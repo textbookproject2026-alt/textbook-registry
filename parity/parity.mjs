@@ -25,7 +25,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { isDeepStrictEqual } from 'node:util';
 import { join, resolve } from 'node:path';
-import { checks, unverifiable } from './checks.mjs';
+import { checks, unverifiable, NotFound } from './checks.mjs';
 import { getRepo, resolveSha, getFile, hasToken } from '../scripts/github.mjs';
 
 // The constants in the five repos are this one book's. Parity is retired before a
@@ -75,7 +75,16 @@ async function openSource(name) {
       const git = (...a) => execFileSync('git', ['-C', dir, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 << 20 });
       const ref = spec.ref ?? 'HEAD';
       const sha = git('rev-parse', ref).trim();
-      return { label: `${spec.local_dir} (local)`, sha, read: async (path) => git('show', `${sha}:${path}`) };
+      const read = async (path) => {
+        try {
+          return git('show', `${sha}:${path}`);
+        } catch (e) {
+          // Same shape as the GitHub client's answer for a missing file.
+          if (/does not exist in|exists on disk, but not in/.test(String(e.stderr))) Object.assign(e, { status: 404, message: `${path} does not exist at ${sha.slice(0, 7)}` });
+          throw e;
+        }
+      };
+      return { label: `${spec.local_dir} (local)`, sha, read };
     }
     const meta = await getRepo(spec.repo);
     if (meta.full_name.toLowerCase() !== spec.repo.toLowerCase()) {
@@ -102,9 +111,47 @@ function readFile(src, path) {
 const show = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
 const results = [];
 
+const readHint = (e) => (e.status === 404 && !hasToken() ? ' (no GITHUB_TOKEN set; private repos read as 404)' : e.status === 404 ? ' (missing file, or the token cannot read this repo; is PARITY_READ_TOKEN set?)' : '');
+
+// A retired check is verified at the pinned commit: the constant must be gone, and the
+// file must show the registry read that replaced it. See the header of checks.mjs.
+async function verifyRetired(check) {
+  const ret = check.retired;
+  const label = `step ${ret.step}, ${ret.source} ${ret.commit}`;
+  let src;
+  try {
+    src = await openSource(check.source);
+  } catch (e) {
+    return { check, status: 'FAIL', at: `${check.source} ${check.path}`, detail: `retired (${label}) but the source cannot be read to confirm it: ${e.message}${readHint(e)}` };
+  }
+  const at = `${src.label} ${src.sha.slice(0, 7)} ${check.path}`;
+
+  let constant;
+  try {
+    constant = check.extract(await readFile(src, check.path));
+  } catch (e) {
+    if (!(e instanceof NotFound) && e.status !== 404)
+      return { check, status: 'FAIL', at, detail: `retired (${label}) but the constant is not cleanly gone: ${e.message}${readHint(e)}` };
+  }
+  if (constant)
+    return { check, status: 'FAIL', at: `${at}:${constant.line}`, detail: `retired (${label}) but the constant is still there: ${show(constant.value)}. Un-retire the check, or finish removing the constant.` };
+
+  const consumesPath = ret.consumes.path ?? check.path;
+  try {
+    const { pattern } = ret.consumes;
+    const text = await readFile(src, consumesPath);
+    const m = new RegExp(pattern.source, pattern.flags.replace('g', '')).exec(text);
+    if (!m) throw new Error(`no match for ${pattern}`);
+    const line = text.slice(0, m.index).split('\n').length;
+    return { check, status: 'retired', at, detail: `${label}: ${ret.reason}. Constant absent; registry read at ${consumesPath}:${line}.` };
+  } catch (e) {
+    return { check, status: 'FAIL', at, detail: `retired (${label}) and the constant is gone, but ${consumesPath} does not show the registry read (${e.message}${readHint(e)}). A constant that vanished with no registry read in its place is a regression, not a migration.` };
+  }
+}
+
 for (const check of checks) {
   if (check.retired) {
-    results.push({ check, status: 'retired', detail: check.retired });
+    results.push(await verifyRetired(check));
     continue;
   }
   const expected = check.expect(registry, book);
@@ -122,8 +169,7 @@ for (const check of checks) {
       results.push({ check, status: 'FAIL', at, detail: `found ${show(value)}, registry says ${show(expected)}` });
     }
   } catch (e) {
-    const hint = e.status === 404 && !hasToken() ? ' (no GITHUB_TOKEN set; private repos read as 404)' : e.status === 404 ? ' (missing file, or the token cannot read this repo; is PARITY_READ_TOKEN set?)' : '';
-    results.push({ check, status: 'FAIL', at: `${check.source} ${check.path}`, detail: `${e.message}${hint}` });
+    results.push({ check, status: 'FAIL', at: `${check.source} ${check.path}`, detail: `${e.message}${readHint(e)}` });
   }
 }
 
@@ -136,15 +182,24 @@ for (const r of results) {
   if (r.status !== 'ok') console.log(`        ${' '.repeat(width)}  ${r.detail}`);
 }
 
+for (const r of results.filter((r) => r.status === 'retired'))
+  annotate('notice', `parity ${r.check.id} retired by migration and verified: ${r.detail}`);
 for (const r of results.filter((r) => r.status === 'drift'))
   annotate('warning', `parity drift accepted for ${r.check.id}: ${r.detail}`);
 for (const r of results.filter((r) => r.status === 'FAIL'))
   annotate('error', `parity ${r.check.id} (${r.check.design}): ${r.detail}`);
 
+// Grouped by migration, so the trail reads as "which repos consume the registry now".
+const retiredBy = Map.groupBy(results.filter((r) => r.status === 'retired'), (r) => r.check.retired);
+if (retiredBy.size) {
+  console.log('\nRetired by migration (constant verified absent, registry read verified present):');
+  for (const [ret, rs] of retiredBy) console.log(`  - step ${ret.step}, ${ret.source} ${ret.commit}: ${rs.map((r) => r.check.id).join(', ')}`);
+}
+
 console.log('\nNot checked by parity (no repository holds these):');
 for (const u of unverifiable) console.log(`  - ${u.field}: ${u.where}`);
 
 const count = (s) => results.filter((r) => r.status === s).length;
-console.log(`\n${count('ok')} ok, ${count('drift')} known drift, ${count('retired')} retired, ${count('FAIL')} failed.`);
+console.log(`\n${count('ok')} ok, ${count('drift')} known drift, ${count('retired')} retired by migration, ${count('FAIL')} failed.`);
 
 if (count('FAIL')) process.exit(1);

@@ -3,18 +3,25 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { once, every, jsonKey, jsStrings, jsGroups, joined, checks } from '../parity/checks.mjs';
+import { once, every, jsonKey, jsStrings, jsGroups, joined, checks, NotFound } from '../parity/checks.mjs';
 
 test('once: exactly one match, with its line', () => {
   assert.deepEqual(once(/^const A = '([^']*)';$/m)("x\nconst A = 'v';\n"), { value: 'v', line: 2 });
 });
 
-test('once: zero matches throws', () => {
-  assert.throws(() => once(/^const A = '([^']*)';$/m)('nothing'), /found 0/);
+test('once: zero matches throws NotFound', () => {
+  assert.throws(() => once(/^const A = '([^']*)';$/m)('nothing'), (e) => e instanceof NotFound && /found 0/.test(e.message));
 });
 
-test('once: two matches throws', () => {
-  assert.throws(() => once(/^const A = '([^']*)';$/m)("const A = 'v';\nconst A = 'w';"), /found 2/);
+test('once: two matches throws, and is not NotFound (a retired check must not pass on it)', () => {
+  assert.throws(() => once(/^const A = '([^']*)';$/m)("const A = 'v';\nconst A = 'w';"), (e) => !(e instanceof NotFound) && /found 2/.test(e.message));
+});
+
+test('NotFound from every missing-constant path', () => {
+  assert.throws(() => every(/^x(y)$/m)('z'), NotFound);
+  assert.throws(() => jsonKey('nope')('{}'), NotFound);
+  assert.throws(() => jsStrings('X')('const Y = [];'), NotFound);
+  assert.throws(() => jsGroups('X')('const Y = [];'), NotFound);
 });
 
 test('every: distinct values, so a disagreeing copy shows up as a second value', () => {
@@ -43,6 +50,12 @@ test('joined', () => {
   assert.equal(x('O = "own"\nR = "rep"').value, 'own/rep');
 });
 
+test('joined: NotFound only when every part is gone; a half-removed constant is not', () => {
+  const x = joined('/', once(/^O = "(.*)"$/m), once(/^R = "(.*)"$/m));
+  assert.throws(() => x('nothing'), NotFound);
+  assert.throws(() => x('R = "rep"'), (e) => !(e instanceof NotFound) && /1 of 2 parts still present/.test(e.message));
+});
+
 test('manifest: ids unique, every check has a source, path, extractor and expectation', () => {
   const ids = checks.map((c) => c.id);
   assert.equal(new Set(ids).size, ids.length);
@@ -50,5 +63,16 @@ test('manifest: ids unique, every check has a source, path, extractor and expect
     assert.ok(c.source && c.path && c.design, c.id);
     assert.equal(typeof c.extract, 'function', c.id);
     assert.equal(typeof c.expect, 'function', c.id);
+  }
+});
+
+test('manifest: a retired check says which migration retired it and what must replace the constant', () => {
+  for (const c of checks.filter((c) => c.retired)) {
+    const r = c.retired;
+    assert.ok(typeof r === 'object', `${c.id}: retired must be a RETIREMENTS entry, not a string`);
+    assert.ok(r.step && r.reason, `${c.id}: step and reason`);
+    assert.equal(r.source, c.source, `${c.id}: retirement is for a different source`);
+    assert.match(r.commit, /^[0-9a-f]{7,40}$/, `${c.id}: commit`);
+    assert.ok(r.consumes?.pattern instanceof RegExp, `${c.id}: consumes.pattern`);
   }
 });

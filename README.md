@@ -129,16 +129,34 @@ read-only** (plus the Metadata access that comes with it) on the five repos and
 from forks never receive secrets, so parity fails on those. Registry changes should
 come from branches in this repo.
 
-**During the migration**, a step that replaces a constant with a registry read edits
-its entry in `parity/checks.mjs` in the same change:
+**During the migration**, when a repo replaces constants with registry reads, retire
+their checks in `parity/checks.mjs`. **Don't delete them.** A deleted check is
+indistinguishable from one dropped by mistake. A retired one stays in every run's output
+with the migration that retired it. Describe the migration once in `RETIREMENTS`:
 
 ```js
-retired: 'step 2: suggest-edit-function reads the bundled registry (abc1234)',
+suggestEditStep2: {
+  step: '2',
+  source: 'suggest-edit-function',
+  commit: 'f97d018',            // the source repo's commit that removed the constants
+  reason: 'resolves the book from the registry bundled at build',
+  consumes: { pattern: /^import BUNDLE from '\.\.\/registry\/bundled\.mjs';$/m },
+},
 ```
 
-A retired check is skipped and listed as retired. If a step removes a constant without
-retiring its check, parity turns red. That is intended: it shows the step changed
-something parity was watching.
+and point each affected check at it with `retired: RETIREMENTS.suggestEditStep2`.
+
+A retirement is **verified, not trusted**. At the pinned commit, parity requires that the
+constant is gone (zero copies; a partly removed constant fails) **and** that
+`consumes.pattern` matches, i.e. the file visibly reads the registry instead. A check
+retired too early fails. So does a constant that disappeared without a registry read in
+its place. A verified retirement is listed as `retired`, raised as an Actions notice,
+and grouped under "Retired by migration" in the summary. If a step removes a constant
+without retiring its check, parity turns red. That is intended: it shows the step
+changed something parity was watching.
+
+Retired so far: step 2, `suggest-edit-function` (`suggest-edit.allowed-origin`,
+`suggest-edit.repo`, `suggest-edit.live-branch`).
 
 **Known drift.** A check can carry `drift: { value, note }` when the registry records
 the corrected value and a repo still holds the stale one. The stale value passes with a

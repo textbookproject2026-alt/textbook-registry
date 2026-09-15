@@ -5,14 +5,21 @@
 // NAME, not by line number, so unrelated edits to a file don't break parity; the
 // `design` field is the DESIGN.md §0a location, kept for cross-reference only.
 //
-// During the migration, a step that replaces a constant with a registry read
-// edits its check in the SAME change:
+// RETIRING A CHECK. When a migration step replaces a constant with a registry read,
+// the same change (or the registry change that follows it) retires the check. Never
+// delete it: a deleted check is indistinguishable from one that was dropped by
+// mistake, while a retired one stays in the output with the step that retired it.
+// Describe the migration once, in RETIREMENTS below, and point each check at it:
 //
-//   retired: 'step 2: suggest-edit-function reads the bundled registry (abc1234)'
+//   retired: RETIREMENTS.suggestEditStep2,
 //
-// A retired check is skipped and listed. Deleting a check is also fine once the
-// constant is gone; `retired` just leaves a trail. When every check is retired,
-// delete the parity job (DESIGN §5 step 1, step 8).
+// A retirement is verified, not trusted. At the pinned commit parity requires that
+//   - the constant is gone: the extractor finds zero copies (a constant still there,
+//     even partly, fails: the check was retired too early), and
+//   - the file reads the registry: `consumes.pattern` matches in `consumes.path`
+//     (default: the check's own path). A constant that vanished without a registry
+//     read in its place fails too; that is a regression, not a migration.
+// When every check is retired, delete the parity job (DESIGN §5 step 1, step 8).
 //
 // A check whose file still holds a known-stale value that the registry has
 // already corrected carries `drift: { value, note }`. The stale value passes with
@@ -22,6 +29,9 @@
 // --- extractors -------------------------------------------------------------
 // Each returns { value, line }. They throw when the constant can't be found, or is
 // found more than once, because an ambiguous match is a parity failure too.
+// "Not found" throws NotFound specifically: a retired check passes only on that.
+
+export class NotFound extends Error {}
 
 const lineOf = (text, index) => text.slice(0, index).split('\n').length;
 
@@ -29,6 +39,7 @@ const lineOf = (text, index) => text.slice(0, index).split('\n').length;
 export const once = (pattern) => (text) => {
   const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
   const matches = [...text.matchAll(new RegExp(pattern.source, flags))];
+  if (!matches.length) throw new NotFound(`expected exactly one match for ${pattern}, found 0`);
   if (matches.length !== 1) throw new Error(`expected exactly one match for ${pattern}, found ${matches.length}`);
   return { value: matches[0][1], line: lineOf(text, matches[0].index) };
 };
@@ -37,14 +48,14 @@ export const once = (pattern) => (text) => {
 export const every = (pattern) => (text) => {
   const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
   const matches = [...text.matchAll(new RegExp(pattern.source, flags))];
-  if (!matches.length) throw new Error(`no match for ${pattern}`);
+  if (!matches.length) throw new NotFound(`no match for ${pattern}`);
   return { value: [...new Set(matches.map((m) => m[1]))], line: matches.map((m) => lineOf(text, m.index)).join(',') };
 };
 
 /** A top-level key of a JSON file. */
 export const jsonKey = (key) => (text) => {
   const obj = JSON.parse(text);
-  if (!(key in obj)) throw new Error(`no key "${key}"`);
+  if (!(key in obj)) throw new NotFound(`no key "${key}"`);
   const m = new RegExp(`^\\s*"${key}"\\s*:`, 'm').exec(text);
   return { value: obj[key], line: m ? lineOf(text, m.index) : '?' };
 };
@@ -52,6 +63,7 @@ export const jsonKey = (key) => (text) => {
 /** The body of `const NAME = <open> ... <close>` in JS source. */
 const jsBlock = (text, name, open, close) => {
   const starts = [...text.matchAll(new RegExp(`^const ${name} = ${open}`, 'gm'))];
+  if (!starts.length) throw new NotFound(`expected exactly one "const ${name} = ...", found 0`);
   if (starts.length !== 1) throw new Error(`expected exactly one "const ${name} = ...", found ${starts.length}`);
   const [start] = starts;
   const end = text.indexOf(close, start.index);
@@ -72,9 +84,17 @@ export const jsGroups = (name) => (text) => {
   return { value, line };
 };
 
-/** Several `once` extractions joined, e.g. OWNER + '/' + NAME. */
+/** Several `once` extractions joined, e.g. OWNER + '/' + NAME. NotFound only when every part is gone. */
 export const joined = (sep, ...extractors) => (text) => {
-  const parts = extractors.map((x) => x(text));
+  const outcomes = extractors.map((x) => { try { return { part: x(text) }; } catch (error) { return { error }; } });
+  const errors = outcomes.filter((o) => o.error).map((o) => o.error);
+  if (errors.length === outcomes.length && errors.every((e) => e instanceof NotFound))
+    throw new NotFound(errors.map((e) => e.message).join('; '));
+  if (errors.length) {
+    const found = outcomes.length - errors.length;
+    throw new Error(`${errors.map((e) => e.message).join('; ')} (${found} of ${outcomes.length} parts still present)`);
+  }
+  const parts = outcomes.map((o) => o.part);
   return { value: parts.map((p) => p.value).join(sep), line: parts.map((p) => p.line).join(',') };
 };
 
@@ -87,6 +107,20 @@ const lcfirst = (s) => s[0].toLowerCase() + s.slice(1);
 const LICENCE_HEADINGS = {
   'CC-BY-SA-4.0': 'Creative Commons Attribution-ShareAlike 4.0 International',
   'CC-BY-4.0': 'Creative Commons Attribution 4.0 International',
+};
+
+// --- retirements ---------------------------------------------------------------
+// One entry per migration of one repo. `commit` is the source repo's commit that
+// replaced the constants; `consumes` is what must be in the file instead.
+
+export const RETIREMENTS = {
+  suggestEditStep2: {
+    step: '2',
+    source: 'suggest-edit-function',
+    commit: 'f97d018',
+    reason: 'the function resolves the book by Origin from the registry bundled at build (registry/bundled.mjs) and takes the origin, content.repo and live_branch from that entry',
+    consumes: { pattern: /^import BUNDLE from '\.\.\/registry\/bundled\.mjs';$/m },
+  },
 };
 
 // --- the manifest -------------------------------------------------------------
@@ -182,12 +216,15 @@ export const checks = [
 
   // ---- suggest-edit-function ---------------------------------------------------
   { id: 'suggest-edit.allowed-origin', source: 'suggest-edit-function', path: 'api/suggest-edit.js', design: 'suggest-edit.js:27',
-    extract: once(/^const ALLOWED_ORIGIN = '([^']*)';$/m), expect: (r, b) => origin(b) },
+    extract: once(/^const ALLOWED_ORIGIN = '([^']*)';$/m), expect: (r, b) => origin(b),
+    retired: RETIREMENTS.suggestEditStep2 },
   { id: 'suggest-edit.repo', source: 'suggest-edit-function', path: 'api/suggest-edit.js', design: 'suggest-edit.js:29-30',
     extract: joined('/', once(/^const REPO_OWNER = '([^']*)';$/m), once(/^const REPO_NAME = '([^']*)';$/m)),
-    expect: (r, b) => b.content.repo },
+    expect: (r, b) => b.content.repo,
+    retired: RETIREMENTS.suggestEditStep2 },
   { id: 'suggest-edit.live-branch', source: 'suggest-edit-function', path: 'api/suggest-edit.js', design: 'suggest-edit.js:31',
-    extract: once(/^const REPO_BRANCH = '([^']*)';$/m), expect: (r, b) => b.content.live_branch },
+    extract: once(/^const REPO_BRANCH = '([^']*)';$/m), expect: (r, b) => b.content.live_branch,
+    retired: RETIREMENTS.suggestEditStep2 },
 
   // ---- authoring-assistant (private: needs PARITY_READ_TOKEN) ------------------
   { id: 'console.repo', source: 'authoring-assistant', path: 'app/github.py', design: 'github.py:24-25',
