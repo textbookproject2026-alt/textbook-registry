@@ -30,7 +30,7 @@ import { getRepo, resolveSha, getFile, hasToken } from '../scripts/github.mjs';
 
 // The constants in the five repos are this one book's. Parity is retired before a
 // second book is added (DESIGN §5 step 8), so there is exactly one book to compare.
-const SLUG = 'critical-realism';
+const SLUG = 'social-research-methods';
 
 const args = process.argv.slice(2);
 const option = (name) => { const i = args.indexOf(name); return i >= 0 ? (args[i + 1] ?? '') : null; };

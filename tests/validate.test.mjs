@@ -69,7 +69,7 @@ test('misspelt key is rejected, not ignored', () =>
 for (const bad of ['Critical-Realism', 'critical_realism', 'cr', '-critical', 'critical-', 'critical--realism', 'a'.repeat(41)]) {
   test(`slug format: ${bad}`, () => expectFail((r) => { book(r).slug = bad; }, '/books/0/slug'));
 }
-test('duplicate slug', () => expectFail((r) => { secondBook(r).slug = 'critical-realism'; }, 'duplicate slug: critical-realism'));
+test('duplicate slug', () => expectFail((r) => { secondBook(r).slug = 'social-research-methods'; }, 'duplicate slug: social-research-methods'));
 
 for (const bad of ['https://confused4now.org', 'Confused4now.org', 'confused4now.org.', 'confused4now.org:443', 'confused4now.org/path', '*.confused4now.org', 'localhost']) {
   test(`domain format: ${bad}`, () => expectFail((r) => { book(r).site.domain = bad; }, '/books/0/site/domain'));
@@ -119,7 +119,7 @@ test('removing a slug relative to the base fails', () => {
   const r = real();
   r.books[0].slug = 'renamed-book';
   const errors = validate(JSON.stringify(r), { baseText: REAL });
-  assert.ok(errors.some((e) => e.includes('slug critical-realism was removed or renamed')), errors.join('\n'));
+  assert.ok(errors.some((e) => e.includes('slug social-research-methods was removed or renamed')), errors.join('\n'));
 });
 
 test('adding a book relative to the base is fine', () => {
