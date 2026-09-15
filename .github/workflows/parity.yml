@@ -1,0 +1,48 @@
+# TEMPORARY. Asserts every registry value still equals the constant it will replace
+# in the five service repos (DESIGN §5 step 1). Must stay green through every
+# migration step; delete it once parity/checks.mjs has nothing left un-retired.
+#
+# It runs on a schedule as well as on push, because the constants live in other
+# repos and can drift without anything being pushed here.
+name: parity
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+  # Lets a service repo ask for a parity run after its own push:
+  #   gh api repos/textbookproject2026-alt/textbook-registry/dispatches -f event_type=parity
+  repository_dispatch:
+    types: [parity]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Require a token that can read every source
+        env:
+          PARITY_READ_TOKEN: ${{ secrets.PARITY_READ_TOKEN }}
+        run: |
+          if [ -z "$PARITY_READ_TOKEN" ]; then
+            echo "::error::PARITY_READ_TOKEN is not available. authoring-assistant is private, so parity cannot read it with the default token, and a partial parity run would report checks it never made. See README, 'The parity job'. (Pull requests from forks never receive secrets.)"
+            exit 1
+          fi
+
+      - name: Compare registry.json with the constants in the service repos
+        env:
+          GITHUB_TOKEN: ${{ secrets.PARITY_READ_TOKEN }}
+        run: node parity/parity.mjs

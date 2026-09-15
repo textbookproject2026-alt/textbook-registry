@@ -1,0 +1,72 @@
+# Schema and integrity of registry.json, on every push and pull request.
+# A malformed registry must fail here, before any consumer can bake it in.
+name: validate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # immutability compares against earlier commits
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Validator tests (every rule has a case that must fail)
+        run: npm test
+
+      - name: Schema, uniqueness, URL form
+        run: node scripts/validate.mjs registry.json
+
+      - name: No slug removed or renamed
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          # Compare against every earlier registry that matters: the PR base, the
+          # commit before this push, and main. A slug on any of them must survive.
+          bases=()
+          [ -n "${BASE_REF:-}" ] && bases+=("origin/$BASE_REF")
+          if [ -n "${BEFORE:-}" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            bases+=("$BEFORE")
+          fi
+          git rev-parse --verify -q origin/main >/dev/null && bases+=("origin/main")
+          if [ ${#bases[@]} -eq 0 ]; then
+            echo "No earlier registry to compare against (first push)."
+          fi
+          for base in "${bases[@]}"; do
+            if git cat-file -e "$base:registry.json" 2>/dev/null; then
+              git show "$base:registry.json" > "$RUNNER_TEMP/base.json"
+              echo "Comparing against $base"
+              node scripts/validate.mjs registry.json --base "$RUNNER_TEMP/base.json"
+            else
+              echo "$base has no registry.json; nothing to protect there."
+            fi
+          done
+
+  github-facts:
+    needs: registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Content repos exist, are public, and have both branches
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-github.mjs registry.json

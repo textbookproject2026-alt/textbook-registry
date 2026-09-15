@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/textbookproject2026-alt/textbook-registry/registry.schema.json",
+  "title": "Textbook registry",
+  "description": "Structural rules only. Cross-entry rules (uniqueness, slug immutability, domain/legacy collisions, preview-only null domains, URL canonical form) are enforced by scripts/validate.mjs, because JSON Schema cannot express them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "platform", "books"],
+  "properties": {
+    "schema_version": { "const": 1 },
+
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suggest_edit_endpoint",
+        "cms_auth_relay",
+        "cms_auth_relay_scope",
+        "edition_extras_repo",
+        "console_oauth_client_id",
+        "automation_logins"
+      ],
+      "properties": {
+        "suggest_edit_endpoint": { "$ref": "#/$defs/https_url" },
+        "cms_auth_relay": {
+          "$ref": "#/$defs/https_origin",
+          "description": "Used as Sveltia's backend.base_url, which must have no trailing slash and no /callback."
+        },
+        "cms_auth_relay_scope": {
+          "type": "string",
+          "pattern": "^[a-z:_]+(,[a-z:_]+)*$",
+          "description": "The GitHub OAuth scope the deployed relay requests. A recorded fact, not a setting: the relay decides it, and this records what a contributor's token can do."
+        },
+        "edition_extras_repo": { "$ref": "#/$defs/repo" },
+        "console_oauth_client_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9.]{20}$",
+          "description": "GitHub OAuth App client ID for the device flow. Public by design; not a secret."
+        },
+        "automation_logins": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/github_login" },
+          "uniqueItems": true
+        }
+      }
+    },
+
+    "books": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/book" }
+    }
+  },
+
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 40,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "hostname": {
+      "type": "string",
+      "maxLength": 253,
+      "pattern": "^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+([a-z]{2,63}|xn--[a-z0-9-]{1,59})$",
+      "description": "Lower-case ASCII host, IDNs as punycode. No scheme, port, path, wildcard or trailing dot."
+    },
+    "https_origin": {
+      "type": "string",
+      "pattern": "^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+([a-z]{2,63}|xn--[a-z0-9-]{1,59})$",
+      "description": "https:// plus a hostname. No port, path or trailing slash."
+    },
+    "https_url": {
+      "type": "string",
+      "pattern": "^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+([a-z]{2,63}|xn--[a-z0-9-]{1,59})(/[A-Za-z0-9._~%!$&'()*+,;=:@-]+)*/?$",
+      "description": "https URL with no port, query, fragment or credentials."
+    },
+    "github_login": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9](-?[A-Za-z0-9]){0,38}$"
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9](-?[A-Za-z0-9]){0,38}/[A-Za-z0-9._-]{1,100}$",
+      "description": "owner/name on github.com."
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^(?!-)(?!.*\\.\\.)(?!.*//)(?!.*\\.lock$)[A-Za-z0-9._/-]+(?<![./])$"
+    },
+
+    "book": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slug", "status", "title", "summary", "licence", "maintainer",
+        "content", "site", "analytics", "annotations", "suggest_edit", "cms", "editions"
+      ],
+      "properties": {
+        "slug": { "$ref": "#/$defs/slug" },
+        "status": { "enum": ["preview", "live", "retired"] },
+
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "licence": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9.+-]+$",
+          "description": "SPDX identifier."
+        },
+        "maintainer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "github"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "github": { "oneOf": [{ "$ref": "#/$defs/github_login" }, { "type": "null" }] }
+          }
+        },
+
+        "content": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repo", "live_branch", "drafts_branch"],
+          "properties": {
+            "repo": { "$ref": "#/$defs/repo" },
+            "live_branch": { "$ref": "#/$defs/branch" },
+            "drafts_branch": { "$ref": "#/$defs/branch" }
+          }
+        },
+
+        "site": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["domain", "host", "legacy_origins"],
+          "properties": {
+            "domain": { "oneOf": [{ "$ref": "#/$defs/hostname" }, { "type": "null" }] },
+            "host": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["kind", "site_id", "publish_host"],
+                  "properties": {
+                    "kind": { "const": "obsidian-publish" },
+                    "site_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+                    "publish_host": { "$ref": "#/$defs/hostname" }
+                  }
+                }
+              ]
+            },
+            "legacy_origins": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/https_origin" },
+              "uniqueItems": true
+            }
+          }
+        },
+
+        "analytics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["plausible"],
+          "properties": {
+            "plausible": {
+              "oneOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["script_src", "site", "dashboard_public"],
+                  "properties": {
+                    "script_src": {
+                      "type": "string",
+                      "pattern": "^https://plausible\\.io/js/[A-Za-z0-9._-]+\\.js$"
+                    },
+                    "site": { "$ref": "#/$defs/hostname" },
+                    "dashboard_public": { "type": "boolean" }
+                  }
+                }
+              ]
+            }
+          }
+        },
+
+        "annotations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hypothesis_groups"],
+          "properties": {
+            "hypothesis_groups": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "label"],
+                "properties": {
+                  "id": { "type": "string", "pattern": "^[A-Za-z0-9]{8}$" },
+                  "label": { "type": "string", "minLength": 1 }
+                }
+              }
+            }
+          }
+        },
+
+        "suggest_edit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled"],
+          "properties": { "enabled": { "type": "boolean" } }
+        },
+
+        "cms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "host"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "host": { "oneOf": [{ "$ref": "#/$defs/hostname" }, { "type": "null" }] }
+          }
+        },
+
+        "editions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["template_repo", "template_preview", "skip_fork_owners"],
+          "properties": {
+            "template_repo": { "$ref": "#/$defs/repo" },
+            "template_preview": { "oneOf": [{ "$ref": "#/$defs/https_origin" }, { "type": "null" }] },
+            "skip_fork_owners": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/github_login" },
+              "uniqueItems": true
+            }
+          }
+        }
+      }
+    }
+  }
+}
