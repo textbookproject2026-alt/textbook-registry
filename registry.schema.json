@@ -175,8 +175,14 @@
                       "type": "string",
                       "pattern": "^https://plausible\\.io/js/[A-Za-z0-9._-]+\\.js$"
                     },
-                    "site": { "$ref": "#/$defs/hostname" },
-                    "dashboard_public": { "type": "boolean" }
+                    "site": {
+                      "$ref": "#/$defs/hostname",
+                      "description": "The site's name in the Plausible account. The public dashboard's address is derived from it, https://plausible.io/<site>, and is never stored."
+                    },
+                    "dashboard_public": {
+                      "type": "boolean",
+                      "description": "Whether https://plausible.io/<site> is viewable logged out. The vault's community dashboard links readership there only when this is true."
+                    }
                   }
                 }
               ]
