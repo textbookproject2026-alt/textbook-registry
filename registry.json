@@ -58,7 +58,7 @@
 
       "cms": {
         "enabled": true,
-        "host": "textbook-cms.pages.dev"
+        "host": "textbook-admin.pages.dev"
       },
 
       "editions": {

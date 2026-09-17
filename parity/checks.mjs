@@ -113,6 +113,18 @@ const LICENCE_HEADINGS = {
 // One entry per migration of one repo. `commit` is the source repo's commit that
 // replaced the constants; `consumes` is what must be in the file instead.
 
+function cmsStep4(name, key, token, field) {
+  return {
+    [name]: {
+      step: '4',
+      source: 'content',
+      commit: 'f9c7619',
+      reason: `admin/config.yml is rendered by configure.mjs from templates/admin/config.yml, whose \`${key}:\` is the ${token} token filled from the registry's ${field}`,
+      consumes: { pattern: new RegExp(`^ {2}${key}: ${token}$`, 'm') },
+    },
+  };
+}
+
 export const RETIREMENTS = {
   suggestEditStep2: {
     step: '2',
@@ -135,6 +147,16 @@ export const RETIREMENTS = {
     reason: 'gen-dashboard.mjs fetches the registry at run time (scripts/lib/registry.mjs) and takes the repo, site, groups, edition template, fork owners and Plausible dashboard from the book\'s entry; the dashboard URL is derived from analytics.plausible.site, not stored',
     consumes: { path: 'scripts/gen-dashboard.mjs', pattern: /^import \{[^}]*\bloadBook\b[^}]*\} from '\.\/lib\/registry\.mjs';$/m },
   },
+  // admin/config.yml is rendered by configure.mjs, so the RENDERED file still holds these
+  // values and a retirement checked there would fail. The hand-edited source is the
+  // template, so these checks read templates/admin/config.yml. `consumes` requires the
+  // token line itself: a template that dropped `branch:` altogether would otherwise pass
+  // as "constant gone", and Sveltia would fall back to the repo's default branch, i.e. main.
+  // configure.mjs refuses to write admin/config.yml with any token left unfilled. The
+  // extractors skip a `__TOKEN__` value: a placeholder is not a hardcoded constant.
+  ...cmsStep4('cmsRepoStep4', 'repo', '__CONTENT_REPO__', 'content.repo'),
+  ...cmsStep4('cmsDraftsBranchStep4', 'branch', '__DRAFTS_BRANCH__', 'content.drafts_branch'),
+  ...cmsStep4('cmsAuthRelayStep4', 'base_url', '__CMS_AUTH_RELAY__', 'platform.cms_auth_relay'),
 };
 
 // --- the manifest -------------------------------------------------------------
@@ -152,12 +174,15 @@ export const checks = [
 
   { id: 'cms.title-comment', source: 'content', path: 'admin/config.yml', design: 'admin/config.yml:1',
     extract: once(/^# Sveltia CMS configuration — (.+) textbook$/m), expect: (r, b) => b.title },
-  { id: 'cms.repo', source: 'content', path: 'admin/config.yml', design: 'admin/config.yml:12',
-    extract: once(/^ {2}repo: (\S+)$/m), expect: (r, b) => b.content.repo },
-  { id: 'cms.drafts-branch', source: 'content', path: 'admin/config.yml', design: 'admin/config.yml:31 (load-bearing line)',
-    extract: once(/^ {2}branch: (\S+)$/m), expect: (r, b) => b.content.drafts_branch },
-  { id: 'cms.auth-relay', source: 'content', path: 'admin/config.yml', design: 'admin/config.yml:40',
-    extract: once(/^ {2}base_url: (\S+)$/m), expect: (r) => r.platform.cms_auth_relay },
+  { id: 'cms.repo', source: 'content', path: 'templates/admin/config.yml', design: 'admin/config.yml:12',
+    extract: once(/^ {2}repo: (?!__[A-Z0-9_]+__$)(\S+)$/m), expect: (r, b) => b.content.repo,
+    retired: RETIREMENTS.cmsRepoStep4 },
+  { id: 'cms.drafts-branch', source: 'content', path: 'templates/admin/config.yml', design: 'admin/config.yml:31 (load-bearing line)',
+    extract: once(/^ {2}branch: (?!__[A-Z0-9_]+__$)(\S+)$/m), expect: (r, b) => b.content.drafts_branch,
+    retired: RETIREMENTS.cmsDraftsBranchStep4 },
+  { id: 'cms.auth-relay', source: 'content', path: 'templates/admin/config.yml', design: 'admin/config.yml:40',
+    extract: once(/^ {2}base_url: (?!__[A-Z0-9_]+__$)(\S+)$/m), expect: (r) => r.platform.cms_auth_relay,
+    retired: RETIREMENTS.cmsAuthRelayStep4 },
 
   { id: 'config.title', source: 'content', path: 'textbook.config.json', design: 'textbook.config.json:2',
     extract: jsonKey('title'), expect: (r, b) => b.title },
