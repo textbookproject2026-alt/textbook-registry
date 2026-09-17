@@ -7,7 +7,7 @@
     "cms_auth_relay_scope": "repo,user",
     "edition_extras_repo": "textbookproject2026-alt/quartz-edition-extras",
     "console_oauth_client_id": "Ov23lixHRSXxMpKK8lVP",
-    "automation_logins": ["aldogo-bot"]
+    "automation_logins": ["aldogobot"]
   },
 
   "books": [
@@ -48,14 +48,12 @@
       },
 
       "annotations": {
-        "hypothesis_groups": [
-          { "id": "ZGY29zLM", "label": "test-group" },
-          { "id": "L9KgjVPa", "label": "Biology edition" }
-        ]
+        "hypothesis_groups": []
       },
 
       "suggest_edit": {
-        "enabled": true
+        "enabled": true,
+        "counted_from": "2026-09-16"
       },
 
       "cms": {
