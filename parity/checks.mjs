@@ -125,6 +125,22 @@ function cmsStep4(name, key, token, field) {
   };
 }
 
+// The console passes the resolved book to every repository call (app/github.py) and
+// takes its links from the book the app resolved (app/web/app.js). Each retirement
+// requires the line that now carries the value, so a file that merely lost the
+// constant does not pass.
+function consoleStep5(name, path, reason, pattern) {
+  return {
+    [name]: {
+      step: '5',
+      source: 'authoring-assistant',
+      commit: '5f62a31',
+      reason,
+      consumes: { path, pattern },
+    },
+  };
+}
+
 export const RETIREMENTS = {
   suggestEditStep2: {
     step: '2',
@@ -157,6 +173,18 @@ export const RETIREMENTS = {
   ...cmsStep4('cmsRepoStep4', 'repo', '__CONTENT_REPO__', 'content.repo'),
   ...cmsStep4('cmsDraftsBranchStep4', 'branch', '__DRAFTS_BRANCH__', 'content.drafts_branch'),
   ...cmsStep4('cmsAuthRelayStep4', 'base_url', '__CMS_AUTH_RELAY__', 'platform.cms_auth_relay'),
+  ...consoleStep5('consoleRepoStep5', 'app/github.py',
+    'the console fetches the registry at launch (app/registry.py), resolves the book from the chosen book or the open vault, and builds every repository URL from that book\'s content.repo',
+    /^\s+url = \(f"\{API\}\/repos\/\{book\.repo\}\/issues"$/m),
+  ...consoleStep5('consoleDraftsStep5', 'app/github.py',
+    'the console lists draft changes against the resolved book\'s content.drafts_branch',
+    /^\s+f"&base=\{urllib\.parse\.quote\(book\.drafts_branch\)\}"\)$/m),
+  ...consoleStep5('consoleLiveStep5', 'app/github.py',
+    'the console opens the publish request from the resolved book\'s drafts_branch into its live_branch',
+    /"head": book\.drafts_branch, "base": book\.live_branch\}/),
+  ...consoleStep5('consoleLinksStep5', 'app/web/app.js',
+    'the page takes the discussion and history links from the book the app resolved; both are derived from site.domain, content.repo and live_branch in app/registry.py, not stored',
+    /\bbook\.discussion_url\b[\s\S]*\bbook\.history_url\b/),
 };
 
 // --- the manifest -------------------------------------------------------------
@@ -272,17 +300,23 @@ export const checks = [
 
   // ---- authoring-assistant (private: needs PARITY_READ_TOKEN) ------------------
   { id: 'console.repo', source: 'authoring-assistant', path: 'app/github.py', design: 'github.py:24-25',
-    extract: joined('/', once(/^OWNER = "([^"]*)"$/m), once(/^REPO = "([^"]*)"$/m)), expect: (r, b) => b.content.repo },
+    extract: joined('/', once(/^OWNER = "([^"]*)"$/m), once(/^REPO = "([^"]*)"$/m)), expect: (r, b) => b.content.repo,
+    retired: RETIREMENTS.consoleRepoStep5 },
   { id: 'console.drafts-branch', source: 'authoring-assistant', path: 'app/github.py', design: 'github.py:32',
-    extract: once(/^DRAFTS_BRANCH = "([^"]*)"$/m), expect: (r, b) => b.content.drafts_branch },
+    extract: once(/^DRAFTS_BRANCH = "([^"]*)"$/m), expect: (r, b) => b.content.drafts_branch,
+    retired: RETIREMENTS.consoleDraftsStep5 },
   { id: 'console.live-branch', source: 'authoring-assistant', path: 'app/github.py', design: 'github.py:33',
-    extract: once(/^LIVE_BRANCH = "([^"]*)"$/m), expect: (r, b) => b.content.live_branch },
+    extract: once(/^LIVE_BRANCH = "([^"]*)"$/m), expect: (r, b) => b.content.live_branch,
+    retired: RETIREMENTS.consoleLiveStep5 },
   { id: 'console.drafts-pr-base-literal', source: 'authoring-assistant', path: 'app/github.py', design: 'github.py:254',
-    extract: once(/[?&]base=([^&"]+)&/), expect: (r, b) => b.content.drafts_branch },
+    extract: once(/[?&]base=([^&"]+)&/), expect: (r, b) => b.content.drafts_branch,
+    retired: RETIREMENTS.consoleDraftsStep5 },
   { id: 'console.site', source: 'authoring-assistant', path: 'app/web/app.js', design: 'app.js:860',
-    extract: once(/^const SITE = '([^']*)';$/m), expect: (r, b) => origin(b) },
+    extract: once(/^const SITE = '([^']*)';$/m), expect: (r, b) => origin(b),
+    retired: RETIREMENTS.consoleLinksStep5 },
   { id: 'console.history-url', source: 'authoring-assistant', path: 'app/web/app.js', design: 'app.js:862',
-    extract: once(/^const HISTORY_URL = '([^']*)';$/m), expect: (r, b) => `https://github.com/${b.content.repo}/commits/${b.content.live_branch}` },
+    extract: once(/^const HISTORY_URL = '([^']*)';$/m), expect: (r, b) => `https://github.com/${b.content.repo}/commits/${b.content.live_branch}`,
+    retired: RETIREMENTS.consoleLinksStep5 },
 
   // ---- textbook-edition-template ------------------------------------------------
   { id: 'edition.canonical-link', source: 'edition-template', path: 'quartz.config.yaml', design: 'quartz.config.yaml:229',
@@ -316,7 +350,7 @@ export const checks = [
 // Registry values that no repository holds, so parity cannot check them. Printed
 // on every run so nobody mistakes silence for verification.
 export const unverifiable = [
-  { field: 'platform.console_oauth_client_id', where: 'each Mac\'s ~/Library/Application Support/Authoring Assistant/state.json (server.py:504-505); verified by hand 2026-09-15' },
+  { field: 'platform.console_oauth_client_id', where: 'read by the console from the registry at launch since step 5 (no repo holds a copy); a value pasted into a Mac\'s state.json still overrides it; verified by hand 2026-09-15' },
   { field: 'books[].maintainer.github', where: 'supplied by the maintainer; no repo records it' },
   { field: 'books[].cms.host (live value)', where: 'the Worker\'s ALLOWED_DOMAINS variable and the Pages project name live in Cloudflare; parity checks the docs that describe them' },
   { field: 'books[].analytics.plausible.site / dashboard_public', where: 'Plausible account settings; checked by hand 2026-09-15' },
