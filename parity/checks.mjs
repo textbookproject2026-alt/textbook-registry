@@ -118,7 +118,7 @@ function cmsStep4(name, key, token, field) {
     [name]: {
       step: '4',
       source: 'content',
-      commit: 'caa599f',
+      commit: 'f9c7619',
       reason: `admin/config.yml is rendered by configure.mjs from templates/admin/config.yml, whose \`${key}:\` is the ${token} token filled from the registry's ${field}`,
       consumes: { pattern: new RegExp(`^ {2}${key}: ${token}$`, 'm') },
     },
