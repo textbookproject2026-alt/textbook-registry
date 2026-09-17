@@ -9,10 +9,11 @@ It is one file, [`registry.json`](registry.json), checked against
 [`registry.schema.json`](registry.schema.json). The design is in
 `platform-registry-design/DESIGN.md`; this repo is step 1 of its migration.
 
-**Status: step 3b.** Three things read the registry now:
+**Status: step 4.** Three things read the registry now:
 
 - `suggest-edit-function` bundles it at build (step 2).
-- The book's `configure.mjs` renders `publish.js` and `.lycheeignore` from it (step 3a).
+- The book's `configure.mjs` renders `publish.js` and `.lycheeignore` (step 3a) and
+  `admin/config.yml` (step 4) from it.
 - The book's annotation backup and dashboard scripts fetch it when they run (step 3b).
 
 Everything else still uses its own hardcoded copies of these values. The
@@ -172,6 +173,18 @@ Retired so far:
   `config.plausible-public-url`. The dashboard now builds the Plausible link from
   `analytics.plausible.site`, so the key was removed from `textbook.config.json`.
   Its retirement is verified by the registry read in `gen-dashboard.mjs`.
+
+- step 4, `textbook`, `templates/admin/config.yml`: `cms.repo`,
+  `cms.drafts-branch`, `cms.auth-relay`. These checks read the **template**, not the
+  rendered `admin/config.yml`: the rendered file still holds the values, so a
+  retirement checked there could never pass. The retirement requires the exact token
+  line (`  branch: __DRAFTS_BRANCH__`), so a template that drops `branch:` fails
+  parity instead of passing as "constant gone". `cms.title-comment` stays active: the
+  title is still rendered from `textbook.config.json`, not from the registry.
+
+Rendered files (`publish.js`, `.lycheeignore`, `admin/config.yml`) are regenerated only
+when a vault PR touches the config or a template. A registry change reaches them the
+next time that happens. Nothing checks for a stale render after a registry-only change.
 
 Both step 3b scripts fetch `registry.json` from `main` at the start of each run.
 If the fetch fails, or the book or any field they need can't be resolved, they
