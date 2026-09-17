@@ -42,6 +42,16 @@ export async function getRepo(fullName) {
   return (await request(`/repos/${fullName}`)).json();
 }
 
+/** The account at a login, or null if there is none. */
+export async function getUser(login) {
+  try {
+    return await (await request(`/users/${encodeURIComponent(login)}`)).json();
+  } catch (e) {
+    if (e.status === 404) return null;
+    throw e;
+  }
+}
+
 export async function branchExists(fullName, branch) {
   try {
     await request(`/repos/${fullName}/branches/${encodeURIComponent(branch)}`);

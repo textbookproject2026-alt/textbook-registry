@@ -6,14 +6,16 @@
 //         scope makes "every registered content repo is public" a platform
 //         invariant); a live or drafts branch that doesn't exist; a template or
 //         extras repo that doesn't exist; a repo that has moved (the registry
-//         must name it where it is, since services match on it exactly).
+//         must name it where it is, since services match on it exactly); an
+//         automation login with no account behind it (parity only proves the
+//         registry and the scripts agree, and they once agreed on a misspelling).
 // Warns:  a domain, CMS host or preview URL that doesn't answer right now. A new
 //         domain may not be live yet, so this is never a failure.
 //
 // Run with a registry that has already passed validate.mjs.
 
 import { readFileSync } from 'node:fs';
-import { getRepo, branchExists } from './github.mjs';
+import { getRepo, getUser, branchExists } from './github.mjs';
 
 const path = process.argv[2] ?? new URL('../registry.json', import.meta.url);
 const reg = JSON.parse(readFileSync(path, 'utf8'));
@@ -49,6 +51,19 @@ async function answers(url) {
 
 for (const [label, fullName] of [['platform.edition_extras_repo', reg.platform.edition_extras_repo]]) {
   if (await repoAt(fullName, label)) ok(`${label}: ${fullName}`);
+}
+
+for (const login of reg.platform.automation_logins) {
+  let user;
+  try {
+    user = await getUser(login);
+  } catch (e) {
+    fail(`platform.automation_logins: ${login} can't be looked up (${e.status ?? e.message})`);
+    continue;
+  }
+  if (!user) fail(`platform.automation_logins: there is no GitHub account called ${login}`);
+  else if (user.login.toLowerCase() !== login.toLowerCase()) fail(`platform.automation_logins: ${login} resolves to ${user.login}; record the account's own login`);
+  else ok(`platform.automation_logins: ${login} exists (${user.type})`);
 }
 
 for (const b of reg.books) {

@@ -113,7 +113,7 @@ test('bad branch name', () => expectFail((r) => { book(r).content.drafts_branch 
 test('bad status', () => expectFail((r) => { book(r).status = 'archived'; }, '/books/0/status'));
 test('bad Publish site id', () => expectFail((r) => { book(r).site.host.site_id = '1443b409'; }, '/books/0/site/host'));
 test('duplicate hypothesis group', () =>
-  expectFail((r) => { book(r).annotations.hypothesis_groups.push({ id: 'ZGY29zLM', label: 'again' }); }, 'listed twice'));
+  expectFail((r) => { book(r).annotations.hypothesis_groups.push({ id: 'ZGY29zLM', label: 'one' }, { id: 'ZGY29zLM', label: 'again' }); }, 'listed twice'));
 
 test('removing a slug relative to the base fails', () => {
   const r = real();

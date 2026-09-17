@@ -205,6 +205,20 @@ against its real source found these differences:
   asks for; newer upstream releases honour one. A contributor's CMS token can
   therefore read and write every repository that contributor can access, private ones
   included, and read and write their profile.
+- **`platform.automation_logins` is `aldogobot`, not `aldogo-bot`.** The design copied
+  the hyphenated name from `gen-contributors.mjs`, and parity passed because the two
+  agreed. No account `aldogo-bot` exists; `aldogobot` is the account that filed the
+  suggested-edit issues during migration. `check-github.mjs` now checks that every
+  automation login exists.
+- **`annotations.hypothesis_groups` is empty.** The design listed `ZGY29zLM`
+  (*test-group*) and `L9KgjVPa` (*Biology edition*). Both were testing leftovers,
+  and every weekly backup from 2026-08-17 to 2026-09-13 found no annotations in
+  either. Per-cohort groups were decided against, so neither one belongs to the book.
+- **`suggest_edit.counted_from` is new: `2026-09-16`.** All 13 suggested-edit issues
+  filed before then (numbered between #1 and #30, the last on 2026-09-15) were tests of the route during
+  migration. The dashboard counts only issues filed on or after this date. The date
+  has to be recorded, not worked out from who filed an issue: the route files real
+  suggestions under the same credentials as the tests.
 - **`maintainer.github` is `textbookproject2026-alt`.** It was supplied by the
   maintainer, and no repo records it.
 - **`cms.host` is recorded as `textbook-cms.pages.dev`**, the value every repo and doc
