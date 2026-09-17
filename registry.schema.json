@@ -213,8 +213,17 @@
         "suggest_edit": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["enabled"],
-          "properties": { "enabled": { "type": "boolean" } }
+          "required": ["enabled", "counted_from"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "counted_from": {
+              "description": "First day (UTC) whose suggestions are reader activity. Issues filed earlier were tests of the route and are left out of public counts. null counts everything.",
+              "oneOf": [
+                { "type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$" },
+                { "type": "null" }
+              ]
+            }
+          }
         },
 
         "cms": {
