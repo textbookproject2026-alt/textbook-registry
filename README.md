@@ -9,9 +9,14 @@ It is one file, [`registry.json`](registry.json), checked against
 [`registry.schema.json`](registry.schema.json). The design is in
 `platform-registry-design/DESIGN.md`; this repo is step 1 of its migration.
 
-**Status: step 1.** Nothing reads this registry yet. The services still use their own
-hardcoded copies of these values. The [parity job](#the-parity-job) checks that the
-registry and those copies agree.
+**Status: step 3b.** Three things read the registry now:
+
+- `suggest-edit-function` bundles it at build (step 2).
+- The book's `configure.mjs` renders `publish.js` and `.lycheeignore` from it (step 3a).
+- The book's annotation backup and dashboard scripts fetch it when they run (step 3b).
+
+Everything else still uses its own hardcoded copies of these values. The
+[parity job](#the-parity-job) checks that the registry and those copies agree.
 
 ---
 
@@ -155,13 +160,28 @@ and grouped under "Retired by migration" in the summary. If a step removes a con
 without retiring its check, parity turns red. That is intended: it shows the step
 changed something parity was watching.
 
-Retired so far: step 2, `suggest-edit-function` (`suggest-edit.allowed-origin`,
-`suggest-edit.repo`, `suggest-edit.live-branch`).
+Retired so far:
+
+- step 2, `suggest-edit-function`: `suggest-edit.allowed-origin`,
+  `suggest-edit.repo`, `suggest-edit.live-branch`.
+- step 3b, `textbook`, `backup-annotations.mjs`: `backup.hypothesis-groups`,
+  `backup.default-site`, `backup.legacy-origins`.
+- step 3b, `textbook`, `gen-dashboard.mjs`: `dashboard.repo-fallback`,
+  `dashboard.template-repo`, `dashboard.skip-fork-owners`,
+  `dashboard.hypothesis-groups`, `dashboard.site-url`, and
+  `config.plausible-public-url`. The dashboard now builds the Plausible link from
+  `analytics.plausible.site`, so the key was removed from `textbook.config.json`.
+  Its retirement is verified by the registry read in `gen-dashboard.mjs`.
+
+Both step 3b scripts fetch `registry.json` from `main` at the start of each run.
+If the fetch fails, or the book or any field they need can't be resolved, they
+exit 1 before calling any API. So a change merged here reaches them at their next
+scheduled run, and a broken `registry.json` on `main` fails those jobs loudly.
 
 **Known drift.** A check can carry `drift: { value, note }` when the registry records
 the corrected value and a repo still holds the stale one. The stale value passes with a
-warning, the corrected value passes silently, and anything else fails. There is one
-today; see below.
+warning, the corrected value passes silently, and anything else fails. There are
+none today.
 
 **Not checkable by parity**, because no repository holds the value. These are printed
 on every run: the console OAuth client ID, `maintainer.github`, the live CMS allowlist,
@@ -175,10 +195,8 @@ against its real source found these differences:
 - **`analytics.plausible.site` is `confused4now.org`, not `bptext2026.xyz`.** The
   Plausible site has been renamed. `plausible.io/confused4now.org` is the public
   dashboard (stats from 2026-06-17, viewable logged out), and
-  `plausible.io/bptext2026.xyz` returns 404. The vault's
-  `textbook.config.json` `plausible_public_url`, and the link on
-  `community/dashboard.md`, still point at the old name, so that link is broken. Parity
-  accepts it as known drift.
+  `plausible.io/bptext2026.xyz` returns 404. The vault was corrected in `cab6b28`,
+  and from step 3b onwards the dashboard derives the link from this field.
 - **`platform.cms_auth_relay_scope` is new: `repo,user`.** The design expected `repo`
   and left this as an open question. The deployed Worker's source
   (`textbookproject2026-alt/sveltia-cms-auth` `src/index.js`, the GitHub branch of
