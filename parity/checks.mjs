@@ -134,7 +134,7 @@ function consoleStep5(name, path, reason, pattern) {
     [name]: {
       step: '5',
       source: 'authoring-assistant',
-      commit: '5f62a31',
+      commit: 'befb6a8',
       reason,
       consumes: { path, pattern },
     },
