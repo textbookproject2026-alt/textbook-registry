@@ -22,6 +22,36 @@ const secondBook = (r) => {
   return b;
 };
 
+// The interim test book from MULTI-BOOK-HOSTING §6c: Quartz on a free Pages subdomain,
+// no Publish subscription, no editions. A fixture only; it is not in registry.json.
+const staticBook = (r) => {
+  const b = {
+    slug: 'platform-test-book',
+    status: 'preview',
+    title: 'Platform test book',
+    summary: 'A throwaway book used to test the shared services with two books. Not for readers.',
+    licence: 'CC-BY-SA-4.0',
+    maintainer: { name: 'Platform test', github: 'someone' },
+    content: { repo: 'someone/platform-test-book', live_branch: 'main', drafts_branch: 'drafts' },
+    site: {
+      domain: 'platform-test-book.pages.dev',
+      aliases: [],
+      host: { kind: 'static', provider: 'cloudflare-pages', project: 'platform-test-book', paid_by: 'platform' },
+      legacy_origins: [],
+      dark: null,
+    },
+    analytics: { plausible: null },
+    annotations: { hypothesis_groups: [] },
+    suggest_edit: { enabled: true, counted_from: null },
+    cms: { enabled: false, host: null },
+    editions: null,
+  };
+  r.books.push(b);
+  return b;
+};
+
+const PORTAL = { domain: 'portal.example', cms_host: 'edit.portal.example', book_parent: 'portal.example' };
+
 function expectFail(mutate, fragment) {
   const r = real();
   mutate(r);
@@ -131,3 +161,115 @@ test('adding a book relative to the base is fine', () => {
 test('a base with no registry yet protects nothing', () => {
   assert.deepEqual(validate(REAL, { baseText: '' }), []);
 });
+
+// --- multi-book hosting (MULTI-BOOK-HOSTING §4, §6) ----------------------------
+
+test('book one needs none of the new fields: its committed entry has none and is valid', () => {
+  const b = book(real());
+  for (const k of ['aliases', 'dark']) assert.ok(!(k in b.site), `site.${k} is already in registry.json`);
+  assert.ok(!('paid_by' in b.site.host), 'site.host.paid_by is already in registry.json');
+  assert.ok(!('portal' in real().platform), 'platform.portal is already in registry.json');
+  assert.deepEqual(validate(REAL), []);
+});
+
+test('book one with every new optional field filled in is valid', () => {
+  const r = real();
+  r.platform.portal = { ...PORTAL };
+  Object.assign(book(r).site, { aliases: ['social-research-methods.portal.example'], dark: null });
+  book(r).site.host.paid_by = 'maintainer';
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+
+test('the §6c interim static book is accepted alongside book one', () => {
+  const r = real();
+  staticBook(r);
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+
+test('platform.portal with null cms_host and book_parent is accepted', () => {
+  const r = real();
+  r.platform.portal = { domain: 'portal.example', cms_host: null, book_parent: null };
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+
+// status stays preview | live | retired: the function and the console reject an unknown
+// status for the whole registry, so 'dark' there would stop suggestions for every book.
+test('dark is not a status', () => expectFail((r) => { book(r).status = 'dark'; }, '/books/0/status'));
+
+test('editions: null is accepted', () => {
+  const r = real();
+  book(r).editions = null;
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('editions must still be present (null, not missing)', () => expectFail((r) => { delete book(r).editions; }, "must have required property 'editions'"));
+test('editions object still requires template_repo', () => expectFail((r) => { delete book(r).editions.template_repo; }, '/books/0/editions'));
+
+test('static host: unknown provider', () => expectFail((r) => { staticBook(r).site.host.provider = 'geocities'; }, '/books/1/site/host'));
+test('static host: missing project', () => expectFail((r) => { delete staticBook(r).site.host.project; }, '/books/1/site/host'));
+test('static host: Publish-only key', () => expectFail((r) => { staticBook(r).site.host.site_id = '1443b409a84e491249da35fdd4b91de6'; }, '/books/1/site/host'));
+test('unknown host kind', () => expectFail((r) => { book(r).site.host.kind = 'wordpress'; }, '/books/0/site/host'));
+test('paid_by: unknown value', () => expectFail((r) => { book(r).site.host.paid_by = 'university'; }, '/books/0/site/host'));
+test('paid_by maintainer needs a maintainer login', () =>
+  expectFail((r) => { book(r).site.host.paid_by = 'maintainer'; book(r).maintainer.github = null; }, 'maintainer.github must name them'));
+test('paid_by platform with no maintainer login is fine', () => {
+  const r = real();
+  book(r).site.host.paid_by = 'platform';
+  book(r).maintainer.github = null;
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+
+test('static book on a shared suffix may not be live', () =>
+  expectFail((r) => { staticBook(r).status = 'live'; }, 'only a static-host book with status preview'));
+test('Publish book on a shared suffix', () =>
+  expectFail((r) => { book(r).status = 'preview'; book(r).site.domain = 'book.pages.dev'; }, 'only a static-host book with status preview'));
+test('domain that is a bare shared suffix', () =>
+  expectFail((r) => { staticBook(r).site.domain = 'pages.dev'; }, 'site.domain pages.dev is a shared platform suffix'));
+test('static book on its own domain may be live', () => {
+  const r = real();
+  const b = staticBook(r);
+  b.status = 'live';
+  b.site.domain = 'test-book.example';
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+
+test('dark on a live book is accepted', () => {
+  const r = real();
+  book(r).site.dark = { since: '2026-10-02', reason: 'subscription-lapsed', notified: '2026-09-20' };
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('dark on a preview book', () =>
+  expectFail((r) => { staticBook(r).site.dark = { since: '2026-10-02', reason: 'unknown', notified: null }; }, 'site.dark may be set only when status is live'));
+test('dark on a retired book', () =>
+  expectFail((r) => { book(r).status = 'retired'; book(r).site.dark = { since: '2026-10-02', reason: 'unknown', notified: null }; }, 'site.dark may be set only when status is live'));
+test('dark: unknown reason', () =>
+  expectFail((r) => { book(r).site.dark = { since: '2026-10-02', reason: 'forgot', notified: null }; }, '/books/0/site/dark'));
+test('dark: bad date', () =>
+  expectFail((r) => { book(r).site.dark = { since: '2026-13-02', reason: 'unknown', notified: null }; }, '/books/0/site/dark'));
+
+for (const bad of ['https://alias.example', 'Alias.example', '*.alias.example']) {
+  test(`alias format: ${bad}`, () => expectFail((r) => { book(r).site.aliases = [bad]; }, '/books/0/site/aliases'));
+}
+test('alias repeated in one book', () => expectFail((r) => { book(r).site.aliases = ['a.example', 'a.example']; }, '/books/0/site/aliases'));
+test('alias that is its own book\'s domain', () =>
+  expectFail((r) => { book(r).site.aliases = ['confused4now.org']; }, 'alias confused4now.org of social-research-methods is also site.domain of social-research-methods'));
+test('alias that is another book\'s domain', () =>
+  expectFail((r) => { secondBook(r).site.aliases = ['confused4now.org']; }, 'is also site.domain of social-research-methods'));
+test('alias that is a legacy origin', () =>
+  expectFail((r) => { secondBook(r).site.aliases = ['bptext2026.xyz']; }, 'is also a legacy origin of social-research-methods'));
+test('alias shared by two books', () =>
+  expectFail((r) => { book(r).site.aliases = ['a.example']; secondBook(r).site.aliases = ['a.example']; }, 'alias a.example of second-book is also an alias of social-research-methods'));
+
+test('portal: unknown key', () => expectFail((r) => { r.platform.portal = { ...PORTAL, zone: 'x' }; }, '(zone)'));
+test('portal: missing domain', () => expectFail((r) => { r.platform.portal = { cms_host: null, book_parent: null }; }, "must have required property 'domain'"));
+test('portal domain that is a book\'s domain', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL, domain: 'confused4now.org', book_parent: null }; }, 'platform.portal.domain confused4now.org is also site.domain'));
+test('portal domain that is a book\'s alias', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL }; book(r).site.aliases = ['portal.example']; }, 'is also an alias of social-research-methods'));
+test('portal domain that is a legacy origin', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL, domain: 'bptext2026.xyz', book_parent: null }; }, 'is also a legacy origin'));
+test('portal cms host that is a bare platform suffix', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL, cms_host: 'pages.dev' }; }, 'platform.portal.cms_host pages.dev is a shared platform suffix'));
+test('book hostname two labels under book_parent', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL }; book(r).site.aliases = ['a.b.portal.example']; }, 'more than one label under platform.portal.book_parent'));
+test('book domain two labels under book_parent', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL }; secondBook(r).site.domain = 'www.second.portal.example'; }, 'more than one label under platform.portal.book_parent'));

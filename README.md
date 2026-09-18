@@ -72,8 +72,13 @@ The endpoint polled is `platform.suggest_edit_endpoint`, read from `registry.jso
   backups and URLs, and a reused slug would hand all of that to a different book. CI
   fails any change that removes a slug that exists on `main`, on the PR base, or in
   the previous commit.
-- **A domain belongs to one book.** It may not appear twice, and it may not be another
-  book's legacy origin.
+- **A hostname belongs to one book, once.** A domain, alias or legacy origin may not
+  appear twice anywhere in the registry, and none of them may be the portal's own
+  domain.
+- **`status` is only ever `preview`, `live` or `retired`.** The function and the
+  console reject an unknown status for the **whole registry**, not one book, so a
+  new value would stop suggestions for every book. A site that has gone away is
+  recorded in `site.dark`, never in `status`.
 - **Store facts, not URLs derived from them.** The issues link, edit links and
   canonical origin are all built from `content.repo` and `site.domain`. They are
   never stored.
@@ -82,6 +87,47 @@ The endpoint polled is `platform.suggest_edit_endpoint`, read from `registry.jso
 - **Every content repo is public**, because the author's console signs in with the
   `public_repo` scope. CI checks this.
 - **Unknown keys are rejected.** A misspelt key fails CI instead of being ignored.
+
+## Fields
+
+`registry.schema.json` is the precise definition; this is what each field means.
+Every key is required unless it says **optional**. An optional key that is absent
+means the same as its empty value (no aliases, not dark, unknown payer, no portal).
+
+### `platform`
+
+| Field | Meaning |
+|---|---|
+| `suggest_edit_endpoint` | The suggest-edit function's URL, baked into every book's reading site. |
+| `cms_auth_relay` | The CMS OAuth relay's origin, used as Sveltia's `backend.base_url` (no trailing slash, no `/callback`). |
+| `cms_auth_relay_scope` | The GitHub scope the deployed relay actually requests. A recorded fact, not a setting (see below). |
+| `edition_extras_repo` | The repo of Quartz plugins that department editions use. |
+| `console_oauth_client_id` | The author's console's OAuth App client ID. Public by design. |
+| `automation_logins` | Machine accounts left out of contributor and activity counts. |
+| `portal` | **Optional**, until a portal domain exists. `domain`: the portal's own address, never a book's hostname. `cms_host`: the shared CMS host (the single `ALLOWED_DOMAINS` entry) once books have moved onto it, else `null`. `book_parent`: new books get `<slug>.<book_parent>`, and any book hostname under it must be exactly one label deep so Universal SSL covers it; `null` for no convention. |
+
+### `books[]`
+
+| Field | Meaning |
+|---|---|
+| `slug` | Permanent key: lower-case words joined by single hyphens, 3–40 characters. Never changed, never reused. |
+| `status` | `preview` (resolvable by services, not listed), `live`, or `retired`. Nothing else, ever (see "Rules"). |
+| `title`, `summary`, `licence` | Shown on the book and the portal. `licence` is an SPDX identifier. |
+| `maintainer` | `name`, and `github` (a login, or `null`). `github` must be set when `site.host.paid_by` is `maintainer`, so a site-health alert reaches whoever can fix it. |
+| `content` | `repo` (`owner/name`, public), `live_branch`, and `drafts_branch`, which must differ from it. |
+| `site.domain` | The hostname readers visit. `null` only for a `preview` book. It may be on a shared suffix such as `pages.dev` only for a `static` host with status `preview`: the platform can't park or redirect a hostname it doesn't hold. |
+| `site.aliases` | **Optional.** Redirect-only hostnames, such as a courtesy `<slug>.<portal>`. Never an accepted origin. |
+| `site.host` | Where the site is served from. `kind` is one of the two below. |
+| `site.host` (`obsidian-publish`) | `site_id` (the Publish site's 32-hex id, which every page embeds publicly) and `publish_host`. |
+| `site.host` (`static`) | `provider` (`cloudflare-pages`, `github-pages`, `netlify` or `vercel`) and `project` (the provider's name for the site). For Quartz and other static builds. No subscription is implied. |
+| `site.host.paid_by` | **Optional.** `maintainer` or `platform`: whose subscription has to keep being paid for the site to stay up. The account itself is never recorded, because it is identified by an email address. Absent means not yet confirmed. |
+| `site.legacy_origins` | Earlier origins of this book, still accepted for annotations and lookups. |
+| `site.dark` | **Optional.** `null`, or `{ since, reason, notified }`, set by the platform owner by PR once the site has gone away and its hostname has been parked. `reason` is `subscription-lapsed`, `domain-removed`, `maintainer-request` or `unknown`; `notified` is the date the maintainer was told, or `null`. Allowed only on a `live` book. This is a declaration, not observed health: a probe's daily observations will live outside `registry.json`. |
+| `analytics.plausible` | `null`, or `script_src`, `site` (the Plausible site name; the public dashboard URL is derived from it) and `dashboard_public`. |
+| `annotations.hypothesis_groups` | Private Hypothes.is groups that belong to the book, as `{ id, label }`. |
+| `suggest_edit` | `enabled`, and `counted_from`: the first UTC day whose suggestions are reader activity, or `null` to count all. |
+| `cms` | `enabled`, and `host`: the exact hostname the CMS page runs on, or `null`. Never a bare shared suffix. |
+| `editions` | `null` for a book with no department editions. Otherwise `template_repo` (the repo departments fork), `template_preview` (its demo site, or `null`) and `skip_fork_owners` (fork owners that are the project's own copies). The key itself is required: `null` says "no editions" on purpose, where a missing key might be a mistake. |
 
 ## Who approves changes
 
@@ -108,8 +154,8 @@ on protection, and write the decision down here.
 
 | Workflow | Runs | Fails when |
 |---|---|---|
-| `validate` → `registry` | every push and PR | JSON is malformed or has duplicate keys; schema violation (missing field, unknown key, bad slug format, malformed URL or host); duplicate slug, domain, content repo, CMS host or legacy origin; a domain that is also a legacy origin; `drafts_branch` equals `live_branch`; null domain on a non-preview book; CMS host that is a bare platform suffix (`pages.dev`…); a slug removed or renamed |
-| `validate` → `github-facts` | every push and PR | a content repo that is missing, private, or moved; a live or drafts branch that doesn't exist; a template or extras repo that is missing. It only **warns** if a domain, CMS host or preview URL doesn't currently answer |
+| `validate` → `registry` | every push and PR | JSON is malformed or has duplicate keys; schema violation (missing field, unknown key, bad slug format, malformed URL or host, unknown status, host kind, provider, payer or dark reason); duplicate slug, domain, content repo, CMS host or legacy origin; a domain that is also a legacy origin; an alias that is any book's domain, alias or legacy origin; the portal domain used by a book; `drafts_branch` equals `live_branch`; null domain on a non-preview book; a domain, CMS host or portal CMS host that is a bare platform suffix (`pages.dev`…); a domain on a shared suffix unless the book is `static` and `preview`; a hostname more than one label under `platform.portal.book_parent`; `site.dark` on a book that isn't `live`; `paid_by: maintainer` with no `maintainer.github`; a slug removed or renamed |
+| `validate` → `github-facts` | every push and PR | a content repo that is missing, private, or moved; a live or drafts branch that doesn't exist; a template or extras repo that is missing (a book with `editions: null` has no template to check). It only **warns** if a domain, CMS host or preview URL doesn't currently answer |
 | `parity` | every push and PR, daily, on demand | any registry value disagrees with the constant still hardcoded in a service repo |
 
 Run locally:

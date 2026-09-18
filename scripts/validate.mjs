@@ -72,6 +72,9 @@ export function findDuplicateKeys(text) {
 
 const lc = (s) => s.toLowerCase();
 
+// The host is one of the shared suffixes, or a subdomain of one.
+const sharedSuffixOf = (host) => SHARED_SUFFIXES.find((s) => host === s || host.endsWith(`.${s}`));
+
 function duplicates(values) {
   const seen = new Set();
   const dup = new Set();
@@ -129,11 +132,27 @@ export function validate(text, { baseText } = {}) {
     if (b.site.domain === null && b.status !== 'preview')
       errors.push(`${at}: site.domain may be null only when status is preview (status is ${b.status})`);
 
+    // A hostname on someone else's platform suffix can't be parked or redirected by the
+    // platform (MULTI-BOOK-HOSTING §4c). Only a static preview book may use one.
+    const domainSuffix = b.site.domain && sharedSuffixOf(b.site.domain);
+    if (domainSuffix && domainSuffix === b.site.domain)
+      errors.push(`${at}: site.domain ${b.site.domain} is a shared platform suffix; it must name one exact site`);
+    else if (domainSuffix && (b.site.host.kind !== 'static' || b.status !== 'preview'))
+      errors.push(`${at}: site.domain ${b.site.domain} is on the shared suffix ${domainSuffix}, which only a static-host book with status preview may use (this one is ${b.site.host.kind}, ${b.status})`);
+
+    // Declared dark is about a site that was up and went away. A preview book that never
+    // came up stays preview; a retired one needs nothing more.
+    if (b.site.dark && b.status !== 'live')
+      errors.push(`${at}: site.dark may be set only when status is live (status is ${b.status})`);
+
+    if (b.site.host.paid_by === 'maintainer' && b.maintainer.github === null)
+      errors.push(`${at}: site.host.paid_by is maintainer, so maintainer.github must name them; the site-health alert has to reach whoever can pay`);
+
     if (b.content.live_branch === b.content.drafts_branch)
       errors.push(`${at}: content.drafts_branch must differ from content.live_branch (both ${b.content.live_branch})`);
 
     for (const [k, o] of b.site.legacy_origins.entries()) checkUrl(errors, `${at}.site.legacy_origins[${k}]`, o, { origin: true });
-    if (b.editions.template_preview) checkUrl(errors, `${at}.editions.template_preview`, b.editions.template_preview, { origin: true });
+    if (b.editions?.template_preview) checkUrl(errors, `${at}.editions.template_preview`, b.editions.template_preview, { origin: true });
     if (b.analytics.plausible) checkUrl(errors, `${at}.analytics.plausible.script_src`, b.analytics.plausible.script_src);
 
     const host = b.cms.host;
@@ -155,6 +174,36 @@ export function validate(text, { baseText } = {}) {
   for (const h of duplicates(legacyHosts.map((l) => l.host))) errors.push(`legacy origin ${h} listed more than once`);
   for (const { slug, host } of legacyHosts)
     if (domains.includes(host)) errors.push(`site.domain ${host} is also a legacy origin of ${slug}; lookups must be unambiguous`);
+
+  // Every hostname a book answers on, with what it is, so aliases and the portal can be
+  // checked against all of them. Domains and legacy origins among themselves are
+  // checked above.
+  const named = books.flatMap((b) => [
+    ...(b.site.domain ? [{ slug: b.slug, host: b.site.domain, role: 'site.domain' }] : []),
+    ...(b.site.aliases ?? []).map((host) => ({ slug: b.slug, host, role: 'an alias' })),
+    ...legacyHosts.filter((l) => l.slug === b.slug).map(({ host }) => ({ slug: b.slug, host, role: 'a legacy origin' })),
+  ]);
+  for (const [k, a] of named.entries()) {
+    if (a.role !== 'an alias') continue;
+    for (const [j, other] of named.entries())
+      if (j !== k && other.host === a.host && (other.role !== 'an alias' || j < k))
+        errors.push(`alias ${a.host} of ${a.slug} is also ${other.role} of ${other.slug}; a hostname belongs to one book, once`);
+  }
+
+  const portal = platform.portal;
+  if (portal) {
+    for (const n of named)
+      if (n.host === portal.domain) errors.push(`platform.portal.domain ${portal.domain} is also ${n.role} of ${n.slug}; the portal's address is never a book's`);
+    if (portal.cms_host && sharedSuffixOf(portal.cms_host) === portal.cms_host)
+      errors.push(`platform.portal.cms_host ${portal.cms_host} is a shared platform suffix; it must name one exact site`);
+    // <slug>.<book_parent> is covered by Universal SSL; <a>.<b>.<book_parent> is not (§2a).
+    if (portal.book_parent) {
+      const under = `.${portal.book_parent}`;
+      for (const n of named)
+        if (n.role !== 'a legacy origin' && n.host.endsWith(under) && n.host.slice(0, -under.length).includes('.'))
+          errors.push(`${n.slug}: ${n.role} ${n.host} is more than one label under platform.portal.book_parent ${portal.book_parent}; certificates cover only <label>.${portal.book_parent}`);
+    }
+  }
 
   if (baseText !== undefined) {
     let base;

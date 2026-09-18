@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/textbookproject2026-alt/textbook-registry/registry.schema.json",
   "title": "Textbook registry",
-  "description": "Structural rules only. Cross-entry rules (uniqueness, slug immutability, domain/legacy collisions, preview-only null domains, URL canonical form) are enforced by scripts/validate.mjs, because JSON Schema cannot express them.",
+  "description": "Structural rules only. Cross-entry rules (uniqueness, slug immutability, collisions between domains, aliases, legacy origins and the portal, preview-only null domains, shared-suffix and dark-state rules, URL canonical form) are enforced by scripts/validate.mjs, because JSON Schema cannot express them.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "platform", "books"],
@@ -41,6 +41,26 @@
           "type": "array",
           "items": { "$ref": "#/$defs/github_login" },
           "uniqueItems": true
+        },
+        "portal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["domain", "cms_host", "book_parent"],
+          "description": "The portal that lists every book (MULTI-BOOK-HOSTING §2c, §4b). Optional until a portal domain is bought.",
+          "properties": {
+            "domain": {
+              "$ref": "#/$defs/hostname",
+              "description": "The portal's own address: the apex of a zone the platform holds. Never a book's domain, alias or legacy host."
+            },
+            "cms_host": {
+              "oneOf": [{ "$ref": "#/$defs/hostname" }, { "type": "null" }],
+              "description": "The shared CMS host, the one exact ALLOWED_DOMAINS entry, once DESIGN step 5b has moved books onto it. null until then."
+            },
+            "book_parent": {
+              "oneOf": [{ "$ref": "#/$defs/hostname" }, { "type": "null" }],
+              "description": "New books get <slug>.<book_parent>. Any book hostname under it must be exactly one label deep, to stay inside Universal SSL."
+            }
+          }
         }
       }
     },
@@ -83,6 +103,14 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9](-?[A-Za-z0-9]){0,38}/[A-Za-z0-9._-]{1,100}$",
       "description": "owner/name on github.com."
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+    },
+    "paid_by": {
+      "enum": ["maintainer", "platform"],
+      "description": "Whose subscription or account has to keep paying for the site to stay up. The account itself is never recorded: it is identified by an email address, and nothing here may be non-public."
     },
     "branch": {
       "type": "string",
@@ -136,6 +164,12 @@
           "required": ["domain", "host", "legacy_origins"],
           "properties": {
             "domain": { "oneOf": [{ "$ref": "#/$defs/hostname" }, { "type": "null" }] },
+            "aliases": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/hostname" },
+              "uniqueItems": true,
+              "description": "Redirect-only hostnames, such as a courtesy <slug>.<portal>. Never an accepted origin. Absent means none."
+            },
             "host": {
               "oneOf": [
                 {
@@ -145,7 +179,26 @@
                   "properties": {
                     "kind": { "const": "obsidian-publish" },
                     "site_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
-                    "publish_host": { "$ref": "#/$defs/hostname" }
+                    "publish_host": { "$ref": "#/$defs/hostname" },
+                    "paid_by": { "$ref": "#/$defs/paid_by" }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["kind", "provider", "project"],
+                  "properties": {
+                    "kind": { "const": "static" },
+                    "provider": {
+                      "enum": ["cloudflare-pages", "github-pages", "netlify", "vercel"],
+                      "description": "Where the built site is served from. A new provider is one more value here."
+                    },
+                    "project": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$",
+                      "description": "The provider's name for the site: the Pages or Netlify project, or owner/repo for GitHub Pages."
+                    },
+                    "paid_by": { "$ref": "#/$defs/paid_by" }
                   }
                 }
               ]
@@ -154,6 +207,25 @@
               "type": "array",
               "items": { "$ref": "#/$defs/https_origin" },
               "uniqueItems": true
+            },
+            "dark": {
+              "description": "Declared by the platform owner, by PR, once the site is gone and its hostname parked (MULTI-BOOK-HOSTING §5d). Not observed health, and not a status: status stays preview | live | retired. null or absent means not declared dark.",
+              "oneOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["since", "reason", "notified"],
+                  "properties": {
+                    "since": { "$ref": "#/$defs/date" },
+                    "reason": { "enum": ["subscription-lapsed", "domain-removed", "maintainer-request", "unknown"] },
+                    "notified": {
+                      "description": "When the maintainer was told. null if they could not be reached.",
+                      "oneOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }]
+                    }
+                  }
+                }
+              ]
             }
           }
         },
@@ -219,7 +291,7 @@
             "counted_from": {
               "description": "First day (UTC) whose suggestions are reader activity. Issues filed earlier were tests of the route and are left out of public counts. null counts everything.",
               "oneOf": [
-                { "type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$" },
+                { "$ref": "#/$defs/date" },
                 { "type": "null" }
               ]
             }
@@ -237,18 +309,24 @@
         },
 
         "editions": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["template_repo", "template_preview", "skip_fork_owners"],
-          "properties": {
-            "template_repo": { "$ref": "#/$defs/repo" },
-            "template_preview": { "oneOf": [{ "$ref": "#/$defs/https_origin" }, { "type": "null" }] },
-            "skip_fork_owners": {
-              "type": "array",
-              "items": { "$ref": "#/$defs/github_login" },
-              "uniqueItems": true
+          "description": "Department editions: forks of an edition template repo. null for a book that has none.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["template_repo", "template_preview", "skip_fork_owners"],
+              "properties": {
+                "template_repo": { "$ref": "#/$defs/repo" },
+                "template_preview": { "oneOf": [{ "$ref": "#/$defs/https_origin" }, { "type": "null" }] },
+                "skip_fork_owners": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/github_login" },
+                  "uniqueItems": true
+                }
+              }
             }
-          }
+          ]
         }
       }
     }
