@@ -89,7 +89,7 @@ test('duplicate content repo, case-insensitively', () =>
   expectFail((r) => { secondBook(r).content.repo = 'TextbookProject2026-alt/Textbook'; }, 'duplicate content.repo'));
 test('drafts equals live', () => expectFail((r) => { book(r).content.drafts_branch = 'main'; }, 'must differ'));
 
-test('duplicate cms host', () => expectFail((r) => { secondBook(r).cms.host = 'textbook-cms.pages.dev'; }, 'duplicate cms.host'));
+test('duplicate cms host', () => expectFail((r) => { secondBook(r).cms.host = 'textbook-admin.pages.dev'; }, 'duplicate cms.host'));
 test('cms host that is a bare platform suffix', () => expectFail((r) => { book(r).cms.host = 'pages.dev'; }, 'shared platform suffix'));
 test('cms host wildcard', () => expectFail((r) => { book(r).cms.host = '*.pages.dev'; }, '/books/0/cms/host'));
 
