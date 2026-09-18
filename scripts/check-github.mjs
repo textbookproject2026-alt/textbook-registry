@@ -5,7 +5,8 @@
 // Fails:  a content repo that is missing or not public (the console's public_repo
 //         scope makes "every registered content repo is public" a platform
 //         invariant); a live or drafts branch that doesn't exist; a template or
-//         extras repo that doesn't exist; a repo that has moved (the registry
+//         extras repo that doesn't exist (a book with editions: null has no
+//         template repo to check); a repo that has moved (the registry
 //         must name it where it is, since services match on it exactly); an
 //         automation login with no account behind it (parity only proves the
 //         registry and the scripts agree, and they once agreed on a misspelling).
@@ -81,12 +82,13 @@ for (const b of reg.books) {
     }
   }
 
-  if (await repoAt(b.editions.template_repo, `${b.slug} editions.template_repo`)) ok(`${b.slug}: ${b.editions.template_repo} exists`);
+  if (!b.editions) ok(`${b.slug}: no department editions (editions is null)`);
+  else if (await repoAt(b.editions.template_repo, `${b.slug} editions.template_repo`)) ok(`${b.slug}: ${b.editions.template_repo} exists`);
 
   const probes = [];
   if (b.site.domain) probes.push(['site.domain', `https://${b.site.domain}/`]);
   if (b.cms.enabled && b.cms.host) probes.push(['cms.host', `https://${b.cms.host}/`]);
-  if (b.editions.template_preview) probes.push(['editions.template_preview', `${b.editions.template_preview}/`]);
+  if (b.editions?.template_preview) probes.push(['editions.template_preview', `${b.editions.template_preview}/`]);
   for (const [key, url] of probes) {
     const problem = await answers(url);
     if (problem) warn(`${b.slug}: ${key} ${url} does not answer (${problem}). Not a failure; a new host may not be live yet.`);

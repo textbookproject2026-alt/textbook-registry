@@ -355,4 +355,5 @@ export const unverifiable = [
   { field: 'books[].cms.host (live value)', where: 'the Worker\'s ALLOWED_DOMAINS variable and the Pages project name live in Cloudflare; parity checks the docs that describe them' },
   { field: 'books[].analytics.plausible.site / dashboard_public', where: 'Plausible account settings; checked by hand 2026-09-15' },
   { field: 'books[].status, books[].suggest_edit.enabled, books[].cms.enabled', where: 'registry-only' },
+  { field: 'books[].site.host.paid_by, books[].site.dark, books[].site.aliases, platform.portal', where: 'registry-only (MULTI-BOOK-HOSTING §4b); paid_by is a fact about a subscription, dark is declared by the platform owner, and no repo holds the aliases or the portal yet' },
 ];
