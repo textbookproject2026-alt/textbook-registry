@@ -1,0 +1,116 @@
+# Redeploys the suggest-edit function after every registry change on main, and fails
+# (a red check on the merge commit) if production isn't serving the new registry
+# within ten minutes (DESIGN §2b-2c). The function bakes the registry in at build
+# time, so without this a merge here never reaches production.
+#
+# Mechanism: a Vercel deploy hook. It rebuilds the function's production branch; that
+# build resolves this repo's main to a SHA, validates it, runs the function's tests,
+# and deploys only if all of that passes. The function reports the SHA it was built
+# with in the X-Registry-Version response header, which is what is polled here.
+#
+# Also runs on a schedule as a staleness alarm: if production has fallen behind main
+# (a missed hook, a failed build), it redeploys and fails loudly.
+#
+# Needs the repository secret SUGGEST_EDIT_DEPLOY_HOOK (README, "Delivery to services").
+name: deploy
+
+on:
+  workflow_run:
+    workflows: [validate]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '41 */6 * * *'
+
+permissions:
+  contents: read
+
+# One deploy at a time. A newer merge queues behind the running one rather than
+# cancelling it, so every merge commit gets its check.
+concurrency:
+  group: deploy-suggest-edit
+  cancel-in-progress: false
+
+jobs:
+  suggest-edit:
+    # Only a successful validate of a push to main. Pull requests never deploy.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0 # the poll accepts a newer registry, which needs history
+
+      - name: Work out which registry production should be serving
+        id: target
+        env:
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          # A merge deploys its own commit; a schedule or manual run deploys main.
+          sha="${RUN_SHA:-$(git rev-parse HEAD)}"
+          endpoint="$(git show "$sha:registry.json" | jq -er '.platform.suggest_edit_endpoint')"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "endpoint=$endpoint" >> "$GITHUB_OUTPUT"
+          echo "Target registry $sha, endpoint $endpoint"
+
+      - name: Redeploy the function if production is behind, and wait for it
+        env:
+          HOOK: ${{ secrets.SUGGEST_EDIT_DEPLOY_HOOK }}
+          SHA: ${{ steps.target.outputs.sha }}
+          ENDPOINT: ${{ steps.target.outputs.endpoint }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          # Every response carries the header, refusals included, so no Origin is needed.
+          served() {
+            curl -s -o /dev/null -D - -X OPTIONS --max-time 20 -H 'Cache-Control: no-cache' "$ENDPOINT" \
+              | tr -d '\r' | awk 'tolower($1) == "x-registry-version:" { print $2 }'
+          }
+          # Serving the target, or a later registry commit (a newer merge beat us to it).
+          caught_up() {
+            local s="$1"
+            [ -n "$s" ] || return 1
+            [ "$s" = "$SHA" ] && return 0
+            git fetch -q origin main
+            git cat-file -e "$s^{commit}" 2>/dev/null && git merge-base --is-ancestor "$SHA" "$s"
+          }
+
+          now="$(served || true)"
+          echo "Production is serving registry ${now:-<no header>}"
+          if caught_up "$now"; then
+            echo "Already current; nothing to deploy."
+            exit 0
+          fi
+          if [ "$EVENT" = "schedule" ]; then
+            echo "::warning::Production was serving registry ${now:-<unknown>}, behind $SHA. A merge-time deploy was missed or failed; redeploying."
+          fi
+
+          if [ -z "${HOOK:-}" ]; then
+            echo "::error::SUGGEST_EDIT_DEPLOY_HOOK is not set, so production can't be redeployed and stays on registry ${now:-<unknown>}. See README, 'Delivery to services'."
+            exit 1
+          fi
+          # The response names the job; the hook URL itself is a secret and is never echoed.
+          curl -fsS -X POST --max-time 30 "$HOOK" > /dev/null
+          echo "Deploy hook accepted. Waiting up to 10 minutes for $SHA."
+
+          deadline=$(( $(date +%s) + 600 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            sleep 20
+            now="$(served || true)"
+            if caught_up "$now"; then
+              echo "Production is serving registry $now."
+              [ "$EVENT" = "schedule" ] && { echo "::error::Production had fallen behind the registry; it is current again, but find out why the merge-time deploy didn't land."; exit 1; }
+              exit 0
+            fi
+            echo "  still serving ${now:-<no header>}"
+          done
+
+          echo "::error::Production is still serving registry ${now:-<unknown>} ten minutes after the deploy hook, not $SHA. The function's build probably failed: check the Vercel deployment log (a registry the function rejects, or a failing test, stops the deploy and leaves the old one live)."
+          exit 1
