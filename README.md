@@ -9,12 +9,16 @@ It is one file, [`registry.json`](registry.json), checked against
 [`registry.schema.json`](registry.schema.json). The design is in
 `platform-registry-design/DESIGN.md`; this repo is step 1 of its migration.
 
-**Status: step 4.** Three things read the registry now:
+**Status: step 5.** Four things read the registry now:
 
 - `suggest-edit-function` bundles it at build (step 2).
 - The book's `configure.mjs` renders `publish.js` and `.lycheeignore` (step 3a) and
   `admin/config.yml` (step 4) from it.
 - The book's annotation backup and dashboard scripts fetch it when they run (step 3b).
+- The author's console (`authoring-assistant`) fetches it at launch, keeps the last
+  good copy, and ships a copy bundled at build (step 5). The author picks a book,
+  or the open vault decides it, and every repository, branch and link comes from
+  that book's entry.
 
 Everything else still uses its own hardcoded copies of these values. The
 [parity job](#the-parity-job) checks that the registry and those copies agree.
@@ -182,6 +186,16 @@ Retired so far:
   parity instead of passing as "constant gone". `cms.title-comment` stays active: the
   title is still rendered from `textbook.config.json`, not from the registry.
 
+- step 5, `authoring-assistant`: `console.repo`, `console.drafts-branch`,
+  `console.live-branch`, `console.drafts-pr-base-literal` (all in
+  `app/github.py`, which now takes the resolved book on every call), and
+  `console.site`, `console.history-url` (in `app/web/app.js`, which now takes
+  its links from the book the app resolved). Each retirement requires the line
+  that now carries the value, not just an import. With these, no check reads a
+  constant from `authoring-assistant` any more, but parity still reads that repo
+  on every run to verify the retirements, so `PARITY_READ_TOKEN` is still needed
+  (see "It needs a secret").
+
 Rendered files (`publish.js`, `.lycheeignore`, `admin/config.yml`) are regenerated only
 when a vault PR touches the config or a template. A registry change reaches them the
 next time that happens. Nothing checks for a stale render after a registry-only change.
@@ -197,7 +211,8 @@ warning, the corrected value passes silently, and anything else fails. There are
 none today.
 
 **Not checkable by parity**, because no repository holds the value. These are printed
-on every run: the console OAuth client ID, `maintainer.github`, the live CMS allowlist,
+on every run: the console OAuth client ID (read by the console from here since
+step 5), `maintainer.github`, the live CMS allowlist,
 Plausible account settings, and registry-only fields such as `status`.
 
 ## What the registry records that differs from DESIGN.md
