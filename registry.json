@@ -66,6 +66,58 @@
         "template_preview": "https://textbook-edition-template.pages.dev",
         "skip_fork_owners": ["textbookproject2026-alt"]
       }
-    }
+    }, 
+	{
+  "slug": "platform-test-book",
+  "status": "preview",
+
+  "title": "Platform test book",
+  "summary": "A throwaway book used to test the shared services with two books. Not for readers.",
+  "licence": "CC-BY-SA-4.0",
+  "maintainer": {
+    "name": "Platform test",
+    "github": "dept-coordinator-test"
+  },
+
+  "content": {
+    "repo": "dept-coordinator-test/platform-test-book",
+    "live_branch": "main",
+    "drafts_branch": "drafts"
+  },
+
+  "site": {
+    "domain": "platform-test-book.pages.dev",
+    "aliases": [],
+    "host": {
+      "kind": "static",
+      "provider": "cloudflare-pages",
+      "project": "platform-test-book",
+      "paid_by": "platform"
+    },
+    "legacy_origins": [],
+    "dark": null
+  },
+
+  "analytics": {
+    "plausible": null
+  },
+
+  "annotations": {
+    "hypothesis_groups": []
+  },
+
+  "suggest_edit": {
+    "enabled": true,
+    "counted_from": null
+  },
+
+  "cms": {
+    "enabled": false,
+    "host": null
+  },
+
+  "editions": null
+}
+
   ]
 }
