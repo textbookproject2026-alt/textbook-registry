@@ -30,7 +30,7 @@
       },
 
       "site": {
-        "domain": "confused4now.org",
+        "domain": "social-research-methods.confused4now.org",
         "host": {
           "kind": "obsidian-publish",
           "site_id": "1443b409a84e491249da35fdd4b91de6",
@@ -42,7 +42,7 @@
       "analytics": {
         "plausible": {
           "script_src": "https://plausible.io/js/pa-eii3VlmU1ClI0VxGOsCTe.js",
-          "site": "confused4now.org",
+          "site": "social-research-methods.confused4now.org",
           "dashboard_public": true
         }
       },
