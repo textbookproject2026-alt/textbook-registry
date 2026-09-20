@@ -287,11 +287,13 @@ Plausible account settings, and registry-only fields such as `status`.
 The design's example entry (§1b) was written from the repos. Checking each value
 against its real source found these differences:
 
-- **`analytics.plausible.site` is `confused4now.org`, not `bptext2026.xyz`.** The
-  Plausible site has been renamed. `plausible.io/confused4now.org` is the public
-  dashboard (stats from 2026-06-17, viewable logged out), and
-  `plausible.io/bptext2026.xyz` returns 404. The vault was corrected in `cab6b28`,
-  and from step 3b onwards the dashboard derives the link from this field.
+- **`analytics.plausible.site` is the book's own hostname, not `bptext2026.xyz`.**
+  The Plausible site was renamed after the 14 September 2026 domain move
+  (`plausible.io/bptext2026.xyz` returns 404) and is renamed again on every move
+  after it. The vault was corrected in `cab6b28`, and from step 3b onwards the
+  dashboard derives its public link from this field — so this value and the name
+  of the Plausible site have to change together. A registry merge that gets ahead
+  of the rename publishes a dead dashboard link at the next weekly rebuild.
 - **`platform.cms_auth_relay_scope` is new: `repo,user`.** The design expected `repo`
   and left this as an open question. The deployed Worker's source
   (`textbookproject2026-alt/sveltia-cms-auth` `src/index.js`, the GitHub branch of
@@ -316,5 +318,7 @@ against its real source found these differences:
   suggestions under the same credentials as the tests.
 - **`maintainer.github` is `textbookproject2026-alt`.** It was supplied by the
   maintainer, and no repo records it.
-- **`cms.host` is recorded as `textbook-cms.pages.dev`**, the value every repo and doc
-  gives. On 2026-09-15 that hostname did **not resolve** (NXDOMAIN).
+- **`cms.host` is `textbook-admin.pages.dev`.** Every repo and doc gave
+  `textbook-cms.pages.dev`, but on 2026-09-15 that hostname did **not resolve**
+  (NXDOMAIN) and `textbook-admin.pages.dev` served the editor. The registry records
+  the host that answers.
