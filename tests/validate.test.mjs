@@ -22,21 +22,23 @@ const secondBook = (r) => {
   return b;
 };
 
-// The interim test book from MULTI-BOOK-HOSTING §6c: Quartz on a free Pages subdomain,
-// no Publish subscription, no editions. A fixture only; it is not in registry.json.
+// A static-host book in the shape MULTI-BOOK-HOSTING §6c gave the interim test book:
+// Quartz on a free Pages subdomain, no Publish subscription, no editions. The interim book
+// itself is now in registry.json, so this stays a fixture with its own slug, repo and
+// domain — reusing the real one's would collide with it instead of testing the rule.
 const staticBook = (r) => {
   const b = {
-    slug: 'platform-test-book',
+    slug: 'static-fixture-book',
     status: 'preview',
-    title: 'Platform test book',
-    summary: 'A throwaway book used to test the shared services with two books. Not for readers.',
+    title: 'Static fixture book',
+    summary: 'A static-host book used by the tests below. Not for readers.',
     licence: 'CC-BY-SA-4.0',
     maintainer: { name: 'Platform test', github: 'someone' },
-    content: { repo: 'someone/platform-test-book', live_branch: 'main', drafts_branch: 'drafts' },
+    content: { repo: 'someone/static-fixture-book', live_branch: 'main', drafts_branch: 'drafts' },
     site: {
-      domain: 'platform-test-book.pages.dev',
+      domain: 'static-fixture-book.pages.dev',
       aliases: [],
-      host: { kind: 'static', provider: 'cloudflare-pages', project: 'platform-test-book', paid_by: 'platform' },
+      host: { kind: 'static', provider: 'cloudflare-pages', project: 'static-fixture-book', paid_by: 'platform' },
       legacy_origins: [],
       dark: null,
     },
@@ -51,6 +53,14 @@ const staticBook = (r) => {
 };
 
 const PORTAL = { domain: 'portal.example', cms_host: 'edit.portal.example', book_parent: 'portal.example' };
+
+// Where staticBook() lands. Derived, so adding a book to registry.json doesn't renumber
+// the schema paths asserted below.
+const STATIC_AT = real().books.length;
+
+// Book one's own address. The fixtures that collide with it deliberately hold the real
+// value, so they have to follow the book when it moves.
+const DOMAIN = book(real()).site.domain;
 
 function expectFail(mutate, fragment) {
   const r = real();
@@ -78,7 +88,9 @@ test('not JSON', () => {
 });
 
 test('duplicate keys in one object are caught, not silently merged', () => {
-  const text = REAL.replace('"domain": "confused4now.org",', '"domain": "confused4now.org",\n "domain": "evil.example",');
+  const line = `"domain": ${JSON.stringify(DOMAIN)},`;
+  const text = REAL.replace(line, `${line}\n "domain": "evil.example",`);
+  assert.notEqual(text, REAL, 'the fixture no longer matches registry.json');
   assert.ok(validate(text).some((e) => e.includes('duplicate key /books/0/site/domain')));
 });
 
@@ -104,7 +116,7 @@ test('duplicate slug', () => expectFail((r) => { secondBook(r).slug = 'social-re
 for (const bad of ['https://confused4now.org', 'Confused4now.org', 'confused4now.org.', 'confused4now.org:443', 'confused4now.org/path', '*.confused4now.org', 'localhost']) {
   test(`domain format: ${bad}`, () => expectFail((r) => { book(r).site.domain = bad; }, '/books/0/site/domain'));
 }
-test('duplicate domain', () => expectFail((r) => { secondBook(r).site.domain = 'confused4now.org'; }, 'duplicate site.domain: confused4now.org'));
+test('duplicate domain', () => expectFail((r) => { secondBook(r).site.domain = book(r).site.domain; }, `duplicate site.domain: ${DOMAIN}`));
 test('domain that is another book\'s legacy origin', () =>
   expectFail((r) => { secondBook(r).site.domain = 'bptext2026.xyz'; }, 'is also a legacy origin'));
 test('null domain on a live book', () => expectFail((r) => { book(r).site.domain = null; }, 'may be null only when status is preview'));
@@ -180,7 +192,7 @@ test('book one with every new optional field filled in is valid', () => {
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
 
-test('the §6c interim static book is accepted alongside book one', () => {
+test('a §6c-shaped static book is accepted alongside book one', () => {
   const r = real();
   staticBook(r);
   assert.deepEqual(validate(JSON.stringify(r)), []);
@@ -204,9 +216,9 @@ test('editions: null is accepted', () => {
 test('editions must still be present (null, not missing)', () => expectFail((r) => { delete book(r).editions; }, "must have required property 'editions'"));
 test('editions object still requires template_repo', () => expectFail((r) => { delete book(r).editions.template_repo; }, '/books/0/editions'));
 
-test('static host: unknown provider', () => expectFail((r) => { staticBook(r).site.host.provider = 'geocities'; }, '/books/1/site/host'));
-test('static host: missing project', () => expectFail((r) => { delete staticBook(r).site.host.project; }, '/books/1/site/host'));
-test('static host: Publish-only key', () => expectFail((r) => { staticBook(r).site.host.site_id = '1443b409a84e491249da35fdd4b91de6'; }, '/books/1/site/host'));
+test('static host: unknown provider', () => expectFail((r) => { staticBook(r).site.host.provider = 'geocities'; }, `/books/${STATIC_AT}/site/host`));
+test('static host: missing project', () => expectFail((r) => { delete staticBook(r).site.host.project; }, `/books/${STATIC_AT}/site/host`));
+test('static host: Publish-only key', () => expectFail((r) => { staticBook(r).site.host.site_id = '1443b409a84e491249da35fdd4b91de6'; }, `/books/${STATIC_AT}/site/host`));
 test('unknown host kind', () => expectFail((r) => { book(r).site.host.kind = 'wordpress'; }, '/books/0/site/host'));
 test('paid_by: unknown value', () => expectFail((r) => { book(r).site.host.paid_by = 'university'; }, '/books/0/site/host'));
 test('paid_by maintainer needs a maintainer login', () =>
@@ -251,9 +263,9 @@ for (const bad of ['https://alias.example', 'Alias.example', '*.alias.example'])
 }
 test('alias repeated in one book', () => expectFail((r) => { book(r).site.aliases = ['a.example', 'a.example']; }, '/books/0/site/aliases'));
 test('alias that is its own book\'s domain', () =>
-  expectFail((r) => { book(r).site.aliases = ['confused4now.org']; }, 'alias confused4now.org of social-research-methods is also site.domain of social-research-methods'));
+  expectFail((r) => { book(r).site.aliases = [DOMAIN]; }, `alias ${DOMAIN} of social-research-methods is also site.domain of social-research-methods`));
 test('alias that is another book\'s domain', () =>
-  expectFail((r) => { secondBook(r).site.aliases = ['confused4now.org']; }, 'is also site.domain of social-research-methods'));
+  expectFail((r) => { secondBook(r).site.aliases = [DOMAIN]; }, 'is also site.domain of social-research-methods'));
 test('alias that is a legacy origin', () =>
   expectFail((r) => { secondBook(r).site.aliases = ['bptext2026.xyz']; }, 'is also a legacy origin of social-research-methods'));
 test('alias shared by two books', () =>
@@ -262,7 +274,7 @@ test('alias shared by two books', () =>
 test('portal: unknown key', () => expectFail((r) => { r.platform.portal = { ...PORTAL, zone: 'x' }; }, '(zone)'));
 test('portal: missing domain', () => expectFail((r) => { r.platform.portal = { cms_host: null, book_parent: null }; }, "must have required property 'domain'"));
 test('portal domain that is a book\'s domain', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL, domain: 'confused4now.org', book_parent: null }; }, 'platform.portal.domain confused4now.org is also site.domain'));
+  expectFail((r) => { r.platform.portal = { ...PORTAL, domain: DOMAIN, book_parent: null }; }, `platform.portal.domain ${DOMAIN} is also site.domain`));
 test('portal domain that is a book\'s alias', () =>
   expectFail((r) => { r.platform.portal = { ...PORTAL }; book(r).site.aliases = ['portal.example']; }, 'is also an alias of social-research-methods'));
 test('portal domain that is a legacy origin', () =>
