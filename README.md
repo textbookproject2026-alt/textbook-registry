@@ -7,7 +7,16 @@ to it, and a few platform-wide values.
 
 It is one file, [`registry.json`](registry.json), checked against
 [`registry.schema.json`](registry.schema.json). The design is in
-`platform-registry-design/DESIGN.md`; this repo is step 1 of its migration.
+[`design/DESIGN.md`](design/DESIGN.md); this repo is step 1 of its migration.
+
+[`design/`](design) holds the platform's architectural record, moved here on
+20 September 2026 from a folder that was tracked nowhere:
+[`DESIGN.md`](design/DESIGN.md) (the registry design this repo implements),
+[`MULTI-BOOK-HOSTING.md`](design/MULTI-BOOK-HOSTING.md),
+[`PORTAL-CUTOVER.md`](design/PORTAL-CUTOVER.md) and
+[`INTERIM-BOOK.md`](design/INTERIM-BOOK.md). Read them for why a rule exists, not
+as a description of what is deployed today — they are design history, and where
+this README and a design doc disagree, the README is the newer of the two.
 
 **Status: step 5.** Four things read the registry now:
 
