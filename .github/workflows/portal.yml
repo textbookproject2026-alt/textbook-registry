@@ -1,0 +1,122 @@
+# Rebuilds the platform portal after every registry change on main, and fails
+# (a red check on the merge commit) if the portal isn't serving the new registry
+# within ten minutes. Sibling of deploy.yml, same mechanism and same reasons:
+# the portal generates its page from the registry at BUILD time, so without this
+# a merge here never reaches the front page.
+#
+# Mechanism: a Cloudflare Pages deploy hook. It rebuilds the portal's production
+# branch; that build resolves this repo's main to a SHA, fetches registry.json at
+# that SHA, and writes the SHA to /version.txt, which is what is polled here.
+# The portal's version.txt is its X-Registry-Version.
+#
+# Also runs on a schedule as a staleness alarm, offset from deploy.yml's
+# '41 */6 * * *' so the two don't collide.
+#
+# Needs the repository secret PORTAL_DEPLOY_HOOK (README, "Delivery to services").
+# Optionally the repository variable PORTAL_VERSION_URL, to poll somewhere other
+# than the apex — set it to the portal's *.pages.dev address while the portal is
+# being set up, and remove it once confused4now.org is bound to the Pages project.
+name: portal
+
+on:
+  workflow_run:
+    workflows: [validate]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: read
+
+# One deploy at a time. A newer merge queues behind the running one rather than
+# cancelling it, so every merge commit gets its check.
+concurrency:
+  group: deploy-portal
+  cancel-in-progress: false
+
+jobs:
+  portal:
+    # Only a successful validate of a push to main. Pull requests never deploy.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0 # the poll accepts a newer registry, which needs history
+
+      - name: Work out which registry the portal should be serving
+        id: target
+        env:
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          # A merge deploys its own commit; a schedule or manual run deploys main.
+          sha="${RUN_SHA:-$(git rev-parse HEAD)}"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Target registry $sha"
+
+      - name: Rebuild the portal if it is behind, and wait for it
+        env:
+          HOOK: ${{ secrets.PORTAL_DEPLOY_HOOK }}
+          SHA: ${{ steps.target.outputs.sha }}
+          # The apex by default, deliberately: polling the *.pages.dev address
+          # would go green while confused4now.org was serving nothing. This check
+          # is worth having because it proves what a reader gets.
+          VERSION_URL: ${{ vars.PORTAL_VERSION_URL || 'https://confused4now.org/version.txt' }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          # The body is the SHA and nothing else. _headers sets no-store on this
+          # path so the edge can't answer with the previous build.
+          served() {
+            curl -s --max-time 20 -H 'Cache-Control: no-cache' "$VERSION_URL" | tr -d '[:space:]'
+          }
+          # Serving the target, or a later registry commit (a newer merge beat us to it).
+          caught_up() {
+            local s="$1"
+            [ -n "$s" ] || return 1
+            [ "$s" = "$SHA" ] && return 0
+            case "$s" in [0-9a-f]*) ;; *) return 1 ;; esac
+            git fetch -q origin main
+            git cat-file -e "$s^{commit}" 2>/dev/null && git merge-base --is-ancestor "$SHA" "$s"
+          }
+
+          now="$(served || true)"
+          echo "The portal is serving registry ${now:-<nothing>} (via $VERSION_URL)"
+          if caught_up "$now"; then
+            echo "Already current; nothing to deploy."
+            exit 0
+          fi
+          if [ "$EVENT" = "schedule" ]; then
+            echo "::warning::The portal was serving registry ${now:-<unknown>}, behind $SHA. A merge-time deploy was missed or failed; rebuilding."
+          fi
+
+          if [ -z "${HOOK:-}" ]; then
+            echo "::error::PORTAL_DEPLOY_HOOK is not set, so the portal can't be rebuilt and stays on registry ${now:-<unknown>}. See README, 'Delivery to services'."
+            exit 1
+          fi
+          # The hook URL itself is a secret and is never echoed.
+          curl -fsS -X POST --max-time 30 "$HOOK" > /dev/null
+          echo "Deploy hook accepted. Waiting up to 10 minutes for $SHA."
+
+          deadline=$(( $(date +%s) + 600 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            sleep 20
+            now="$(served || true)"
+            if caught_up "$now"; then
+              echo "The portal is serving registry $now."
+              [ "$EVENT" = "schedule" ] && { echo "::error::The portal had fallen behind the registry; it is current again, but find out why the merge-time deploy didn't land."; exit 1; }
+              exit 0
+            fi
+            echo "  still serving ${now:-<nothing>}"
+          done
+
+          echo "::error::The portal is still serving registry ${now:-<unknown>} ten minutes after the deploy hook, not $SHA. Check the Cloudflare Pages build log: a registry the portal refuses (an unknown schema_version, or no book it could list) fails the build and leaves the previous page live. If /version.txt returns HTML, the apex redirect rule is catching it — it must exempt /version.txt."
+          exit 1
