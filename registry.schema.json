@@ -45,12 +45,23 @@
         "portal": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["domain", "cms_host", "book_parent"],
-          "description": "The portal that lists every book (MULTI-BOOK-HOSTING §2c, §4b). Optional until a portal domain is bought.",
+          "required": ["domain", "host", "cms_host", "book_parent"],
+          "description": "The portal that lists every book (MULTI-BOOK-HOSTING §2c, §4b, and the 22 Sep note there for `host`, which §4b did not have). Optional until a portal domain is bought.",
           "properties": {
             "domain": {
               "$ref": "#/$defs/hostname",
               "description": "The portal's own address: the apex of a zone the platform holds. Never a book's domain, alias or legacy host."
+            },
+            "host": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "provider", "project"],
+              "description": "Where the portal page is served from. Always `static`: the portal is generated from this file at build time, so no Publish site can ever serve it. No `paid_by` — the portal is the platform's by definition.",
+              "properties": {
+                "kind": { "const": "static" },
+                "provider": { "$ref": "#/$defs/static_provider" },
+                "project": { "$ref": "#/$defs/project_name" }
+              }
             },
             "cms_host": {
               "oneOf": [{ "$ref": "#/$defs/hostname" }, { "type": "null" }],
@@ -107,6 +118,15 @@
     "date": {
       "type": "string",
       "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+    },
+    "static_provider": {
+      "enum": ["cloudflare-pages", "github-pages", "netlify", "vercel"],
+      "description": "Where a built static site is served from. A new provider is one more value here, for books and the portal at once."
+    },
+    "project_name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$",
+      "description": "The provider's name for the site: the Pages or Netlify project, or owner/repo for GitHub Pages."
     },
     "paid_by": {
       "enum": ["maintainer", "platform"],
@@ -189,15 +209,8 @@
                   "required": ["kind", "provider", "project"],
                   "properties": {
                     "kind": { "const": "static" },
-                    "provider": {
-                      "enum": ["cloudflare-pages", "github-pages", "netlify", "vercel"],
-                      "description": "Where the built site is served from. A new provider is one more value here."
-                    },
-                    "project": {
-                      "type": "string",
-                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$",
-                      "description": "The provider's name for the site: the Pages or Netlify project, or owner/repo for GitHub Pages."
-                    },
+                    "provider": { "$ref": "#/$defs/static_provider" },
+                    "project": { "$ref": "#/$defs/project_name" },
                     "paid_by": { "$ref": "#/$defs/paid_by" }
                   }
                 }
