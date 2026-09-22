@@ -336,8 +336,9 @@ book that wants the editor brings its own Pages project and asks for one
   sent to authors as a signed, notarised `.dmg`. There's no update mechanism.
 - **Multi-book since migration step 5.** The app fetches the registry at launch,
   keeps the last good copy, and ships a bundled copy. It lists the books the
-  signed-in author can push to. An open vault decides the book, and the app
-  refuses a vault whose slug or `origin` remote doesn't match the registry.
+  signed-in author can push to. The chosen book decides (a vault is optional,
+  and only ever the chosen book's copy), and the app refuses a vault whose slug
+  or `origin` remote doesn't match the registry.
 - **Sign-in:** OAuth device flow against the *Textbook Author Console* OAuth App.
   Its client ID is public by design, and comes from
   `platform.console_oauth_client_id` in the registry. A value pasted into
