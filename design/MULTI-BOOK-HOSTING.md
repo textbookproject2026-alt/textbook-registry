@@ -441,6 +441,38 @@ updated when the key is first used.
 | `site.dark` | `null` or the object in §5d | Declared dark state |
 | `maintainer.github` | Now **required non-null** for books with `paid_by: maintainer` | The probe's alert has to reach someone who can act (§5e) |
 
+> **Recorded 22 September 2026, with one field this section did not have.** The
+> block went into `registry.json` two days after the portal went up:
+> `domain: confused4now.org`, `book_parent: confused4now.org`, `cms_host: null`.
+>
+> `cms_host` is `null` because `DESIGN.md` step 5b has not happened — there is no
+> shared CMS host yet, and book one's `cms.host` is still its own
+> `textbook-admin.pages.dev`. §3a is what fills this in, not this change.
+>
+> **`host` is new here.** The block above records the portal's *address* but not
+> where the page is served from, which left the Cloudflare Pages project
+> (`textbook-portal`) written down nowhere. It is the same fact `site.host` records
+> for a book, so it has the same shape: `{ kind: "static", provider, project }`,
+> `$ref`-ing the provider and project definitions the book host now shares with it.
+> `kind` is `const: "static"` — the portal is generated from `registry.json` at build
+> time, so no Publish site can serve it — and there is no `paid_by`, because a portal
+> paid for by anyone but the platform is not a portal. `validate.mjs` refuses a
+> project that is also a book's on the same provider: one Pages project serves one
+> site, so the second binding would have taken the first's hostname.
+>
+> The account behind the project (`brandonproject2026`) is **not** recorded, for the
+> reason this section already gives for Publish accounts: it is identified by an
+> email address, and nothing in this file may be non-public.
+>
+> **The convention is still only a convention.** §4c's depth rule is enforced, and
+> now covers `cms_host` as well as book domains and aliases; a legacy origin stays
+> exempt, because the platform may no longer hold it. The `<slug>.<book_parent>`
+> *warning* was not built: `validate.mjs` has no warning channel, only errors, and
+> the one entry that would trip it is book two's `platform-test-book.pages.dev` —
+> a `preview` static book this section already calls a legitimate exception. Where
+> the convention actually bites is `textbook-template/scripts/new-book.mjs`, which
+> reads `book_parent` and offers `<slug>.<book_parent>` as the default hostname.
+
 **Which Publish account holds a book.** An Obsidian account is identified by an email
 address, and `registry.json` is public, with a rule of no values that aren't already
 public (`DESIGN.md` §1a). So **don't record the account.** Record the things that are

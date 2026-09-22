@@ -196,12 +196,26 @@ export function validate(text, { baseText } = {}) {
       if (n.host === portal.domain) errors.push(`platform.portal.domain ${portal.domain} is also ${n.role} of ${n.slug}; the portal's address is never a book's`);
     if (portal.cms_host && sharedSuffixOf(portal.cms_host) === portal.cms_host)
       errors.push(`platform.portal.cms_host ${portal.cms_host} is a shared platform suffix; it must name one exact site`);
+
+    // One Pages (or Netlify) project serves one site, so the portal's cannot also be a
+    // book's: whichever was bound second would have taken the other's hostname.
+    for (const b of books)
+      if (b.site.host.kind === 'static' && b.site.host.provider === portal.host.provider && b.site.host.project === portal.host.project)
+        errors.push(`platform.portal.host.project ${portal.host.project} on ${portal.host.provider} is also ${b.slug}'s site.host.project; one project serves one site`);
+
     // <slug>.<book_parent> is covered by Universal SSL; <a>.<b>.<book_parent> is not (§2a).
+    // A legacy origin is exempt: it is a hostname the book used to answer on, which the
+    // platform may not hold and cannot re-certify. Everything the platform serves today
+    // is in scope, the CMS host included.
     if (portal.book_parent) {
       const under = `.${portal.book_parent}`;
+      const tooDeep = (host) => host.endsWith(under) && host.slice(0, -under.length).includes('.');
+      const why = `certificates cover only <label>.${portal.book_parent}`;
       for (const n of named)
-        if (n.role !== 'a legacy origin' && n.host.endsWith(under) && n.host.slice(0, -under.length).includes('.'))
-          errors.push(`${n.slug}: ${n.role} ${n.host} is more than one label under platform.portal.book_parent ${portal.book_parent}; certificates cover only <label>.${portal.book_parent}`);
+        if (n.role !== 'a legacy origin' && tooDeep(n.host))
+          errors.push(`${n.slug}: ${n.role} ${n.host} is more than one label under platform.portal.book_parent ${portal.book_parent}; ${why}`);
+      if (portal.cms_host && tooDeep(portal.cms_host))
+        errors.push(`platform.portal.cms_host ${portal.cms_host} is more than one label under platform.portal.book_parent ${portal.book_parent}; ${why}`);
     }
   }
 

@@ -52,7 +52,12 @@ const staticBook = (r) => {
   return b;
 };
 
-const PORTAL = { domain: 'portal.example', cms_host: 'edit.portal.example', book_parent: 'portal.example' };
+const PORTAL = {
+  domain: 'portal.example',
+  host: { kind: 'static', provider: 'cloudflare-pages', project: 'portal-fixture' },
+  cms_host: 'edit.portal.example',
+  book_parent: 'portal.example',
+};
 
 // Where staticBook() lands. Derived, so adding a book to registry.json doesn't renumber
 // the schema paths asserted below.
@@ -176,12 +181,25 @@ test('a base with no registry yet protects nothing', () => {
 
 // --- multi-book hosting (MULTI-BOOK-HOSTING §4, §6) ----------------------------
 
-test('book one needs none of the new fields: its committed entry has none and is valid', () => {
+test('book one needs none of the new per-book fields: its committed entry has none and is valid', () => {
   const b = book(real());
   for (const k of ['aliases', 'dark']) assert.ok(!(k in b.site), `site.${k} is already in registry.json`);
   assert.ok(!('paid_by' in b.site.host), 'site.host.paid_by is already in registry.json');
-  assert.ok(!('portal' in real().platform), 'platform.portal is already in registry.json');
   assert.deepEqual(validate(REAL), []);
+});
+
+// platform.portal went in on 22 Sep 2026, once the portal was actually serving the apex.
+// Book one's own hostname is what the depth rule is chiefly there to permit, so assert it
+// is exactly one label under book_parent rather than merely that the file validates.
+test('the committed portal block records the live portal, and book one sits under it', () => {
+  const r = real();
+  assert.ok(r.platform.portal, 'platform.portal is missing from registry.json');
+  const { domain, book_parent: parent } = r.platform.portal;
+  assert.equal(r.platform.portal.host.kind, 'static');
+  const d = book(r).site.domain;
+  assert.ok(d.endsWith(`.${parent}`), `${d} is not under book_parent ${parent}`);
+  assert.ok(!d.slice(0, -parent.length - 1).includes('.'), `${d} is more than one label under ${parent}`);
+  assert.notEqual(d, domain, "the portal's address is never a book's");
 });
 
 test('book one with every new optional field filled in is valid', () => {
@@ -200,7 +218,7 @@ test('a §6c-shaped static book is accepted alongside book one', () => {
 
 test('platform.portal with null cms_host and book_parent is accepted', () => {
   const r = real();
-  r.platform.portal = { domain: 'portal.example', cms_host: null, book_parent: null };
+  r.platform.portal = { ...PORTAL, cms_host: null, book_parent: null };
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
 
@@ -272,7 +290,8 @@ test('alias shared by two books', () =>
   expectFail((r) => { book(r).site.aliases = ['a.example']; secondBook(r).site.aliases = ['a.example']; }, 'alias a.example of second-book is also an alias of social-research-methods'));
 
 test('portal: unknown key', () => expectFail((r) => { r.platform.portal = { ...PORTAL, zone: 'x' }; }, '(zone)'));
-test('portal: missing domain', () => expectFail((r) => { r.platform.portal = { cms_host: null, book_parent: null }; }, "must have required property 'domain'"));
+test('portal: missing domain', () => expectFail((r) => { const { domain, ...rest } = PORTAL; r.platform.portal = rest; }, "must have required property 'domain'"));
+test('portal: missing host', () => expectFail((r) => { const { host, ...rest } = PORTAL; r.platform.portal = rest; }, "must have required property 'host'"));
 test('portal domain that is a book\'s domain', () =>
   expectFail((r) => { r.platform.portal = { ...PORTAL, domain: DOMAIN, book_parent: null }; }, `platform.portal.domain ${DOMAIN} is also site.domain`));
 test('portal domain that is a book\'s alias', () =>
@@ -285,3 +304,29 @@ test('book hostname two labels under book_parent', () =>
   expectFail((r) => { r.platform.portal = { ...PORTAL }; book(r).site.aliases = ['a.b.portal.example']; }, 'more than one label under platform.portal.book_parent'));
 test('book domain two labels under book_parent', () =>
   expectFail((r) => { r.platform.portal = { ...PORTAL }; secondBook(r).site.domain = 'www.second.portal.example'; }, 'more than one label under platform.portal.book_parent'));
+test('cms host two labels under book_parent', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL, cms_host: 'a.edit.portal.example' }; }, 'platform.portal.cms_host a.edit.portal.example is more than one label under'));
+test('a legacy origin under book_parent is exempt from the depth rule', () => {
+  const r = real();
+  r.platform.portal = { ...PORTAL };
+  book(r).site.legacy_origins = ['https://old.book.portal.example'];
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+
+test('portal host: unknown provider', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, provider: 'geocities' } }; }, '/platform/portal/host/provider'));
+test('portal host: Publish kind is refused', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, kind: 'obsidian-publish' } }; }, '/platform/portal/host/kind'));
+test('portal host: paid_by is not a key here', () =>
+  expectFail((r) => { r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, paid_by: 'platform' } }; }, '(paid_by)'));
+test('portal project that is also a book\'s Pages project', () =>
+  expectFail((r) => {
+    const b = staticBook(r);
+    r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, project: b.site.host.project } };
+  }, 'one project serves one site'));
+test('the same project name on a different provider is fine', () => {
+  const r = real();
+  const b = staticBook(r);
+  r.platform.portal = { ...PORTAL, host: { kind: 'static', provider: 'netlify', project: b.site.host.project } };
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});

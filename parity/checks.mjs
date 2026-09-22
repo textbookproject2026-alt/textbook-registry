@@ -355,5 +355,7 @@ export const unverifiable = [
   { field: 'books[].cms.host (live value)', where: 'the Worker\'s ALLOWED_DOMAINS variable and the Pages project name live in Cloudflare; parity checks the docs that describe them' },
   { field: 'books[].analytics.plausible.site / dashboard_public', where: 'Plausible account settings; checked by hand 2026-09-15' },
   { field: 'books[].status, books[].suggest_edit.enabled, books[].cms.enabled', where: 'registry-only' },
-  { field: 'books[].site.host.paid_by, books[].site.dark, books[].site.aliases, platform.portal', where: 'registry-only (MULTI-BOOK-HOSTING §4b); paid_by is a fact about a subscription, dark is declared by the platform owner, and no repo holds the aliases or the portal yet' },
+  { field: 'books[].site.host.paid_by, books[].site.dark, books[].site.aliases', where: 'registry-only (MULTI-BOOK-HOSTING §4b); paid_by is a fact about a subscription, dark is declared by the platform owner, and no repo holds the aliases' },
+  { field: 'platform.portal.host.project, platform.portal.book_parent, platform.portal.cms_host', where: 'the Pages project lives in Cloudflare; book_parent is a convention new-book.mjs reads at run time and validate.mjs enforces; cms_host is null until DESIGN step 5b' },
+  { field: 'platform.portal.domain', where: "no longer duplicated in a repo: .github/workflows/portal.yml reads it from registry.json at run time (22 Sep 2026). textbook-portal's own README and package.json describe it in prose, which parity does not read" },
 ];

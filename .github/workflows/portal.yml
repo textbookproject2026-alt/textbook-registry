@@ -15,7 +15,12 @@
 # Needs the repository secret PORTAL_DEPLOY_HOOK (README, "Delivery to services").
 # Optionally the repository variable PORTAL_VERSION_URL, to poll somewhere other
 # than the apex — set it to the portal's *.pages.dev address while the portal is
-# being set up, and remove it once confused4now.org is bound to the Pages project.
+# being set up, and remove it once the portal domain is bound to the Pages project.
+#
+# The apex is read from platform.portal.domain in the registry being deployed, the
+# way deploy.yml reads platform.suggest_edit_endpoint, so the hostname lives in one
+# place. A registry with no portal block yet fails the step with a clear message
+# rather than polling a guess.
 name: portal
 
 on:
@@ -58,17 +63,22 @@ jobs:
           set -euo pipefail
           # A merge deploys its own commit; a schedule or manual run deploys main.
           sha="${RUN_SHA:-$(git rev-parse HEAD)}"
+          if ! domain="$(git show "$sha:registry.json" | jq -er '.platform.portal.domain')"; then
+            echo "::error::registry.json at $sha has no platform.portal.domain, so this job does not know which hostname the portal answers on. Add the block (README, platform.portal) or set the repository variable PORTAL_VERSION_URL."
+            exit 1
+          fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "Target registry $sha"
+          echo "url=https://$domain/version.txt" >> "$GITHUB_OUTPUT"
+          echo "Target registry $sha, portal $domain"
 
       - name: Rebuild the portal if it is behind, and wait for it
         env:
           HOOK: ${{ secrets.PORTAL_DEPLOY_HOOK }}
           SHA: ${{ steps.target.outputs.sha }}
-          # The apex by default, deliberately: polling the *.pages.dev address
-          # would go green while confused4now.org was serving nothing. This check
-          # is worth having because it proves what a reader gets.
-          VERSION_URL: ${{ vars.PORTAL_VERSION_URL || 'https://confused4now.org/version.txt' }}
+          # The registry's own portal domain by default, deliberately: polling the
+          # *.pages.dev address would go green while the apex was serving nothing.
+          # This check is worth having because it proves what a reader gets.
+          VERSION_URL: ${{ vars.PORTAL_VERSION_URL || steps.target.outputs.url }}
           EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail

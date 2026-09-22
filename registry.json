@@ -7,7 +7,18 @@
     "cms_auth_relay_scope": "repo,user",
     "edition_extras_repo": "textbookproject2026-alt/quartz-edition-extras",
     "console_oauth_client_id": "Ov23lixHRSXxMpKK8lVP",
-    "automation_logins": ["aldogobot"]
+    "automation_logins": ["aldogobot"],
+
+    "portal": {
+      "domain": "confused4now.org",
+      "host": {
+        "kind": "static",
+        "provider": "cloudflare-pages",
+        "project": "textbook-portal"
+      },
+      "cms_host": null,
+      "book_parent": "confused4now.org"
+    }
   },
 
   "books": [
