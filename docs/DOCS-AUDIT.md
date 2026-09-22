@@ -100,7 +100,8 @@ relevant doc as it is today, not as it ought to be.
    README's review rule aren't enforced. Anyone with write access can push
    `registry.json` to `main`, and `deploy.yml` ships it to the function. The
    design counts registry review as one of the two credential gates.
-2. **The template repo's own weekly `apply-config` fails every Monday.** Its
+2. **Fixed 22 Sep (textbook-template #3; a dispatched run shows `skipped`).**
+   **The template repo's own weekly `apply-config` fails every Monday.** Its
    `textbook.config.json` has an empty slug by design, and `configure.mjs` refuses
    it. The first failure is due on 28 Sep. The workflow needs to skip the
    template repository (a `github.repository` guard).
