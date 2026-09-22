@@ -7,7 +7,15 @@ ran and the move is live: the Publish custom domain is
 `X-Registry-Version`), the new origin is accepted and `https://confused4now.org` gets
 **403 `origin not allowed`**. §1e, §4b and §4c all landed.
 
-**What has *not* been done**, so nobody reads this as finished:
+**Update, 22 September 2026 (checked live).** Four of the items below have closed
+since: the portal is built and bound to the apex (`/version.txt` serves registry
+`main`), the Plausible site is renamed (`plausible.io/social-research-methods.confused4now.org`
+answers, the old name 404s), the apex 301 rule is live (`/chapters/x` → the
+subdomain), and the registry has its `platform.portal` block (#11). Still open:
+step 10, the coordinator fork (still on `bptext2026.xyz`). What is deployed now is
+recorded in `docs/INFRASTRUCTURE.md`; the list below is the state on 20 September.
+
+**What had *not* been done on 20 September**, so nobody reads this as finished:
 
 - **Step 6 — the apex is not bound to anything.** The portal was never built (§6a steps 2
   and 3 were skipped: there is no `portal.yml` and no Pages project), so

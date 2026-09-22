@@ -173,6 +173,19 @@ export const RETIREMENTS = {
   ...cmsStep4('cmsRepoStep4', 'repo', '__CONTENT_REPO__', 'content.repo'),
   ...cmsStep4('cmsDraftsBranchStep4', 'branch', '__DRAFTS_BRANCH__', 'content.drafts_branch'),
   ...cmsStep4('cmsAuthRelayStep4', 'base_url', '__CMS_AUTH_RELAY__', 'platform.cms_auth_relay'),
+  // The platform's operator docs moved out of the vault into this repo's docs/ on
+  // 22 Sep 2026. The four checks below read values that those docs used to carry
+  // as a stand-in for settings no repo holds (the relay allowlist, the relay URL,
+  // the template preview). With the files gone from the content repo there is
+  // nothing to drift there; the "registry read" that replaces them is the vault's
+  // docs index pointing at this repo's copy.
+  docsMovedToRegistry: {
+    step: 'docs',
+    source: 'content',
+    commit: '01b83a4',
+    reason: 'the platform docs (INFRASTRUCTURE.md, OAUTH-SETUP.md) moved to textbook-registry/docs/, and the vault now points there',
+    consumes: { path: 'docs/README.md', pattern: /textbook-registry\/docs\/INFRASTRUCTURE\.md/ },
+  },
   ...consoleStep5('consoleRepoStep5', 'app/github.py',
     'the console fetches the registry at launch (app/registry.py), resolves the book from the chosen book or the open vault, and builds every repository URL from that book\'s content.repo',
     /^\s+url = \(f"\{API\}\/repos\/\{book\.repo\}\/issues"$/m),
@@ -278,13 +291,17 @@ export const checks = [
     extract: once(/^Welcome\. This is (.+?) — /m), expect: (r, b) => lcfirst(b.summary).replace(/\.$/, '') },
 
   { id: 'docs.cms-allowed-domains', source: 'content', path: 'OAUTH-SETUP.md', design: 'OAUTH-SETUP.md:107 (stands in for the Worker variable, which no repo holds)',
-    extract: once(/^\| `ALLOWED_DOMAINS` \| `([^`]+)` \|/m), expect: (r, b) => b.cms.host },
+    extract: once(/^\| `ALLOWED_DOMAINS` \| `([^`]+)` \|/m), expect: (r, b) => b.cms.host,
+    retired: RETIREMENTS.docsMovedToRegistry },
   { id: 'docs.cms-homepage', source: 'content', path: 'OAUTH-SETUP.md', design: 'OAUTH-SETUP.md:78 (OAuth App homepage)',
-    extract: once(/^\| Homepage URL \| `([^`]+)`/m), expect: (r, b) => `https://${b.cms.host}` },
+    extract: once(/^\| Homepage URL \| `([^`]+)`/m), expect: (r, b) => `https://${b.cms.host}`,
+    retired: RETIREMENTS.docsMovedToRegistry },
   { id: 'docs.infrastructure.cms-relay', source: 'content', path: 'docs/INFRASTRUCTURE.md', design: 'INFRASTRUCTURE.md §3',
-    extract: once(/^- \*\*URL:\*\* `(https:\/\/[^`]*workers\.dev)`$/m), expect: (r) => r.platform.cms_auth_relay },
+    extract: once(/^- \*\*URL:\*\* `(https:\/\/[^`]*workers\.dev)`$/m), expect: (r) => r.platform.cms_auth_relay,
+    retired: RETIREMENTS.docsMovedToRegistry },
   { id: 'docs.infrastructure.template-preview', source: 'content', path: 'docs/INFRASTRUCTURE.md', design: 'INFRASTRUCTURE.md §5',
-    extract: once(/^## 5\.[^\n]*\n\n- \*\*URL:\*\* <([^>]+)>$/m), expect: (r, b) => b.editions.template_preview },
+    extract: once(/^## 5\.[^\n]*\n\n- \*\*URL:\*\* <([^>]+)>$/m), expect: (r, b) => b.editions.template_preview,
+    retired: RETIREMENTS.docsMovedToRegistry },
 
   // ---- suggest-edit-function ---------------------------------------------------
   { id: 'suggest-edit.allowed-origin', source: 'suggest-edit-function', path: 'api/suggest-edit.js', design: 'suggest-edit.js:27',
