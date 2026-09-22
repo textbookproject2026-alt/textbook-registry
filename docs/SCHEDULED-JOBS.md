@@ -26,6 +26,7 @@ start tens of minutes late under load.
 | every 6 h at :41 | `textbook-registry` | `deploy` | nothing. It polls the function and redeploys if it's behind |
 | daily 06:17 | `textbook-registry` | `parity` | nothing. It compares the registry with the constants left in other repos |
 | Sun 03:00 | `textbook` | `backup-annotations` | the `backups` branch |
+| Sun 03:00 | `textbook`, `textbook-template` | `weekly-snapshot` | a `snapshot-YYYY-MM-DD` tag on `main`, if `main` changed since the last one. Skipped in the template repo itself |
 | Sun 07:00 | `textbook` | `contributors` | `community/contributors.md`, by auto-merged PR |
 | Sun 11:00 | `textbook` | `derivatives` | `community/derivatives.md`, by auto-merged PR |
 | Sun 15:00 | `textbook` | `dashboard` | `community/dashboard.md`, by auto-merged PR |
@@ -38,12 +39,14 @@ On every push or PR, they also run: `validate` and `parity` in the registry;
 touches the config, a template or `configure.mjs`.
 
 **Book two (`platform-test-book`) and `textbook-portal` have no workflows.** A
-new book made from `textbook-template` starts with that template's three.
+new book made from `textbook-template` starts with that template's four.
 
 ### Signals that look like failures and aren't
 
 - **A green run with no commit.** The generator jobs commit only when their
   output differs from last week's.
+- **A Sunday with no new snapshot tag.** `weekly-snapshot` tags only when
+  `main` changed.
 - **Zero annotations.** On a book nobody has annotated yet, zero is the true
   count.
 - **`deploy`/`portal` saying "Already current; nothing to deploy."** That is the
@@ -182,6 +185,35 @@ merged directly, and a still-open PR isn't re-pushed with an identical render.
   **Sunday 8 November 2026**. On that day, confirm the branch holds 12 files,
   not 13, and that the commit deletes one.
 
+### Sun 03:00 — `weekly-snapshot`
+
+A named, dated point in time for the book's content: an annotated tag
+`snapshot-YYYY-MM-DD` on `main`, which GitHub serves as a browsable tree and a
+zip (`archive/refs/tags/snapshot-YYYY-MM-DD.zip`). The maintainer's side is the
+book's `docs/weekly-snapshots.md`. How a snapshot differs from a `v` version tag
+is in its `docs/how-versioning-works.md`.
+
+- **Pass:** green, and either a new tag whose message lists the files changed
+  since the last snapshot, or "has not changed since snapshot-…" and no tag.
+  The first one is `snapshot-2026-09-22` (`1120318`), made by hand before the
+  workflow merged.
+- **What counts as a change:** any path on `main` except the three
+  `community/` pages the later Sunday jobs regenerate (`IGNORE` in the
+  workflow). Those pages are in every snapshot but never cause one.
+- **Same slot as `backup-annotations`, on purpose.** A week's snapshot and
+  annotation backup share a date, so they restore as a pair. They can't
+  collide: one writes a tag, the other the `backups` branch.
+- **"already exists, and tags never move":** a second run on the same day. Not
+  a failure.
+- **Fail:** red at `git push` means tag creation was refused. `main`'s branch
+  protection doesn't cover tags, and there's no tag ruleset (checked 22 Sep). A
+  ruleset that restricts tag *creation* would cause this. One that restricts
+  only updates and deletions is fine.
+- **Retention:** every snapshot is kept, deliberately. People cite them, and a
+  pruned tag is a dead link. Annotation backups prune to 12 files, but pruned
+  files stay in the `backups` branch history, so an old week's pair can still
+  be restored together.
+
 ### Sun 07:00 — `contributors`, Sun 11:00 — `derivatives`, Sun 15:00 — `dashboard`
 
 - **Pass:** green. The PR opened and merged, or nothing changed.
@@ -234,15 +266,15 @@ does nothing.
 
 ## Part 3 — the new-book template (`textbook-template`)
 
-`lint`, `link-check` and `apply-config`: the same jobs as book one's, and every
-new book inherits them.
+`lint`, `link-check`, `apply-config` and `weekly-snapshot`: the same jobs as
+book one's, and every new book inherits them. The template's `weekly-snapshot`
+starts with an empty `IGNORE`, because a new book has no self-rewriting pages.
 
-> **Known to fail in the template repo itself.** The template's
-> `textbook.config.json` has an empty slug on purpose, and `configure.mjs`
-> refuses it. So the Monday `apply-config` run in `textbook-template` fails
-> every week. That is a workflow defect, not a book problem. See
-> [DOCS-AUDIT.md](DOCS-AUDIT.md). In a book made from the template, the slug is
-> set and the job works.
+**`apply-config` and `weekly-snapshot` are skipped in the template repo
+itself** (a `github.repository` guard). The template's content is placeholder
+and its slug is empty, so a render there can only fail and a snapshot would be
+nobody's book. A skipped run is grey, not red. In a book made from the template,
+both run normally.
 
 ---
 
