@@ -3,7 +3,8 @@
 **Status:** plan, decided except D12, D15 and D16, which are with the client (see
 *Decisions*). §0a designs the build trigger that D2 left open. §8 is the order of work, as
 PR-sized steps. No code, repository, registry entry or DNS record has changed.
-**Date:** 22 Sep 2026. Decisions recorded the same day.
+**Date:** 22 Sep 2026. Decisions recorded the same day. Amended the same day: the 15-minute
+poll in §0a runs from a Cron Trigger on the `build-nudge` Worker, not a GitHub schedule.
 **Read against:** `textbook` at `d3a7031`, `textbook-registry` at `82c6086`,
 `quartz-edition-extras` at `36297df`, `textbook-edition-template` at `c54ba10`,
 `platform-test-book` at `b6b2cbc`, `authoring-assistant` at `20bb552`, `textbook-template`
@@ -196,7 +197,7 @@ drafts preview, D13).
 | Credential on the platform side | Cloudflare token in `quartz-book`. Public books are read anonymously | Cloudflare token in `quartz-book`, webhook secret and a dispatch token in the receiver | Cloudflare token in `quartz-book`, dispatch token in the receiver. There is no shared secret to verify: GitHub's signing keys are public | as B | as C, plus a way to authenticate the app and CMS |
 | What it widens | nothing | **The App.** `push` needs `Contents: read`. Raising an App's permissions asks every installation owner to approve, and until they do, their installation keeps the old permissions and sends no pushes. The App's key could then mint content-read tokens for every installed repo, not issues-only ones (DESIGN §4d, T3). It breaks DESIGN §4e's "no webhook, outbound only", and the receiver becomes inbound traffic on whatever holds the App key | **Nothing granted.** One workflow file per book (a D6 thin caller) | A **new grant from every maintainer**: the objection that ruled out Cloudflare's own App in D2, though read-only and platform-owned | nothing |
 | Blind spots | none: it compares state, not events | missed deliveries. GitHub doesn't redeliver failed deliveries on its own (manual redelivery goes back 3 days) | pushes made with a workflow's `GITHUB_TOKEN` don't trigger workflows, so a bot-merged community pull request isn't nudged. A maintainer can delete the workflow or turn off Actions | missed deliveries, as B | the browser editor's saves, git pushes, merges on github.com |
-| If it fails | builds are late, never wrong. In a public repo, **scheduled workflows are disabled after 60 days with no commits**: the builder repo can go quiet | pushes are missed until the next one | builds wait for the next nudge | as B | as C |
+| If it fails | builds are late, never wrong. In a public repo, **scheduled workflows are disabled after 60 days with no repository activity**, and the builder repo will go quiet. The recommendation keeps A but moves its clock off GitHub | pushes are missed until the next one | builds wait for the next nudge | as B | as C |
 
 **Also considered.** Pages deploy hooks only exist for Git-integrated projects, so D2 rules
 them out. Conditional API requests (`ETag`, where a 304 doesn't count against the rate
@@ -223,17 +224,32 @@ Two things wake it:
    using the registry it fetched at most five minutes ago. That check is a spam filter, not
    a security boundary: the nudge only names a book, and `reconcile` reads that book's repo
    and branches from the registry itself. It then calls
-   `workflow_dispatch` on `reconcile` with `slug` as the input, and coalesces repeat nudges
+   `workflow_dispatch` on `reconcile` with `slug` and `woken_by: nudge` as inputs, and coalesces repeat nudges
    for the same book within 30 seconds. The Worker's only secret is a **fine-grained token
    on `quartz-book` alone, `Actions: write`**. `workflow_dispatch` needs that permission,
    whereas `repository_dispatch` would need `Contents: write`. A forged or replayed nudge
    costs one no-op reconcile. Pull-request workflows from forks don't receive
    `id-token: write`, so a stranger's pull request can't nudge.
-2. **The poll (A), for correctness.** `reconcile` also runs on a 15-minute schedule over every
+2. **The poll (A), for correctness.** Every 15 minutes, `reconcile` also runs over every
    book. It catches whatever the nudge misses: bot merges, a deleted workflow, disabled
-   Actions, a Worker outage. It also catches registry and builder changes: a registry merge
-   that changes a book's entry, or a new builder commit, changes the digest, so the book
-   rebuilds without a separate "redeploy everything" path (§4b).
+   Actions. It also catches registry and builder changes: a registry merge that changes a
+   book's entry, or a new builder commit, changes the digest, so the book rebuilds without a
+   separate "redeploy everything" path (§4b).
+
+   **The 15 minutes come from a Cron Trigger on `build-nudge`, not a GitHub `schedule:`.**
+   GitHub disables scheduled workflows in a public repository after 60 days with no
+   repository activity. `quartz-book` will be quiet once it is stable, so a GitHub-scheduled
+   safety net would switch itself off without a sound, and would do so exactly when nobody
+   is looking. The Worker's `scheduled` handler (`*/15 * * * *`) calls `workflow_dispatch`
+   on `reconcile` with no `slug` (every book) and `woken_by: cron`, with the same token as
+   the nudge. `workflow_dispatch` is not subject to the 60-day rule. The cron path doesn't
+   depend on the Worker's registry fetch, because `reconcile` reads the registry itself.
+   `reconcile` has **no `schedule:` trigger at all**: a second, GitHub-side schedule
+   would switch itself off in the same way, and meanwhile would look like cover.
+
+   The cost is that the nudge and the poll now share one Worker and one token, so the
+   Worker is the single point that starts builds. The failure table below covers what
+   happens when it is down, and the check that notices.
 
 **Why not B.** It needs every maintainer to approve a wider App before it works for their
 book. It raises the ceiling of the key that files reader suggestions. It still needs A,
@@ -253,9 +269,17 @@ C gets in its way.
 - **Books must be public.** `ls-remote` and the checkout are anonymous. The reader controls
   already assume this (Edit on GitHub, History). Parity enforces it (§8 step 7). A
   private book would need `Contents: read` from some App, which is option B's cost.
-- **Keeping the schedule alive.** The weekly health check (`docs/SCHEDULED-JOBS.md`) gains a
-  row: the last scheduled `reconcile` ran less than an hour ago. The nudge carries on
-  regardless, so a disabled schedule shows up as late bot merges, not as a dark book.
+- **How a run says what woke it.** `reconcile` takes a `woken_by` input (`nudge`, `cron`,
+  or empty for a run by hand) and puts it in `run-name`, so the Actions API's run list
+  shows it without opening a log.
+- **Keeping the tick alive.** A Worker that stops dispatching makes no red run. It makes
+  no run at all. So the check has to live outside `quartz-book` and outside the Worker: a
+  daily `builder-alive` workflow in `textbook-registry` asks the Actions API (anonymously,
+  since `quartz-book` is public) for the latest `reconcile` run named `cron`, and goes red
+  if it started more than an hour ago. It sits beside the registry's other scheduled
+  jobs, and the "scheduled workflows disabled" check in `docs/SCHEDULED-JOBS.md` already
+  covers those. The Worker token's expiry date is in INFRASTRUCTURE, and the health check
+  gains a row for renewing it a month early.
 - **Telling people about a failed build.** The last deployment keeps serving, and the
   `reconcile` run goes red in `quartz-book`, which only the platform owner watches. The
   author learns it through the console: after "Send to drafts" it polls the drafts marker,
@@ -263,15 +287,17 @@ C gets in its way.
   the new commit in 10 minutes. The probe (§7) reports `stale-build` for the live branch.
   No new permission is needed, because the marker is public.
 - **Latency, expected.** Nudge path: under a minute to start, plus the build. Poll path: up
-  to 15 minutes plus cron lag. Measure both in §8 step 10, and record them in
-  `docs/SCHEDULED-JOBS.md`.
+  to 15 minutes plus the Actions queue, then the build. A Cron Trigger isn't subject to
+  GitHub's scheduler, whose runs can start 10-30 minutes late. Measure both paths in §8
+  step 10, and record them in `docs/SCHEDULED-JOBS.md`.
 
 ### What breaks if each part fails
 
 | Part down | Effect | Detected by |
 |---|---|---|
-| `build-nudge` Worker, or its token (expired or revoked) | builds fall back to poll latency | `reconcile` logs how it was woken; the health check flags "no nudged run in 7 days" while books had pushes |
-| Scheduled `reconcile` (disabled or late) | bot merges and registry or builder changes wait for the next nudge | the health-check row above |
+| **`build-nudge` Worker** (deleted, a bad deploy, the Cloudflare account suspended or unpaid), or **its token** (expired or revoked) | **Nothing rebuilds automatically.** Neither the nudges nor the 15-minute tick reach `reconcile`. Every book keeps serving its last deployment, and pushes, registry merges and builder changes wait. **`reconcile` can still be run by hand:** `quartz-book` → Actions → `reconcile` → Run workflow, with `slug` empty for every book. That run is as correct as any other, because it compares state rather than trusting an event. Run it again after each change until the Worker is back | Silence, not a red run. `builder-alive` in the registry goes red within a day, because no `cron` run has started in the last hour. Sooner, if someone is working: the author's console shows the stale-preview notice 10 minutes after "Send to drafts", and the probe reports `stale-build` once a live branch moves |
+| **The Cron Trigger only** (removed from the Worker's config) | bot merges and registry or builder changes wait for the next nudge | `builder-alive`, as above: nudged runs don't count |
+| **A book's nudge only** (`nudge.yml` deleted, Actions turned off in the book) | that book's builds fall back to the 15-minute tick | `reconcile`'s run names; the health check flags "no nudged run in 7 days" for a book that had pushes |
 | Cloudflare token | nothing deploys. **Every book keeps serving its last deployment** | red `reconcile` runs; the probe reports `stale-build` |
 | A book's build (bad content) | that book and branch stay at the previous deployment; other books are unaffected | red run; the console's stale-preview notice; the probe |
 | `quartz-book` itself (a bad builder commit) | caught by the preview gate in §4b before `stable` moves; if not caught, move `stable` back and every book rebuilds | the preview links on the pin pull request |
@@ -740,12 +766,14 @@ registry PR if it isn't.
   ignoring a folder equals deleting it).
 - **Must not break:** nothing is deployed yet.
 
-**9. Building on a schedule, and book one's Pages project.**
+**9. The `reconcile` workflow, and book one's Pages project.**
 - **Repo:** `quartz-book`, plus one Cloudflare action by hand.
 - **Does:** the `reconcile` workflow (§0a): per book and branch, compare the served marker
   with the would-be build, build in a job with no secrets, deploy in a separate job with the
-  token. `concurrency` per book and branch. A 15-minute schedule and `workflow_dispatch` with
-  a `slug` input. By hand: create **`social-research-methods` as a Direct Upload project** in
+  token. `concurrency` per book and branch. `workflow_dispatch` only, with optional `slug`
+  and `woken_by` inputs and `woken_by` in `run-name`. **No `schedule:` trigger**: the
+  15-minute tick comes from the Worker in step 10. Until then, `reconcile` runs only by
+  hand, which is enough, since nothing live depends on it before step 16. By hand: create **`social-research-methods` as a Direct Upload project** in
   `brandonproject2026`, production branch `main`. Add `CLOUDFLARE_API_TOKEN` (Pages edit,
   that account only) and the account ID as `quartz-book` secrets.
 - **Proves it:** `social-research-methods.pages.dev/.well-known/textbook.json` shows `main`'s
@@ -757,14 +785,22 @@ registry PR if it isn't.
   suggest-edit form answers 403 on `pages.dev`, which is correct: that origin isn't
   registered.
 
-**10. The nudge.**
-- **Repos:** `build-nudge` (new, a Cloudflare Worker in `brandonproject2026`), then `textbook`.
+**10. The Worker: the nudge and the 15-minute tick.**
+- **Repos:** `build-nudge` (new, a Cloudflare Worker in `brandonproject2026`), then
+  `textbook`, then `textbook-registry`.
 - **Does:** the Worker in §0a, with one secret: a fine-grained token on `quartz-book` alone,
-  `Actions: write`, with an expiry date recorded in INFRASTRUCTURE. Then a second PR adds
-  `.github/workflows/nudge.yml` to book one.
-- **Proves it:** a push to book one's `drafts` starts `reconcile` within a minute, logged as
-  woken by a nudge. A token minted in an unregistered repo gets 403 and dispatches nothing.
-  A replayed token is coalesced. Measure the nudge and poll latencies, and put them in
+  `Actions: write`, with an expiry date recorded in INFRASTRUCTURE. Its `fetch` handler
+  takes nudges. Its `scheduled` handler, on a Cron Trigger `*/15 * * * *` in the Worker's
+  config, dispatches `reconcile` for every book with `woken_by: cron`. A second PR adds
+  `.github/workflows/nudge.yml` to book one. A third adds the daily `builder-alive`
+  workflow to the registry (§0a).
+- **Proves it:** a push to book one's `drafts` starts `reconcile` within a minute, named
+  `nudge`. With no push, a run named `cron` starts every 15 minutes. A token minted in an
+  unregistered repo gets 403 and dispatches nothing. A replayed token is coalesced.
+  `builder-alive` is green. With the Cron Trigger removed from a test deploy of the
+  Worker for over an hour, a run of `builder-alive` goes red, and it goes green again once
+  the trigger is back. With the Worker's token revoked, a run by hand from the Actions tab still
+  builds and deploys. Measure the nudge and poll latencies, and put them in
   `docs/SCHEDULED-JOBS.md`.
 - **Must not break:** book one's other workflows. `nudge.yml` asks for `id-token: write` and
   nothing else, and holds no secret.
@@ -919,7 +955,9 @@ registry PR if it isn't.
 - **Repo:** `textbook-registry`.
 - **Does:** the §7 amendments to `MULTI-BOOK-HOSTING.md` that don't depend on D15. The policy
   text, the exit commitment and the removal reviewers wait for the client, and the sections
-  say so. `SCHEDULED-JOBS.md` gains the `reconcile` row, `BOOK-LIFECYCLE.md` the new
+  say so. `SCHEDULED-JOBS.md` gains rows for the Worker's Cron Trigger, `reconcile`
+  (including how to run it by hand when the Worker is down), `builder-alive` and the
+  Worker token's renewal. `BOOK-LIFECYCLE.md` the new
   onboarding, and whatever INFRASTRUCTURE still lacks.
 - **Proves it:** `npm test` and the parity doc checks are green.
 - **Must not break:** the design history: dated notes, not rewrites. The removal automation in
@@ -944,7 +982,7 @@ D16.
 | # | Topic | Status | Decision |
 |---|---|---|---|
 | D1 | Builder | **decided** | A new `quartz-book` repo (§0) |
-| D2 | Pages builds | **decided** | Direct Upload from the builder. No Cloudflare App on maintainers' repos. The trigger is §0a: a level-triggered `reconcile`, woken by an OIDC-signed nudge from each book and by a 15-minute schedule. The same trigger builds the drafts previews |
+| D2 | Pages builds | **decided** | Direct Upload from the builder. No Cloudflare App on maintainers' repos. The trigger is §0a: a level-triggered `reconcile`, woken by an OIDC-signed nudge from each book and by a 15-minute Cron Trigger on the same Worker (not a GitHub schedule, which switches itself off after 60 quiet days). The same trigger builds the drafts previews |
 | D3 | What is published | **decided** | `community/` is published. The allowlist is `index.md`, `chapters/`, `assets/`, `glossary.md`, `community/` |
 | D4 | Page titles | **decided** | From the first heading, by a platform transform (§2 #2) |
 | D5 | Reader help | **decided** | The builder adds "how to comment" to every book, at `/how-to-comment`. `for-course-coordinators.md` moves to the edition template |
