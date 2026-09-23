@@ -593,7 +593,13 @@ The app writes to disk in three places:
    (`file_at_ref`, `github.py:309`), applies the edits, and commits.
 4. **Accept a reader's suggestion.** `plan_change` and `apply_change` run against the chapter
    on `drafts` instead of the local file. The result is a commit, and the issue closes.
-5. **Small edits:** the browser editor, which already writes to `drafts`.
+5. **Small edits:** the browser editor. It writes to `drafts` only once an edit
+   is marked Ready and published. Until then each edit sits on its own
+   `cms/<collection>/<name>` branch. So a browser edit clashes with the app only
+   when one is **published** while the author is mid-import or mid-edit, and
+   then the non-force ref update in steps 2-4 refuses, and the app re-reads and
+   offers again. *(Corrected 22 Sep: this said the browser editor writes to
+   `drafts` directly. Live testing of §8 step 1 showed otherwise.)*
 6. **Contributors' changes:** accepting squash-merges them into `drafts` (exists).
 7. **Preview (new):** the builder deploys `drafts` to `drafts.<project>.pages.dev` (§0a),
    public but `noindex` (D13). The console gets a "See the drafts" link, and says so when the

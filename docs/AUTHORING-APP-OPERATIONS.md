@@ -35,10 +35,12 @@ Since migration step 5 the app has no book of its own.
   bundled at build (`app/registry.bundled.json`, fetched by `build.sh`, never
   committed). If the band under the title says "List of textbooks as of …", the
   fetch failed and the app is on its cached copy.
-- **Which book:** with no vault open, the author picks one of the books their
-  GitHub account can push to. With a vault open, **the vault decides**: its
+- **Which book:** the author picks one of the books their GitHub account can
+  push to, and **the chosen book decides** (BOOK-ONE-TO-QUARTZ §8 step 2).
+  A vault is optional, and can only be the chosen book's copy: its
   `textbook.config.json` slug and its `origin` remote must both match the
-  registry entry, or the vault is refused and nothing is written.
+  registry entry, or the vault is refused and nothing is written. Choosing
+  another book closes it.
 - **A new book needs nothing from you here.** It appears to its maintainer at
   their next launch after the registry merge.
 - **A retired book** disappears at the next launch. A vault for it is refused.
