@@ -234,6 +234,29 @@ test('editions: null is accepted', () => {
 test('editions must still be present (null, not missing)', () => expectFail((r) => { delete book(r).editions; }, "must have required property 'editions'"));
 test('editions object still requires template_repo', () => expectFail((r) => { delete book(r).editions.template_repo; }, '/books/0/editions'));
 
+// site.host.builder (BOOK-ONE-TO-QUARTZ §8 step 7). Optional: absent means the builder
+// leaves the book alone, which is every committed book until step 17.
+test('a static book built by quartz-book is accepted beside one without the field', () => {
+  const r = real();
+  staticBook(r).site.host.builder = 'quartz-book';
+  const other = staticBook(r);
+  other.slug = 'static-fixture-unbuilt';
+  other.content.repo = 'someone/static-fixture-unbuilt';
+  other.site.domain = 'static-fixture-unbuilt.pages.dev';
+  other.site.host.project = 'static-fixture-unbuilt';
+  assert.ok(!('builder' in other.site.host));
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('no committed book names a builder yet', () => {
+  for (const b of real().books) assert.ok(!('builder' in b.site.host), `${b.slug} already has site.host.builder`);
+});
+test('builder: unknown value', () => expectFail((r) => { staticBook(r).site.host.builder = 'netlify-build'; }, `/books/${STATIC_AT}/site/host`));
+test('builder: null is not a way to say none (leave it out)', () =>
+  expectFail((r) => { staticBook(r).site.host.builder = null; }, `/books/${STATIC_AT}/site/host`));
+test('builder on a Publish host', () => expectFail((r) => { book(r).site.host.builder = 'quartz-book'; }, '/books/0/site/host'));
+test('builder on the portal host', () =>
+  expectFail((r) => { r.platform.portal.host.builder = 'quartz-book'; }, '/platform/portal/host'));
+
 test('static host: unknown provider', () => expectFail((r) => { staticBook(r).site.host.provider = 'geocities'; }, `/books/${STATIC_AT}/site/host`));
 test('static host: missing project', () => expectFail((r) => { delete staticBook(r).site.host.project; }, `/books/${STATIC_AT}/site/host`));
 test('static host: Publish-only key', () => expectFail((r) => { staticBook(r).site.host.site_id = '1443b409a84e491249da35fdd4b91de6'; }, `/books/${STATIC_AT}/site/host`));

@@ -762,6 +762,13 @@ registry PR if it isn't.
 - **Must not break:** the function, the console and the portal, which all read the registry.
   The field is additive.
 
+> **Done, 23 Sep 2026 (textbook-registry, `registry/site-host-builder`).** The public-repo
+> check is in `check-github.mjs` (the `validate` workflow's `github-facts` job), not in
+> `parity/`. `github-facts` already failed any non-public content repo, and parity is
+> temporary: it is deleted once every check is retired. For a builder book the job also
+> runs `git ls-remote` with no credentials on both branches, which is how the builder reads
+> them. No committed book has the field until step 17.
+
 **8. The builder.**
 - **Repo:** `quartz-book` (new, D1).
 - **Does:** Quartz v5 checkout, the shared `quartz.config.yaml` (graph on, SPA off), the
