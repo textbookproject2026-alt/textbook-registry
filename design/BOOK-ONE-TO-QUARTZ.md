@@ -784,6 +784,41 @@ registry PR if it isn't.
   ignoring a folder equals deleting it).
 - **Must not break:** nothing is deployed yet.
 
+> **Done, 23 Sep 2026 (`quartz-book`, `builder/step-8`).** Quartz is upstream
+> `jackyzha0/quartz` at `9cf87ff`, the same commit the edition template runs. The extras
+> are pinned at `ba88e98` (steps 3-6). Quartz reads its config only from its working
+> directory, so each build runs in a scratch directory with the book's rendered config.
+> Settled: **ignoring a folder does equal deleting it.** Contributors' `[[chapter-03]]`
+> resolves to `chapters/chapter-03` with `Frankenstein/` in the tree. Choices the steps
+> above left open:
+> - Edit and History links name the **branch being built**, so the drafts preview's links
+>   open `drafts`. On the live branch this is the live branch, as §0 says.
+> - The marker's `registry_digest` covers the book's entry **and**
+>   `platform.suggest_edit_endpoint`, the one platform value a build reads. Otherwise
+>   moving the endpoint would not rebuild any book.
+> - `_redirects` has one line for a one-word page, where the `+` and `%20` spellings are
+>   the same path. It also has `/index → /`, by the same rule.
+>
+> Found, for later steps:
+> - **Book one's `drafts` is 31 commits behind `main`**, and its `textbook.config.json`
+>   has no `slug`, so the builder refuses it. Bring `drafts` up to date with `main` before
+>   step 9 builds the drafts preview.
+> - `community/contributors.md` links `[[for-trusted-contributors]]`, a `docs/` page that
+>   is outside the allowlist. It is dead on the Quartz build, like the
+>   `[[for-course-coordinators]]` links in the same page, `index.md` and
+>   `derivatives.md`. `gen-contributors.mjs` writes both (step 14), and step 18 fixes
+>   `index.md`.
+> - `/docs/for-course-coordinators` redirects to the edition template's
+>   `docs/for-course-coordinators.md`, which doesn't exist until step 22.
+> - Step 9's `reconcile` builds "the books on the builder". No committed book has
+>   `site.host.builder` until step 17, so step 9 has to build book one another way, for
+>   example by slug.
+> - `sitemap.xml` and `index.xml` carry the build time as `lastmod`, so two builds of one
+>   commit differ there. Step 18's diff of two builds should leave those two files out.
+> - If Pages matched `_redirects` without regard to case, the case-only rules
+>   (`/chapters/Definitions/Emergence`) would redirect to themselves. Step 15's redirect
+>   check covers this.
+
 **9. The `reconcile` workflow, and book one's Pages project.**
 - **Repo:** `quartz-book`, plus one Cloudflare action by hand.
 - **Does:** the `reconcile` workflow (§0a): per book and branch, compare the served marker
