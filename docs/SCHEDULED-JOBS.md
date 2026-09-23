@@ -70,8 +70,9 @@ These four are the platform's own jobs. A red one here can affect every book.
 ### `validate` (push and PR)
 
 Schema, uniqueness, the depth rule, slug immutability (`registry` job), and the
-GitHub facts: every content repo exists and is public, both branches exist, and
-every automation login exists (`github-facts` job).
+GitHub facts: every content repo exists and is public, both branches exist,
+a builder book's two branches can be read with no credentials, and every
+automation login exists (`github-facts` job).
 
 - **Red on a PR:** the registry change is wrong. Read the message; each rule
   names what it refused.

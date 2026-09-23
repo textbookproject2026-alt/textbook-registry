@@ -9,13 +9,19 @@
 //         template repo to check); a repo that has moved (the registry
 //         must name it where it is, since services match on it exactly); an
 //         automation login with no account behind it (parity only proves the
-//         registry and the scripts agree, and they once agreed on a misspelling).
+//         registry and the scripts agree, and they once agreed on a misspelling);
+//         a builder book (site.host.builder) whose two branches can't be read
+//         with no credentials at all, which is how quartz-book reads them
+//         (BOOK-ONE-TO-QUARTZ §0a). A token that can see the repo proves nothing
+//         about that, so this one check runs git ls-remote anonymously.
 // Warns:  a domain, CMS host or preview URL that doesn't answer right now. A new
 //         domain may not be live yet, so this is never a failure.
 //
 // Run with a registry that has already passed validate.mjs.
 
 import { readFileSync } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { getRepo, getUser, branchExists } from './github.mjs';
 
 const path = process.argv[2] ?? new URL('../registry.json', import.meta.url);
@@ -50,6 +56,19 @@ async function answers(url) {
   }
 }
 
+// The branches of a repo as an anonymous client sees them, or the reason it can't.
+// No credential helper and no prompt, so a private repo fails rather than asking.
+async function anonymousHeads(fullName) {
+  try {
+    const { stdout } = await promisify(execFile)('git', [
+      '-c', 'credential.helper=', 'ls-remote', '--heads', `https://github.com/${fullName}.git`,
+    ], { env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_ASKPASS: '' }, timeout: 30000 });
+    return { heads: new Set(stdout.split('\n').filter(Boolean).map((l) => l.split('\trefs/heads/')[1])) };
+  } catch (e) {
+    return { problem: (e.stderr || e.message).trim().split('\n').pop() };
+  }
+}
+
 for (const [label, fullName] of [['platform.edition_extras_repo', reg.platform.edition_extras_repo]]) {
   if (await repoAt(fullName, label)) ok(`${label}: ${fullName}`);
 }
@@ -72,13 +91,25 @@ for (const b of reg.books) {
 
   const repo = await repoAt(b.content.repo, `${b.slug} content.repo`);
   if (repo) {
-    if (repo.visibility !== 'public' || repo.private) fail(`${b.slug}: ${b.content.repo} is ${repo.visibility}; content repos must be public`);
+    const builder = b.site.host.builder;
+    const why = builder ? `; content repos must be public, and ${builder} builds this one without credentials` : '; content repos must be public';
+    if (repo.visibility !== 'public' || repo.private) fail(`${b.slug}: ${b.content.repo} is ${repo.visibility}${why}`);
     else ok(`${b.slug}: ${b.content.repo} exists and is public`);
 
     for (const key of ['live_branch', 'drafts_branch']) {
       const branch = b.content[key];
       if (await branchExists(b.content.repo, branch)) ok(`${b.slug}: branch ${branch} exists (${key})`);
       else fail(`${b.slug}: content.${key} ${branch} does not exist on ${b.content.repo}`);
+    }
+  }
+
+  if (b.site.host.builder) {
+    const { heads, problem } = await anonymousHeads(b.content.repo);
+    if (problem) fail(`${b.slug}: ${b.site.host.builder} can't read ${b.content.repo} anonymously (${problem})`);
+    else for (const key of ['live_branch', 'drafts_branch']) {
+      const branch = b.content[key];
+      if (heads.has(branch)) ok(`${b.slug}: ${b.site.host.builder} can read ${branch} anonymously (${key})`);
+      else fail(`${b.slug}: ${b.site.host.builder} can't see content.${key} ${branch} on ${b.content.repo} anonymously`);
     }
   }
 

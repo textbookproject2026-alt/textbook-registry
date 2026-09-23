@@ -211,7 +211,11 @@
                     "kind": { "const": "static" },
                     "provider": { "$ref": "#/$defs/static_provider" },
                     "project": { "$ref": "#/$defs/project_name" },
-                    "paid_by": { "$ref": "#/$defs/paid_by" }
+                    "paid_by": { "$ref": "#/$defs/paid_by" },
+                    "builder": {
+                      "enum": ["quartz-book"],
+                      "description": "The platform builder that builds and deploys this book (BOOK-ONE-TO-QUARTZ §0, §0a). Absent means the builder leaves the book alone: it is built somewhere else, by whoever maintains it. A builder book's content repo must be readable anonymously, which check-github.mjs enforces."
+                    }
                   }
                 }
               ]
