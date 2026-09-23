@@ -472,6 +472,11 @@ build`, which avoids the extras README's trap: "a source change without a rebuil
 no effect". **Unverified:** that Quartz's plugin install keeps a non-`dist` file in the
 subdirectory. If it doesn't, have a workflow rebuild `dist/` on any change to `design.yaml`.
 
+> **Settled, 23 Sep 2026 (§8 step 6, quartz-edition-extras #6).** It keeps it. Quartz
+> clones the repo and copies the whole subdirectory (`cloneWithSubdirAsync`, `fs.cpSync`),
+> and both `plugin resolve` and `plugin update` from the branch left `design.yaml` beside
+> `dist/`. No rebuild workflow was added.
+
 It emits CSS custom properties that override the ones Quartz generates from the config
 (`--light`, `--lightgray`, `--gray`, `--darkgray`, `--dark`, `--secondary`, `--tertiary`,
 `--highlight`, `--textHighlight`, and the three font variables). It also emits the `--tb-*`
