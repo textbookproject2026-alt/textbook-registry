@@ -131,7 +131,52 @@
   },
 
   "editions": null
-}
+},
+    {
+      "slug": "sandbox-test-book",
+      "status": "live",
+      "title": "Sandbox Test Book",
+      "summary": "testing the methods of building textbooks",
+      "licence": "CC-BY-SA-4.0",
+      "maintainer": {
+        "name": "Alec Gordon",
+        "github": null
+      },
+      "content": {
+        "repo": "textbookproject2026-alt/sandbox-test-book",
+        "live_branch": "main",
+        "drafts_branch": "drafts"
+      },
+      "site": {
+        "domain": "sandbox-test-book.confused4now.org",
+        "aliases": [],
+        "host": {
+          "kind": "static",
+          "provider": "cloudflare-pages",
+          "project": "sandbox-test-book",
+          "paid_by": "platform",
+          "builder": "quartz-book"
+        },
+        "legacy_origins": [],
+        "dark": null
+      },
+      "analytics": {
+        "plausible": null
+      },
+      "annotations": {
+        "hypothesis_groups": []
+      },
+      "suggest_edit": {
+        "enabled": true,
+        "counted_from": "2026-09-24"
+      },
+      "cms": {
+        "enabled": false,
+        "host": null
+      },
+      "editions": null,
+      "sandbox": true
+    }
 
   ]
 }
