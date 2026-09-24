@@ -406,6 +406,18 @@ book that wants the editor brings its own Pages project and asks for one
   `project`, which on a Publish host means a preview on `<project>.pages.dev` only
   (BOOK-ONE-TO-QUARTZ §8 step 7, amended 24 Sep 2026). The `unrecorded_book` input
   that stood in for this during step 9 is gone.
+- **The design preview gate** (§8 step 11, 24 Sep 2026). `reconcile` builds with the
+  builder at the tag **`stable`**, not at `main`'s head. `stable` moves only when `ci`
+  passes on a push to `main`, and every book then rebuilds. Before that, every pull
+  request into `main` gets a preview of each builder book's live branch, built by
+  that pull request, on the Pages branch `design-<pr>` of the book's own project
+  (`noindex`, never production), and a comment with the links. When
+  `quartz-edition-extras`' `main` moves, a bot pull request (`bump-extras`, started on
+  the 15-minute tick) moves the pin. **Rollback:** `quartz-book` → Actions →
+  `stable` → Run workflow, with the commit to go back to. That holds until the next
+  merge to `main`. **If `stable` is deleted,** `reconcile` stops at its first step and
+  no book rebuilds; run `stable` by hand with `main`'s head. The bot needs the repo
+  setting *Allow GitHub Actions to create and approve pull requests*.
 - **Its secrets**, readable only by `reconcile`'s deploy job:
   `CLOUDFLARE_API_TOKEN`, a custom API token named **`quartz-book reconcile`** in
   `brandonproject2026`, with one permission, *Account → Cloudflare Pages → Edit*,
@@ -450,8 +462,8 @@ book that wants the editor brings its own Pages project and asks for one
 |---|---|---|---|---|
 | `textbook-portal` | `brandonproject2026` | `textbook-portal` `main` + deploy hook | `confused4now.org` | platform (S4) |
 | `textbook-admin` | `brandonproject2026` | `textbook` `main`, output `admin/` | `textbook-admin.pages.dev` | book one's CMS host |
-| `social-research-methods` | `brandonproject2026` | **Direct Upload** from `quartz-book`'s `reconcile` (no Git connection). Production branch `main` | `social-research-methods.pages.dev` (book one's `main`), `drafts.social-research-methods.pages.dev` (its `drafts`, `noindex`). No custom domain until §8 step 16 | book one, paid by the platform (S7; created 24 Sep 2026, §8 step 9) |
-| `platform-test-book-2` | `brandonproject2026` | uploaded by `quartz-book`'s `reconcile` (Direct Upload) | `platform-test-book-2.pages.dev`, and `drafts.platform-test-book-2.pages.dev` (unregistered origin) | book two, `paid_by: platform` |
+| `social-research-methods` | `brandonproject2026` | **Direct Upload** from `quartz-book`'s `reconcile` (no Git connection). Production branch `main` | `social-research-methods.pages.dev` (book one's `main`), `drafts.social-research-methods.pages.dev` (its `drafts`, `noindex`), `design-<pr>.social-research-methods.pages.dev` (design previews of `main` for `quartz-book` pull requests, `noindex`, §8 step 11). No custom domain until §8 step 16 | book one, paid by the platform (S7; created 24 Sep 2026, §8 step 9) |
+| `platform-test-book-2` | `brandonproject2026` | uploaded by `quartz-book`'s `reconcile` (Direct Upload) | `platform-test-book-2.pages.dev`, and `drafts.platform-test-book-2.pages.dev` (unregistered origin), and `design-<pr>.platform-test-book-2.pages.dev` (design previews, §8 step 11) | book two, `paid_by: platform` |
 | `platform-test-book` | **confirm** (the second account) | `dept-coordinator-test/platform-test-book` `main`, Git-integrated | `platform-test-book.pages.dev` | **retired**: book two's pre-builder site. Delete once nothing points at it (MULTI-BOOK-HOSTING §2e) |
 | `textbook-edition-template` | **confirm** | `textbook-edition-template` | its `pages.dev` demo | book one's edition template |
 | `textbook-edition-template-5cm` | **confirm** — the `-5cm` suffix means the name was taken, so this is a second account | the coordinator-test fork | a test edition | a test artefact: decide whether to delete it |

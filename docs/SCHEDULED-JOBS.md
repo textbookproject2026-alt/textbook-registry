@@ -22,7 +22,7 @@ start tens of minutes late under load.
 
 | When (UTC) | Repo | Workflow | Writes |
 |---|---|---|---|
-| every 15 min | Cloudflare Worker `build-nudge` (a Cron Trigger) | dispatches `reconcile` in `quartz-book`, named `cron` | each builder book's Pages deployments, when a book or branch is behind |
+| every 15 min | Cloudflare Worker `build-nudge` (a Cron Trigger) | dispatches `reconcile` in `quartz-book`, named `cron` | each builder book's Pages deployments, when a book or branch is behind. When `quartz-edition-extras`' `main` is ahead of the pin, it also starts `bump-extras`, which opens a pull request (once per extras commit) |
 | on every push to a branch | `textbook` | `nudge` | nothing. It asks `build-nudge` to dispatch `reconcile` for the book, named `nudge` |
 | every 6 h at :17 | `textbook-registry` | `portal` | nothing. It polls the portal and redeploys if it's behind |
 | every 6 h at :41 | `textbook-registry` | `deploy` | nothing. It polls the function and redeploys if it's behind |
@@ -56,6 +56,12 @@ new book made from `textbook-template` starts with that template's four.
   normal result of every scheduled run.
 - **A `reconcile` run every 15 minutes that builds nothing.** Only its `plan` job
   runs, for a few seconds. That is the tick finding every book current.
+- **After a merge in `quartz-book`, a `stable` run, then `reconcile: stable, every
+  book` rebuilding every book.** Moving the builder commit makes every book stale,
+  on purpose (BOOK-ONE-TO-QUARTZ §4b).
+- **A skipped `extras` job in most `reconcile` runs.** It runs only on the tick. When
+  it does run, it usually finds the pin current, or finds the bot's pull request already
+  opened.
 - **A `nudge` run in a book, and then a `reconcile` run that builds nothing.** A
   push to a branch other than the live and drafts branches, or a second push
   while the first push's run was still waiting to start (coalesced).

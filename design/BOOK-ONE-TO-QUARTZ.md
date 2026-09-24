@@ -1019,6 +1019,33 @@ registry PR if it isn't.
   merging, each book's marker shows the new builder commit within one `reconcile`.
 - **Must not break:** production for any book before the merge.
 
+> **Built, 24 Sep 2026 (`quartz-book` PR #5). Live proof pending.** Where §4b left a
+> detail open, this is how it was settled:
+>
+> - **`stable` moves when `ci` passes on the push to `main`,** not at the moment of
+>   merging (`stable.yml`). It then starts `reconcile` (`woken_by: stable`, so the run
+>   is named `reconcile: stable, every book`). A `reconcile` run from `main` builds
+>   with the commit `stable` names. The commit is resolved once per run, and the
+>   marker's `builder_commit` is that commit. On its own, `stable` only moves forward.
+>   A rollback (run `stable` by hand with an older commit) holds until the next merge
+>   to `main` passes CI.
+> - **The bot is started by `reconcile`'s cron tick,** which runs on the Worker's
+>   clock, not by a GitHub `schedule:` (§0a). There is one pull request per extras
+>   commit, ever, and closing it unmerged declines that commit. All the extras plugins
+>   move together.
+> - **The preview runs on every pull request into `main`,** not only the bot's,
+>   because any builder change reaches every book (§0a, the failure table). It builds
+>   each book's live branch as a `noindex` preview (`build-book.sh --preview`) and
+>   deploys it only to `design-<pr>`.
+> - **The first bump will be a real no-op.** Extras `main` is `381b110`. The pins are
+>   `edit-on-github` at `ba88e98` and `edition-integrations` at `edc96fc`, and neither
+>   plugin changed between its pin and `381b110`. Built locally from that bump, both
+>   books are identical to their current build except for the dates in `index.xml`
+>   and `sitemap.xml`.
+> - **Not in this step:** §4c's previews on a `design.yaml` pull request in
+>   `quartz-edition-extras`, with `QA.md`. This gate previews an extras change after
+>   it merges, on the bot's pull request. No step in §8 names the extras-side preview.
+
 **12. "See the drafts" in the console.**
 - **Repo:** `authoring-assistant`.
 - **Does:** the link to the drafts preview, and the stale-preview notice from §0a, both
