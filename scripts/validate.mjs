@@ -75,6 +75,14 @@ const lc = (s) => s.toLowerCase();
 // The host is one of the shared suffixes, or a subdomain of one.
 const sharedSuffixOf = (host) => SHARED_SUFFIXES.find((s) => host === s || host.endsWith(`.${s}`));
 
+// The provider project a book deploys to, or null. A static host names its own. A
+// Publish host names one only while the builder previews it before the cutover
+// (BOOK-ONE-TO-QUARTZ §8 steps 9-16), and the builder deploys only to Cloudflare Pages.
+const projectOf = (host) =>
+  host.kind === 'static' ? { provider: host.provider, project: host.project }
+  : host.builder ? { provider: 'cloudflare-pages', project: host.project }
+  : null;
+
 function duplicates(values) {
   const seen = new Set();
   const dup = new Set();
@@ -167,6 +175,10 @@ export function validate(text, { baseText } = {}) {
   for (const r of duplicates(books.map((b) => lc(b.content.repo)))) errors.push(`duplicate content.repo: ${r}`);
   for (const h of duplicates(books.map((b) => b.cms.host).filter(Boolean))) errors.push(`duplicate cms.host: ${h}`);
 
+  // One project serves one site: a second book deploying to it would replace the first.
+  const projects = books.map((b) => projectOf(b.site.host)).filter(Boolean);
+  for (const p of duplicates(projects.map((p) => `${p.project} on ${p.provider}`))) errors.push(`duplicate site.host.project: ${p}`);
+
   const domains = books.map((b) => b.site.domain).filter(Boolean);
   for (const d of duplicates(domains)) errors.push(`duplicate site.domain: ${d}`);
 
@@ -200,7 +212,7 @@ export function validate(text, { baseText } = {}) {
     // One Pages (or Netlify) project serves one site, so the portal's cannot also be a
     // book's: whichever was bound second would have taken the other's hostname.
     for (const b of books)
-      if (b.site.host.kind === 'static' && b.site.host.provider === portal.host.provider && b.site.host.project === portal.host.project)
+      if (projectOf(b.site.host)?.provider === portal.host.provider && b.site.host.project === portal.host.project)
         errors.push(`platform.portal.host.project ${portal.host.project} on ${portal.host.provider} is also ${b.slug}'s site.host.project; one project serves one site`);
 
     // <slug>.<book_parent> is covered by Universal SSL; <a>.<b>.<book_parent> is not (§2a).

@@ -769,6 +769,22 @@ registry PR if it isn't.
 > runs `git ls-remote` with no credentials on both branches, which is how the builder reads
 > them. No committed book has the field until step 17.
 
+> **Amended, 24 Sep 2026 (textbook-registry, `registry/builder-on-publish-host`).** The
+> gap step 9 found is closed in the schema, not in the Worker. An `obsidian-publish` host
+> may now carry `builder` too, and when it does it must also carry `project`, the
+> Cloudflare Pages project the builder deploys to. On a Publish host, `builder` means
+> **build a preview**: the builder builds the book and deploys it to
+> `<project>.pages.dev`, and readers are still served by Publish at `site.domain`, which
+> stays the book's only address. Book one's entry names `builder: "quartz-book"` and
+> `project: "social-research-methods"` from this PR, so steps 10-16 rebuild it with no
+> extra input. Nothing that treats `site.domain` as the address changes: the
+> suggest-edit function matches origins on `site.domain` alone, the portal links
+> `site.domain`, and the console decides "published from the folder" by `site.host.kind`,
+> which stays `obsidian-publish` until step 17. Each was run against the old and new
+> `registry.json` and gave the same answer. The validator now also refuses two books
+> on one provider project, and counts a Publish book's preview project as a Cloudflare
+> Pages one when checking the portal's.
+
 **8. The builder.**
 - **Repo:** `quartz-book` (new, D1).
 - **Does:** Quartz v5 checkout, the shared `quartz.config.yaml` (graph on, SPA off), the
@@ -884,6 +900,12 @@ registry PR if it isn't.
 > in the Worker, or the registry records `builder` (and the project) on book one
 > before its host kind changes, which amends step 7's schema. The second keeps the
 > registry the one source the builder trusts, and is the recommendation.
+>
+> **Decided, 24 Sep 2026: the registry records it.** Step 7's schema is amended (see the
+> note there), book one's entry names the builder and its project, and `quartz-book`
+> removes `unrecorded_book` (PR `reconcile/drop-unrecorded-book`). A `reconcile` run with
+> no input now plans book one from the registry. Steps 10, 12, 15 and 16 need no
+> workaround, and step 17 shrinks to switching the host kind.
 
 **10. The Worker: the nudge and the 15-minute tick.**
 - **Repos:** `build-nudge` (new, a Cloudflare Worker in `brandonproject2026`), then
@@ -893,7 +915,9 @@ registry PR if it isn't.
   takes nudges. Its `scheduled` handler, on a Cron Trigger `*/15 * * * *` in the Worker's
   config, dispatches `reconcile` for every book with `woken_by: cron`. A second PR adds
   `.github/workflows/nudge.yml` to book one. A third adds the daily `builder-alive`
-  workflow to the registry (§0a).
+  workflow to the registry (§0a). The Worker passes only `slug` and `woken_by`: book
+  one is on the builder in the registry (step 7, amended 24 Sep), so no slug or project
+  is written into the Worker.
 - **Proves it:** a push to book one's `drafts` starts `reconcile` within a minute, named
   `nudge`. With no push, a run named `cron` starts every 15 minutes. A token minted in an
   unregistered repo gets 403 and dispatches nothing. A replayed token is coalesced.
@@ -916,7 +940,10 @@ registry PR if it isn't.
 **12. "See the drafts" in the console.**
 - **Repo:** `authoring-assistant`.
 - **Does:** the link to the drafts preview, and the stale-preview notice from §0a, both
-  from the public marker.
+  from the public marker. The preview's address is
+  `drafts.<site.host.project>.pages.dev`, read from the registry, which names book one's
+  project while it is still on Publish (step 7, amended 24 Sep). "Going live" keeps its
+  Publish wording while the host kind is `obsidian-publish`.
 - **Proves it:** after a "Send to drafts" to book one, the console shows "building", then the
   link once the marker reaches the commit. With `reconcile` disabled, the notice appears
   after 10 minutes.
@@ -949,8 +976,9 @@ registry PR if it isn't.
 **15. The proof run.**
 - **Repo:** `textbook-registry` (this document gains a *Proof run* section recording results).
   No code.
-- **Does:** everything that must be seen or recorded before anything live moves. In a
-  browser on `pages.dev`: every §1a row, print, mobile, the Hypothes.is sidebar and badge,
+- **Does:** everything that must be seen or recorded before anything live moves, on the
+  builds `reconcile` made by itself from the registry (no run by hand, no extra input).
+  In a browser on `pages.dev`: every §1a row, print, mobile, the Hypothes.is sidebar and badge,
   the tag helper, and Plausible recording nothing. Every redirect in both spellings: if
   Pages doesn't match `+` and `%20` literally, add a zone Redirect Rule here instead. A
   link check of the built output. **Rehearse the custom-domain binding** on
@@ -970,7 +998,9 @@ registry PR if it isn't.
 - **Does:** in Pages, add `social-research-methods.confused4now.org` to the project, and
   change the CNAME from `publish-main.obsidian.md` to `social-research-methods.pages.dev`.
   **Don't touch Publish's custom-domain setting.**
-- **Proves it:** the live hostname serves the marker for `main`'s head. A Plausible pageview
+- **Proves it:** the live hostname serves the marker for `main`'s head, built by
+  `reconcile` on its own, since book one has been on the builder in the registry since
+  step 7's amendment. A Plausible pageview
   arrives from the live domain. A honeypot POST from the live origin gets the honeypot
   answer. Every redirect answers 301. The step 15 test annotation re-anchors. The CMS, the
   console and the portal work as before.
@@ -980,11 +1010,19 @@ registry PR if it isn't.
 
 **17. Record the host.**
 - **Repo:** `textbook-registry`.
-- **Does:** book one's `site.host` becomes `{"kind":"static","provider":"cloudflare-pages",
-  "project":"social-research-methods","paid_by":"platform","builder":"quartz-book"}`,
-  dropping `site_id` and `publish_host`.
+- **Does:** switches book one's host kind. `builder` and `project` are already there
+  (step 7, amended 24 Sep), so the change is `kind` to `static`, `provider:
+  "cloudflare-pages"` and `paid_by: "platform"` in, and `site_id` and `publish_host`
+  out: `{"kind":"static","provider":"cloudflare-pages","project":"social-research-methods",
+  "paid_by":"platform","builder":"quartz-book"}`. There is no builder input left to
+  delete; `unrecorded_book` went on 24 Sep.
 - **Proves it:** validation and parity are green, and the function serves the merge commit.
-- **Must not break:** nothing: no consumer reads `site.host` beyond validation and parity.
+  Book one's `registry_digest` changes, so `reconcile` rebuilds both branches once, and
+  the live marker then names the new digest.
+- **Must not break:** the builder, which reads only `builder` and `project`. The console,
+  which reads `site.host.kind`: from here it stops treating book one as published from
+  the folder, which is what step 2 kept the old wording behind the kind for. No other
+  consumer reads `site.host` beyond validation and parity.
 
 **18. Clean up book one, apart from the Publish files.**
 - **Repo:** `textbook`.
@@ -1067,7 +1105,8 @@ registry PR if it isn't.
 
 **The one setting:** point the CNAME back at `publish-main.obsidian.md`, proxied. It takes
 effect in seconds at Cloudflare's edge, because Publish's custom domain never changed. Then
-revert step 17 for the record. **Content drift:** Publish serves what was last uploaded, so
+revert step 17 for the record. The reverted host is a Publish host that still names the
+builder and its project, so the builder carries on deploying previews to `pages.dev`. **Content drift:** Publish serves what was last uploaded, so
 anything merged to `main` since the cutover is missing until the technical contact
 republishes from an up-to-date vault. That is why the Publish files stay until step 20.
 

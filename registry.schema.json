@@ -200,8 +200,17 @@
                     "kind": { "const": "obsidian-publish" },
                     "site_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
                     "publish_host": { "$ref": "#/$defs/hostname" },
-                    "paid_by": { "$ref": "#/$defs/paid_by" }
-                  }
+                    "paid_by": { "$ref": "#/$defs/paid_by" },
+                    "builder": {
+                      "enum": ["quartz-book"],
+                      "description": "Before a Publish book's cutover (BOOK-ONE-TO-QUARTZ §8 steps 9-16): the builder builds the book and deploys it to the Cloudflare Pages project named by project, as a preview only. Readers are still served by Publish at site.domain, and site.domain stays the book's only address. Absent means the builder leaves the book alone. A builder book's content repo must be readable anonymously, which check-github.mjs enforces."
+                    },
+                    "project": {
+                      "$ref": "#/$defs/project_name",
+                      "description": "With builder only: the Cloudflare Pages project the builder deploys this book's preview to (<project>.pages.dev). Not where readers are served, and not an accepted origin. At the cutover the host becomes static and keeps this project."
+                    }
+                  },
+                  "dependentRequired": { "builder": ["project"], "project": ["builder"] }
                 },
                 {
                   "type": "object",

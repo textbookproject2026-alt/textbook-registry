@@ -45,7 +45,9 @@
         "host": {
           "kind": "obsidian-publish",
           "site_id": "1443b409a84e491249da35fdd4b91de6",
-          "publish_host": "publish-01.obsidian.md"
+          "publish_host": "publish-01.obsidian.md",
+          "builder": "quartz-book",
+          "project": "social-research-methods"
         },
         "legacy_origins": ["https://bptext2026.xyz"]
       },
