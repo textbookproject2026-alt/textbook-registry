@@ -838,6 +838,53 @@ registry PR if it isn't.
   suggest-edit form answers 403 on `pages.dev`, which is correct: that origin isn't
   registered.
 
+> **Built and proved, 24 Sep 2026 (`quartz-book`, `builder/step-9-reconcile`).** The
+> live proofs, all run by hand with `unrecorded_book`:
+> - **First run:** both branches built and deployed. `main` served book commit
+>   `c76f9a7`, `drafts` served `1b80418`, and the `drafts` preview answered
+>   `X-Robots-Tag: noindex`.
+> - **Second run, nothing changed:** the plan job ran alone; nothing was rebuilt.
+> - **Broken build** (`proof/step-9-broken-build`, `8f1350a`): the run went red, both
+>   deploy jobs were skipped, and the site kept serving builder `7aa4e7f`. After the
+>   revert, both branches rebuilt.
+> - **Registry change** (PR #19, book one's `suggest_edit.counted_from`, which no code
+>   reads): `registry_digest` went from `sha256:dc001e26…` to `sha256:4a30e168…` and
+>   book one rebuilt. After the revert (PR #20) it returned to `sha256:dc001e26…`.
+>
+> A blank secret surfaced only as a wrangler error deep in the deploy log, which cost
+> time during the proof. With `quartz-book` PR #3, the deploy job checks both secrets
+> first and names any that is missing. `reconcile.yml` compares and fans out;
+> `reconcile-book.yml` holds the build job (no secrets) and the deploy job (the token)
+> for one book and branch, and the `concurrency` group sits on the job that calls it,
+> so it covers both. Choices the step left open:
+> - **Book one before step 17: a temporary `unrecorded_book` input.** `reconcile`
+>   builds only entries with `site.host.builder`, and book one can't have it until step
+>   17. The input names one book to build in addition, with its Pages project named
+>   after its slug. It is a workflow input, not a list committed in `quartz-book`, so
+>   the registry stays the only record of which books the builder owns, and each use
+>   is visible in the run name and as a warning. Once book one's entry names the
+>   builder, the input is refused, and step 17 deletes it.
+> - The pair's own job checks the marker again before building, because a run that
+>   waited in the concurrency group may find the work done. It builds with the
+>   registry it decided on.
+> - **Only a run from `main` deploys.** A run from another branch builds and stops,
+>   which is how a broken builder commit can be tried without touching a book.
+> - After deploying, the job checks that Pages serves the new marker, and that a
+>   preview answers `X-Robots-Tag: noindex`. A marker that doesn't name exactly this
+>   builder and book commit fails the build, since it would never compare as current.
+> - The Quartz plugin cache is restore-only in `reconcile`; `ci.yml` saves it. Nothing
+>   written after book content is read is kept for a later build.
+> - The token expires on 24 Sep 2027 (INFRASTRUCTURE §7).
+>
+> **Open, for step 10 (decide before it starts).** The input covers step 9's runs by
+> hand, but not the automatic ones. Steps 10, 12, 15 and 16 all expect book one to
+> rebuild on its own (a nudge from its `drafts`, the `cron` tick, the console's "See
+> the drafts", the cutover's marker for `main`'s head), and each of those comes before
+> step 17. Either the Worker passes `unrecorded_book` until step 17, which puts a slug
+> in the Worker, or the registry records `builder` (and the project) on book one
+> before its host kind changes, which amends step 7's schema. The second keeps the
+> registry the one source the builder trusts, and is the recommendation.
+
 **10. The Worker: the nudge and the 15-minute tick.**
 - **Repos:** `build-nudge` (new, a Cloudflare Worker in `brandonproject2026`), then
   `textbook`, then `textbook-registry`.
