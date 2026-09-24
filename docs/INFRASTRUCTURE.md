@@ -386,9 +386,11 @@ book that wants the editor brings its own Pages project and asks for one
   `/.well-known/textbook.json` is behind. It runs **only by hand** until the
   `build-nudge` Worker (§8 step 10) starts it: `quartz-book` → Actions →
   `reconcile` → Run workflow, branch `main`, `slug` empty for every book. Only a
-  run from `main` deploys. **Until §8 step 17, book one isn't on the builder in the
-  registry**, so a run must also give `unrecorded_book: social-research-methods`;
-  step 17 removes that input.
+  run from `main` deploys. Book one is on the builder in the registry although
+  Publish still serves its readers: its `obsidian-publish` host names `builder` and
+  `project`, which on a Publish host means a preview on `<project>.pages.dev` only
+  (BOOK-ONE-TO-QUARTZ §8 step 7, amended 24 Sep 2026). The `unrecorded_book` input
+  that stood in for this during step 9 is gone.
 - **Its secrets**, readable only by `reconcile`'s deploy job:
   `CLOUDFLARE_API_TOKEN`, a custom API token named **`quartz-book reconcile`** in
   `brandonproject2026`, with one permission, *Account → Cloudflare Pages → Edit*,
