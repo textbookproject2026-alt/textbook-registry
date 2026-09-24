@@ -44,7 +44,7 @@ These are the services every book uses. Each one bakes in or reads
 | Slug | Status | Content repo (owner) | Site | Host | Paid by |
 |---|---|---|---|---|---|
 | `social-research-methods` | `live` | `textbookproject2026-alt/textbook` | <https://social-research-methods.confused4now.org> | Obsidian Publish, site `1443b409…` | not recorded (`paid_by` absent) — **confirm at handover** |
-| `platform-test-book` | `preview` | `dept-coordinator-test/platform-test-book` | <https://platform-test-book.pages.dev> | Cloudflare Pages `platform-test-book` (Quartz) | `platform` |
+| `platform-test-book` | `preview` | `dept-coordinator-test/platform-test-book` | <https://platform-test-book-2.pages.dev> | Cloudflare Pages `platform-test-book-2` (Direct Upload, built by `quartz-book`; the old Git-integrated `platform-test-book` is retired, §8 step 21) | `platform` |
 
 The registry is the source of truth for everything in this table. If it and this
 table disagree, the registry wins, and this table needs correcting.
@@ -451,7 +451,8 @@ book that wants the editor brings its own Pages project and asks for one
 | `textbook-portal` | `brandonproject2026` | `textbook-portal` `main` + deploy hook | `confused4now.org` | platform (S4) |
 | `textbook-admin` | `brandonproject2026` | `textbook` `main`, output `admin/` | `textbook-admin.pages.dev` | book one's CMS host |
 | `social-research-methods` | `brandonproject2026` | **Direct Upload** from `quartz-book`'s `reconcile` (no Git connection). Production branch `main` | `social-research-methods.pages.dev` (book one's `main`), `drafts.social-research-methods.pages.dev` (its `drafts`, `noindex`). No custom domain until §8 step 16 | book one, paid by the platform (S7; created 24 Sep 2026, §8 step 9) |
-| `platform-test-book` | **confirm** | `dept-coordinator-test/platform-test-book` `main` | `platform-test-book.pages.dev` (also builds `drafts.` previews, which are unregistered origins) | book two, `paid_by: platform` |
+| `platform-test-book-2` | `brandonproject2026` | uploaded by `quartz-book`'s `reconcile` (Direct Upload) | `platform-test-book-2.pages.dev`, and `drafts.platform-test-book-2.pages.dev` (unregistered origin) | book two, `paid_by: platform` |
+| `platform-test-book` | **confirm** (the second account) | `dept-coordinator-test/platform-test-book` `main`, Git-integrated | `platform-test-book.pages.dev` | **retired**: book two's pre-builder site. Delete once nothing points at it (MULTI-BOOK-HOSTING §2e) |
 | `textbook-edition-template` | **confirm** | `textbook-edition-template` | its `pages.dev` demo | book one's edition template |
 | `textbook-edition-template-5cm` | **confirm** — the `-5cm` suffix means the name was taken, so this is a second account | the coordinator-test fork | a test edition | a test artefact: decide whether to delete it |
 
