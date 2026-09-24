@@ -417,7 +417,10 @@ book that wants the editor brings its own Pages project and asks for one
   `stable` → Run workflow, with the commit to go back to. That holds until the next
   merge to `main`. **If `stable` is deleted,** `reconcile` stops at its first step and
   no book rebuilds; run `stable` by hand with `main`'s head. The bot needs the repo
-  setting *Allow GitHub Actions to create and approve pull requests*.
+  setting *Allow GitHub Actions to create and approve pull requests*. `main` is
+  protected (since 24 Sep 2026): pull requests only, the `build` check required,
+  admins included. A bot pull request's own `ci` run waits for approval
+  on the pull request before `build` counts.
 - **Its secrets**, readable only by `reconcile`'s deploy job:
   `CLOUDFLARE_API_TOKEN`, a custom API token named **`quartz-book reconcile`** in
   `brandonproject2026`, with one permission, *Account → Cloudflare Pages → Edit*,

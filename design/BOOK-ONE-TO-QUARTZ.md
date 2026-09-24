@@ -1037,14 +1037,44 @@ registry PR if it isn't.
 >   because any builder change reaches every book (§0a, the failure table). It builds
 >   each book's live branch as a `noindex` preview (`build-book.sh --preview`) and
 >   deploys it only to `design-<pr>`.
-> - **The first bump will be a real no-op.** Extras `main` is `381b110`. The pins are
->   `edit-on-github` at `ba88e98` and `edition-integrations` at `edc96fc`, and neither
->   plugin changed between its pin and `381b110`. Built locally from that bump, both
->   books are identical to their current build except for the dates in `index.xml`
->   and `sitemap.xml`.
 > - **Not in this step:** §4c's previews on a `design.yaml` pull request in
 >   `quartz-edition-extras`, with `QA.md`. This gate previews an extras change after
 >   it merges, on the bot's pull request. No step in §8 names the extras-side preview.
+>
+> **After the merge, 24 Sep 2026 (times UTC).**
+>
+> - **PR #5's own merge never moved `stable`.** `e217293` merged at 15:36 and `ci`
+>   passed, but `stable.yml`'s tag push got a GitHub 500 (`remote rejected … Internal
+>   Server Error`, request `400A:32DE10:16ECCA:1E1F10:6AB543D1`). The tag stayed
+>   where it was, and nothing reported it. A failed `stable` run is the only sign.
+> - **Two commits then went straight to `main`, and `stable` carried them to every
+>   book without a design preview.** Another session pushed `83ad987` ("pin
+>   edit-on-github to the in-site editor", 16:04) and `7d066e1` ("Graph: bump
+>   textbook-graph…", 16:13). `ci` passed on each push, `stable` moved to each, and
+>   `reconcile: stable, every book` rebuilt every book at 16:06 and at 16:14–16:16.
+>   All four sites (both books, `main` and `drafts`) now serve builder `7d066e1`.
+>   `83ad987` moved `edit-on-github` from `ba88e98` to `78ad69f` (the in-site
+>   editor). `7d066e1` moved `textbook-graph` from `a8c3531` to `5a0982b` and changed
+>   the graph settings in `quartz.config.yaml`.
+> - **`quartz-book`'s `main` is now protected:** it requires a pull request (no
+>   approvals needed) and the `build` check from GitHub Actions, and admins are
+>   included. Nothing in steps 8–11 pushes to `main`. `stable.yml` pushes only
+>   the tag, and the bot pushes only `bot/extras-*` branches.
+> - **The bot did open its pull requests.** Both were started by `reconcile`'s cron
+>   tick within 15 s: #6 (extras `a8c3531`, 15:46) and #7 (extras `5a0982b`, 16:16).
+>   The "first bump is `381b110`, a no-op" expected at the merge was overtaken, because
+>   extras moved first. #6 is stale: it would put `edit-on-github` back from `78ad69f`
+>   to `a8c3531` and conflicts with `main`. #7 is a no-op in files, because the direct
+>   commits had already moved the pins that mattered. No plugin directory changes
+>   between its from and to commits, but it is a real pin move and a real builder
+>   commit.
+> - **A pull request the bot opens now starts its `pull_request` workflows, held for
+>   approval** (`action_required`). The comment in `bump-extras.yml` says they don't
+>   start at all. The `build` check from the bot's dispatched `ci` run passes but
+>   doesn't count on the pull request, so #7 shows `BLOCKED` under the new protection.
+>   Approving the held runs is part of the live proof.
+> - **The bot doesn't close the bot pull requests it supersedes.** An older one merged
+>   after a newer one would move the pins backwards.
 
 **12. "See the drafts" in the console.**
 - **Repo:** `authoring-assistant`.
