@@ -929,6 +929,41 @@ registry PR if it isn't.
 - **Must not break:** book one's other workflows. `nudge.yml` asks for `id-token: write` and
   nothing else, and holds no secret.
 
+> **Built, 24 Sep 2026; live proof pending** (`build-nudge` PR #1, `textbook`
+> `ci/nudge`, textbook-registry `registry/build-nudge-step-10`). Choices the step
+> left open:
+> - **Which repositories pass the filter:** the books `reconcile` builds, which are
+>   those with `site.host.builder` that aren't retired. Any other repository gets
+>   403. `nudge.yml` runs on every branch and names none: the Worker takes the live
+>   and drafts branches from the registry, and answers a push to any other branch
+>   with 200 and no dispatch. Tags don't run it.
+> - **Coalescing joins a run only while it hasn't started.** Once `reconcile`'s plan
+>   job starts, it may already have read the branch heads, so it can't stand in for
+>   a later push. For 10 seconds after a dispatch, the Worker's memory is enough.
+>   From 10 to 30 seconds, it coalesces only while GitHub lists a
+>   `reconcile: nudge, <slug>` run as queued. The Worker keeps no storage: the Cache
+>   API does nothing on `workers.dev`, and KV would be one more resource with
+>   eventually consistent reads.
+> - **`GET /` reports the serving version's ID, whether its token works, and the
+>   token's expiry** (GitHub sends it as a header). This is how to tell that a
+>   secret reached the serving version, the failure that took the relay down.
+>   `builder-alive` reads it too, and warns 30 days before the expiry. It also warns
+>   when the latest finished `cron` run failed. Only the missing `cron` runs make it
+>   red.
+> - **Deployed by hand with `wrangler`**, from the platform owner's Mac. Deploying
+>   from Actions would put a Worker-edit Cloudflare credential in GitHub, and the
+>   Worker changes rarely.
+> - **A refused nudge makes a red `nudge` run in the book.** The book still rebuilds
+>   on the tick. A red run is the only sign a maintainer would see.
+> - **`nudge.yml` has to be on `drafts` as well as `main`,** because a push runs the
+>   workflow file of the pushed commit. Bringing `drafts` up to date with `main`
+>   after the PR merges is also the proof's push.
+> - The proof that removes the Cron Trigger for an hour removes it from the real
+>   Worker. `builder-alive` watches that Worker, so a separate test Worker couldn't
+>   turn it red.
+> - The token expires on 24 Sep 2027, the same day as the Cloudflare token.
+>   INFRASTRUCTURE now lists every credential that expires.
+
 **11. The design preview gate.**
 - **Repo:** `quartz-book`.
 - **Does:** §4b. A bot PR bumps the extras pin, CI deploys every builder book to a

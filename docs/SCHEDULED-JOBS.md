@@ -22,9 +22,12 @@ start tens of minutes late under load.
 
 | When (UTC) | Repo | Workflow | Writes |
 |---|---|---|---|
+| every 15 min | Cloudflare Worker `build-nudge` (a Cron Trigger) | dispatches `reconcile` in `quartz-book`, named `cron` | each builder book's Pages deployments, when a book or branch is behind |
+| on every push to a branch | `textbook` | `nudge` | nothing. It asks `build-nudge` to dispatch `reconcile` for the book, named `nudge` |
 | every 6 h at :17 | `textbook-registry` | `portal` | nothing. It polls the portal and redeploys if it's behind |
 | every 6 h at :41 | `textbook-registry` | `deploy` | nothing. It polls the function and redeploys if it's behind |
 | daily 06:17 | `textbook-registry` | `parity` | nothing. It compares the registry with the constants left in other repos |
+| daily 07:29 | `textbook-registry` | `builder-alive` | nothing. It checks that a `cron` run of `reconcile` started in the last hour |
 | Sun 03:00 | `textbook` | `backup-annotations` | the `backups` branch |
 | Sun 03:00 | `textbook`, `textbook-template` | `weekly-snapshot` | a `snapshot-YYYY-MM-DD` tag on `main`, if `main` changed since the last one. Skipped in the template repo itself |
 | Sun 07:00 | `textbook` | `contributors` | `community/contributors.md`, by auto-merged PR |
@@ -51,6 +54,11 @@ new book made from `textbook-template` starts with that template's four.
   count.
 - **`deploy`/`portal` saying "Already current; nothing to deploy."** That is the
   normal result of every scheduled run.
+- **A `reconcile` run every 15 minutes that builds nothing.** Only its `plan` job
+  runs, for a few seconds. That is the tick finding every book current.
+- **A `nudge` run in a book, and then a `reconcile` run that builds nothing.** A
+  push to a branch other than the live and drafts branches, or a second push
+  while the first push's run was still waiting to start (coalesced).
 
 ### A real failure looks like one of these
 
@@ -65,7 +73,7 @@ new book made from `textbook-template` starts with that template's four.
 
 ## Part 1 — the registry (`textbook-registry`)
 
-These four are the platform's own jobs. A red one here can affect every book.
+These five are the platform's own jobs. A red one here can affect every book.
 
 ### `validate` (push and PR)
 
@@ -137,6 +145,43 @@ another repo. It is temporary, and is deleted when nothing un-retired is left.
   change. Merge the source repo's change and re-run.
 - **It runs daily for a reason.** The constants live in other repos and can
   drift with nothing pushed here.
+
+### `builder-alive` (daily 07:29)
+
+Added 24 Sep 2026 (BOOK-ONE-TO-QUARTZ §8 step 10). It asks the Actions API for
+`quartz-book`'s `reconcile` runs from the last hour, and fails unless one is
+named `reconcile: cron, …`. Nudged and hand runs don't count, because they can't
+show that the 15-minute tick is alive. It then reads the Worker's status page
+(`https://build-nudge.brandonproject2026.workers.dev/`) for two warnings.
+
+| Result | Meaning | Do |
+|---|---|---|
+| green | the Worker's Cron Trigger dispatched within the hour | nothing |
+| red, "No reconcile run named "cron"" | **nothing rebuilds on its own.** The Worker is gone or failing, its Cron Trigger was removed, or its token expired or was revoked. Every book keeps serving its last deployment | run `reconcile` by hand now (below), then open the Worker's status page: `"token"` other than `"works"` means replace the token; no answer means redeploy the Worker (`build-nudge` README) |
+| warning, "token expires on …" | the Worker's token lapses within 30 days | renew it (INFRASTRUCTURE.md §7) |
+| warning, "ended "failure"" | the Worker is fine, but a book's build is failing | read the red `reconcile` run in `quartz-book` |
+| warning, "didn't answer" alone | the status page didn't answer, but cron runs are arriving | look again tomorrow |
+
+**Running `reconcile` by hand**, while the Worker is down: `quartz-book` → Actions
+→ `reconcile` → Run workflow, branch `main`, `slug` empty. It is as correct as any
+other run, because it compares state. Run it again after each change until the
+Worker is back.
+
+**A book's nudge**, checked by hand when you look over these jobs: `quartz-book` → Actions →
+`reconcile`. A book that had pushes in the last 7 days but no
+`reconcile: nudge, <slug>` run has lost its `nudge.yml` or has Actions off. It
+still rebuilds on the tick, up to 15 minutes late.
+
+**Latency, measured:** *to be recorded from the step 10 live proof.* Nudge path: push →
+`reconcile` started, and push → marker updated. Tick path: Cron time →
+`reconcile` started.
+
+### Dates to act on
+
+| When | What | Where |
+|---|---|---|
+| by **24 Aug 2027** | renew the Cloudflare token `quartz-book reconcile` (expires 24 Sep 2027) | INFRASTRUCTURE.md §7 |
+| by **24 Aug 2027** | renew the GitHub token `build-nudge dispatch` (expires 24 Sep 2027). `builder-alive` also warns from 25 Aug | INFRASTRUCTURE.md §7, `build-nudge` README |
 
 ---
 
@@ -257,6 +302,21 @@ filenames. Don't switch it back to the action.
 ### `lint`
 
 markdownlint on pushes to `main` and on every PR. `docs/**` is ignored.
+
+### `nudge` (every push to a branch)
+
+Sends the job's GitHub OIDC token to the `build-nudge` Worker, which dispatches
+`reconcile` for the book (Part 1, `builder-alive`). It holds no secret and asks for
+`id-token: write` only. **It must be on every branch whose pushes should rebuild
+quickly**, because a push runs the workflow file on the pushed branch: on `main`
+and on `drafts`.
+
+- **Green:** the Worker answered. The log shows `"dispatched": true`, or
+  `false` with the reason (not a built branch, or coalesced).
+- **Red, 403:** the registry doesn't list this repository as a book on the
+  builder. **Red, 502:** the Worker couldn't dispatch, usually its token. Either
+  way the book still rebuilds on the 15-minute tick, and `builder-alive` catches
+  a Worker problem.
 
 ### `stats.yml`
 

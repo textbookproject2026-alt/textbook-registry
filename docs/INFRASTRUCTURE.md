@@ -37,7 +37,7 @@ These are the services every book uses. Each one bakes in or reads
 | S4 | **Portal** (`textbook-portal`) | Cloudflare Pages, project `textbook-portal`, on `confused4now.org` | generated at build | The front page is gone. Old book-one links keep redirecting, because the redirect rule is in the zone, not in Pages |
 | S5 | **Authoring Assistant** (author's console) | each author's Mac, a signed app | fetched at launch, cached copy as fallback | Authors can't work through their queues from the app. Books and sites are unaffected |
 | S6 | **Edition extras** (`quartz-edition-extras`) | GitHub, installed by department-edition builds | named in `platform.edition_extras_repo` | Every department edition's next build fails |
-| S7 | **The builder** (`quartz-book`) | GitHub Actions. Its `reconcile` workflow builds each book and uploads it to the book's Pages project in `brandonproject2026` (Direct Upload) | fetched from `main` at every build | No book rebuilds. Each keeps serving its last deployment. Nothing a reader sees is served from it until the cutover, BOOK-ONE-TO-QUARTZ §8 step 16 (added 23 Sep 2026, §8 step 8; deploys from 24 Sep, step 9) |
+| S7 | **The builder** (`quartz-book`), **started by the `build-nudge` Worker** | GitHub Actions. Its `reconcile` workflow builds each book and uploads it to the book's Pages project in `brandonproject2026` (Direct Upload). The Cloudflare Worker `build-nudge` in the same account starts `reconcile`: on each book's pushes, and every 15 minutes | `quartz-book`: fetched from `main` at every build. `build-nudge`: fetched at most every 5 minutes, only to filter nudges | `quartz-book` gone: no book rebuilds, and each keeps serving its last deployment. `build-nudge` gone: nothing rebuilds **on its own**, but `reconcile` still runs by hand. Nothing a reader sees is served from it until the cutover, BOOK-ONE-TO-QUARTZ §8 step 16 (added 23 Sep 2026, §8 step 8; deploys from 24 Sep, step 9; the Worker from 24 Sep, step 10) |
 
 ### The books
 
@@ -49,6 +49,20 @@ These are the services every book uses. Each one bakes in or reads
 The registry is the source of truth for everything in this table. If it and this
 table disagree, the registry wins, and this table needs correcting.
 
+### Credentials that expire
+
+Every credential with an expiry date is listed here, with what stops when it
+lapses. Renew a month early. `docs/SCHEDULED-JOBS.md` ("Dates to act on") has the
+same dates as reminders. Add a row whenever a step creates an expiring credential.
+
+| Credential | Expires | Kept in | When it lapses |
+|---|---|---|---|
+| Cloudflare API token `quartz-book reconcile` (§7) | **24 Sep 2027** | `quartz-book` secret `CLOUDFLARE_API_TOKEN` | `reconcile` builds but can't deploy: every run goes red, and every book keeps serving its last deployment |
+| GitHub fine-grained token `build-nudge dispatch` (§7) | **24 Sep 2027** | `build-nudge` Worker secret `DISPATCH_TOKEN` | the Worker can't start `reconcile`: nothing rebuilds on its own (no nudges, no 15-minute tick). `builder-alive` goes red within a day. `reconcile` still works by hand |
+| `PARITY_READ_TOKEN` (fine-grained, SCHEDULED-JOBS Part 1) | **not recorded — confirm** | registry secret | parity goes red every day |
+| `BOT_TOKEN` (§2d) | **not recorded — confirm** | Vercel | only the fallback for suggestions to a repo the App isn't installed on (§2e); nothing once the fallback is deleted |
+| `HYPOTHESIS_API_TOKEN` (§9) | **not recorded — confirm** whether it expires | `textbook` secret | book one's Sunday annotation backup and dashboard fail |
+
 Book two is a throwaway test book (`MULTI-BOOK-HOSTING.md` §6). It is meant to be
 retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE.md)).
 
@@ -56,10 +70,10 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 
 | Account | Kind | Holds | Who holds the login |
 |---|---|---|---|
-| `textbookproject2026-alt` | GitHub user | Nine platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c) | the platform owner |
+| `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), and the fine-grained token `build-nudge dispatch` (§7) | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
 | `aldogobot` | GitHub user (machine) | the fallback `BOT_TOKEN` (§2d) | **confirm at handover** |
-| `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), and the API token `quartz-book` deploys with | the platform owner (confirmed on their word, 20 Sep) |
+| `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep) |
 | a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | **confirm at handover** |
 | Vercel | Vercel | the suggest-edit function (S2) | **confirm at handover** |
 | Plausible | Plausible | one *site* per book or edition that has analytics | **confirm at handover** |
@@ -82,6 +96,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `authoring-assistant` | **private** | S5. Cloned over HTTPS, not over the SSH alias | platform |
 | `quartz-edition-extras` | public | S6: the `edition-integrations` and `edit-on-github` Quartz plugins | platform |
 | `quartz-book` | public | S7: the shared builder. Quartz v5, the one shared `quartz.config.yaml`, `build-book.sh`, the extras pinned in `quartz.lock.json`, and the `reconcile` workflow that deploys. Secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (§7) | platform |
+| `build-nudge` | public | S7's trigger: the `build-nudge` Cloudflare Worker. Deployed by hand with `wrangler`, so the repo holds no credential (§7) | platform |
 | `sveltia-cms-auth` | public | the relay's source (S3). A copy of upstream `sveltia/sveltia-cms-auth` that hardcodes scope `repo,user` | platform |
 | `textbook-template` | public | the starting point for a new book (`SETUP.md`, `scripts/new-book.mjs`) | platform |
 | `textbook` | public | **book one's** content repo, its weekly workflows and its maintainer docs | book one |
@@ -383,8 +398,8 @@ book that wants the editor brings its own Pages project and asks for one
 - **`reconcile`** (§8 step 9, 24 Sep 2026) is the workflow that builds and deploys.
   It builds each book whose registry entry has `site.host.builder: "quartz-book"`,
   on its live and drafts branches, when the marker Pages serves at
-  `/.well-known/textbook.json` is behind. It runs **only by hand** until the
-  `build-nudge` Worker (§8 step 10) starts it: `quartz-book` → Actions →
+  `/.well-known/textbook.json` is behind. The `build-nudge` Worker starts it
+  (below). By hand, whenever the Worker is down: `quartz-book` → Actions →
   `reconcile` → Run workflow, branch `main`, `slug` empty for every book. Only a
   run from `main` deploys. Book one is on the builder in the registry although
   Publish still serves its readers: its `obsidian-publish` host names `builder` and
@@ -400,6 +415,32 @@ book that wants the editor brings its own Pages project and asks for one
   ID, which is not a secret, but is kept beside the token. Delete, rename or
   privatise `quartz-book`, or let the token lapse, and no book rebuilds; each keeps
   serving its last deployment.
+- **`build-nudge`** (added 24 Sep 2026, BOOK-ONE-TO-QUARTZ §8 step 10) is a
+  Cloudflare Worker in `brandonproject2026`, at
+  `https://build-nudge.brandonproject2026.workers.dev`. Source: the `build-nudge`
+  repo, deployed by hand with `wrangler` from the platform owner's Mac (its
+  README). It starts `reconcile` two ways. **The nudge:** each builder book's
+  `.github/workflows/nudge.yml` POSTs a GitHub OIDC token on every push. The Worker
+  checks it against GitHub's public keys, and that its repository is a book on
+  the builder in the registry, then dispatches `reconcile` for that book
+  (`woken_by: nudge`). **The tick:** a Cron Trigger, `*/15 * * * *`, dispatches
+  `reconcile` for every book (`woken_by: cron`). There is no GitHub `schedule:`
+  anywhere in this path, because GitHub turns schedules off in a quiet public
+  repo. The address is rendered into every book's `nudge.yml` as the token
+  audience, so **it must not move**. `GET` on it reports the serving version and
+  whether its token works.
+- **Its one secret**, `DISPATCH_TOKEN`: a fine-grained personal access token of
+  `textbookproject2026-alt` named **`build-nudge dispatch`**, on `quartz-book`
+  only, with *Actions: Read and write* (and the *Metadata: Read* every token
+  has). It can start, re-run and cancel `quartz-book`'s workflows, and nothing
+  else. It can't read or write code. **It expires on 24 Sep 2027**: renew it a
+  month before. Set it only with `npx wrangler versions secret put DISPATCH_TOKEN`
+  and then deploy the version that makes (README, "Changing the token"). A secret
+  set in the dashboard can attach to a version that isn't serving, which is how
+  the relay (§3) was once down for an hour with correct-looking settings.
+  **When it lapses, or the Worker is gone,** nothing rebuilds on its own. Books
+  keep serving their last deployment, `reconcile` still works by hand, and
+  `builder-alive` in this repo goes red within a day (SCHEDULED-JOBS Part 1).
 
 ---
 
@@ -446,7 +487,7 @@ rebuild publishes a dead link.
 | S4 portal | generated at build | on the deploy that `portal.yml` triggers | `portal.yml` (`/version.txt`) |
 | S3 relay | **not at all** | when someone edits `ALLOWED_DOMAINS` by hand | nothing |
 | S5 console | fetched at launch | the author's next launch | nothing |
-| The builder (S7) | fetched from `main` at every build | the book's next `reconcile`. Until §8 step 10, that is the next run by hand | the build marker's `registry_digest` (`/.well-known/textbook.json`) |
+| The builder (S7) | fetched from `main` at every build | the book's next `reconcile`: the Worker's 15-minute tick, at the latest | the build marker's `registry_digest` (`/.well-known/textbook.json`) |
 | A book's Actions (backup, dashboard) | fetched at job start | the next scheduled run | the job fails if the registry can't be read, or the book is retired |
 | A book's rendered files (`publish.js`, `admin/config.yml`, README…) | `configure.mjs` | a PR touching the config, **or** the weekly Monday `apply-config` run (book one and the template). Book one's title, maintainer, licence and `site_url` come from its own `textbook.config.json`, so a change to those also needs an edit there; parity flags the mismatch | parity (book one), nothing for a book without the weekly run (book two has none) |
 | A Publish book's **live** `publish.js` | the maintainer's Publish dialog | when the maintainer next publishes | nothing. This is why platform endpoints never move |

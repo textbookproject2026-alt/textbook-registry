@@ -1,0 +1,33 @@
+# Checks, from outside, that the build-nudge Worker is still starting builds
+# (BOOK-ONE-TO-QUARTZ §0a, §8 step 10). A Worker that stops dispatching leaves no
+# red run anywhere, only silence, so this goes red when no `reconcile` run named
+# `cron` has started in quartz-book in the last hour. It also warns a month
+# before the Worker's token expires.
+#
+# It lives here, beside the registry's other scheduled jobs, so the "scheduled
+# workflows disabled" check in docs/SCHEDULED-JOBS.md covers it too.
+name: builder-alive
+
+on:
+  schedule:
+    - cron: '29 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  builder-alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      # quartz-book is public. The built-in token is only for the rate limit.
+      - name: Look for a cron-started reconcile run in the last hour
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/builder-alive.mjs
