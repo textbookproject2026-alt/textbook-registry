@@ -1107,6 +1107,26 @@ registry PR if it isn't.
   after 10 minutes.
 - **Must not break:** "Going live".
 
+> **Built, 24 Sep 2026 (`authoring-assistant` PR #8). Live proof pending.** Where the
+> step left something open, this is how it was settled:
+> - **The address uses the drafts branch's alias, not a literal `drafts.`**, named as
+>   `quartz-book`'s `branchAlias` names it, on `site.host.project`. It is offered only
+>   when the entry has both `builder` and `project`. That holds for book one now, and
+>   for book two.
+> - **"How long" comes from the drafts head's committer time**, not from when the
+>   console saw the head. Nothing is stored, so restarting the app doesn't reset the
+>   10 minutes. A commit made through the API, the app's or the CMS's, is timed when
+>   it's made. A `git push` of an older commit can raise the notice early. A head
+>   with no readable time never raises it.
+> - **A marker counts only if it names this book and its drafts branch.** Otherwise
+>   the preview is treated as not built.
+> - **Where it shows:** a "The drafts preview" block in the console, and a line on the
+>   screen after "Send to drafts". The page asks again every 20 s while the preview is
+>   building, every 60 s while it is stale or unknown, and stops when the screen
+>   changes. When it is stale, the link is still offered, labelled as the earlier
+>   version, or not offered if nothing was ever built.
+> - "Going live" is unchanged. Its wording still follows `site.host.kind`.
+
 **13. Parity learns host kinds.**
 - **Repo:** `textbook-registry`.
 - **Does:** the four `reading-site.*` checks read the registry and the
