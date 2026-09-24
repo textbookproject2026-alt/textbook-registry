@@ -24,7 +24,7 @@ against the running service that day. Everything else comes from the repositorie
 
 ## At a glance
 
-### The six shared services
+### The seven shared services
 
 These are the services every book uses. Each one bakes in or reads
 `registry.json`, and none of them has any book hardcoded.
@@ -37,6 +37,7 @@ These are the services every book uses. Each one bakes in or reads
 | S4 | **Portal** (`textbook-portal`) | Cloudflare Pages, project `textbook-portal`, on `confused4now.org` | generated at build | The front page is gone. Old book-one links keep redirecting, because the redirect rule is in the zone, not in Pages |
 | S5 | **Authoring Assistant** (author's console) | each author's Mac, a signed app | fetched at launch, cached copy as fallback | Authors can't work through their queues from the app. Books and sites are unaffected |
 | S6 | **Edition extras** (`quartz-edition-extras`) | GitHub, installed by department-edition builds | named in `platform.edition_extras_repo` | Every department edition's next build fails |
+| S7 | **The builder** (`quartz-book`) | GitHub. It builds; it deploys nothing until BOOK-ONE-TO-QUARTZ §8 step 9 | fetched from `main` at every build | No book can be built. Nothing is served from it yet (added 23 Sep 2026, §8 step 8) |
 
 ### The books
 
@@ -80,6 +81,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `textbook-portal` | public | S4 | platform |
 | `authoring-assistant` | **private** | S5. Cloned over HTTPS, not over the SSH alias | platform |
 | `quartz-edition-extras` | public | S6: the `edition-integrations` and `edit-on-github` Quartz plugins | platform |
+| `quartz-book` | public | S7: the shared builder. Quartz v5, the one shared `quartz.config.yaml`, `build-book.sh`, and the extras pinned in `quartz.lock.json` | platform |
 | `sveltia-cms-auth` | public | the relay's source (S3). A copy of upstream `sveltia/sveltia-cms-auth` that hardcodes scope `repo,user` | platform |
 | `textbook-template` | public | the starting point for a new book (`SETUP.md`, `scripts/new-book.mjs`) | platform |
 | `textbook` | public | **book one's** content repo, its weekly workflows and its maintainer docs | book one |
@@ -358,7 +360,7 @@ book that wants the editor brings its own Pages project and asks for one
 
 ---
 
-## 7. S6 — edition extras, and the edition template
+## 7. S6 and S7 — edition extras, the builder, and the edition template
 
 - **`quartz-edition-extras`** (`platform.edition_extras_repo`) holds the two
   Quartz plugins every department edition installs **at build time**, pinned by
@@ -373,6 +375,15 @@ book that wants the editor brings its own Pages project and asks for one
   forks, because `gen-derivatives.mjs` finds them through the forks API.
 - Each department edition is a Pages project in the **coordinator's own**
   Cloudflare account. Editions are outside the platform, and aren't listed here.
+- **`quartz-book`** (S7, added 23 Sep 2026 by BOOK-ONE-TO-QUARTZ §8 step 8) builds
+  every platform book with one copy of Quartz, from the book's own repository and
+  its registry entry. It pins the extras plugins in its own `quartz.lock.json`, so
+  books take an extras change only when that pin moves. **It must stay public**:
+  the plan's exit path is that anyone can build a book with it. Today it only
+  builds, in CI. It holds **no secret**: the Cloudflare token and the `reconcile`
+  workflow arrive at §8 step 9, and the `build-nudge` Worker at step 10. Delete,
+  rename or privatise it after step 9, and no book rebuilds; each keeps serving its
+  last deployment.
 
 ---
 
@@ -418,6 +429,7 @@ rebuild publishes a dead link.
 | S4 portal | generated at build | on the deploy that `portal.yml` triggers | `portal.yml` (`/version.txt`) |
 | S3 relay | **not at all** | when someone edits `ALLOWED_DOMAINS` by hand | nothing |
 | S5 console | fetched at launch | the author's next launch | nothing |
+| The builder (S7) | fetched from `main` at every build | the book's next build. Nothing starts builds until §8 step 9's `reconcile` | the build marker's `registry_digest` (`/.well-known/textbook.json`) |
 | A book's Actions (backup, dashboard) | fetched at job start | the next scheduled run | the job fails if the registry can't be read, or the book is retired |
 | A book's rendered files (`publish.js`, `admin/config.yml`, README…) | `configure.mjs` | a PR touching the config, **or** the weekly Monday `apply-config` run (book one and the template). Book one's title, maintainer, licence and `site_url` come from its own `textbook.config.json`, so a change to those also needs an edit there; parity flags the mismatch | parity (book one), nothing for a book without the weekly run (book two has none) |
 | A Publish book's **live** `publish.js` | the maintainer's Publish dialog | when the maintainer next publishes | nothing. This is why platform endpoints never move |
