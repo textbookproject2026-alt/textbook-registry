@@ -172,16 +172,24 @@ Worker is back.
 `reconcile: nudge, <slug>` run has lost its `nudge.yml` or has Actions off. It
 still rebuilds on the tick, up to 15 minutes late.
 
-**Latency, measured:** *to be recorded from the step 10 live proof.* Nudge path: push →
-`reconcile` started, and push → marker updated. Tick path: Cron time →
-`reconcile` started.
+**Latency, measured** (24 Sep 2026, the step 10 live proof):
+
+| Path | Measured | Runs |
+|---|---|---|
+| Nudge, push → `reconcile` started | **9 s**, both times: `main` pushed 12:35:56, run 12:36:05; `drafts` pushed 12:45:52, run 12:46:01 | `nudge` 36000070939 and its `drafts` run; `reconcile` 36000081378, 36001144292 |
+| Nudge, push → new marker served | **1 min 30 s**: `drafts` pushed 12:45:52; the deploy job confirmed `drafts.social-research-methods.pages.dev` serving `e7145120` at 12:47:22 | `reconcile` 36001144292 |
+| Tick, Cron time → `reconcile` started | **2-3 s**: 12:30:03, 12:45:02, 13:00:03 | `reconcile` 35999438082, 36001034740, 36002687607 |
+
+So a push is on the preview in about a minute and a half, plus build time for a
+bigger book. A missed nudge costs at most 15 minutes more. The tick isn't delayed
+the way GitHub's `schedule:` runs are.
 
 ### Dates to act on
 
 | When | What | Where |
 |---|---|---|
 | by **24 Aug 2027** | renew the Cloudflare token `quartz-book reconcile` (expires 24 Sep 2027) | INFRASTRUCTURE.md §7 |
-| by **24 Aug 2027** | renew the GitHub token `build-nudge dispatch` (expires 24 Sep 2027). `builder-alive` also warns from 25 Aug | INFRASTRUCTURE.md §7, `build-nudge` README |
+| by **23 Aug 2027** | renew the GitHub token `build-nudge dispatch` (expires 23 Sep 2027, 22:00 UTC). `builder-alive` also warns from 24 Aug | INFRASTRUCTURE.md §7, `build-nudge` README |
 
 ---
 

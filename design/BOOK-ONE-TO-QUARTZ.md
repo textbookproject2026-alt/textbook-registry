@@ -929,9 +929,9 @@ registry PR if it isn't.
 - **Must not break:** book one's other workflows. `nudge.yml` asks for `id-token: write` and
   nothing else, and holds no secret.
 
-> **Built, 24 Sep 2026; live proof pending** (`build-nudge` PR #1, `textbook`
-> `ci/nudge`, textbook-registry `registry/build-nudge-step-10`). Choices the step
-> left open:
+> **Built, 24 Sep 2026** (`build-nudge` PR #1, `textbook` PR #43, textbook-registry
+> PR #23). **Proven live the same day, except the Cron Trigger removal, which is
+> still to run** (below). Choices the step left open:
 > - **Which repositories pass the filter:** the books `reconcile` builds, which are
 >   those with `site.host.builder` that aren't retired. Any other repository gets
 >   403. `nudge.yml` runs on every branch and names none: the Worker takes the live
@@ -961,8 +961,47 @@ registry PR if it isn't.
 > - The proof that removes the Cron Trigger for an hour removes it from the real
 >   Worker. `builder-alive` watches that Worker, so a separate test Worker couldn't
 >   turn it red.
-> - The token expires on 24 Sep 2027, the same day as the Cloudflare token.
->   INFRASTRUCTURE now lists every credential that expires.
+> - The token expires on **23 Sep 2027**, 22:00 UTC. That's the date GitHub set,
+>   a day before the one entered. The Worker's status page reports it as
+>   `token_expires`, read from GitHub's own header. INFRASTRUCTURE now lists every
+>   credential that expires.
+>
+> **Live proof, 24 Sep 2026:**
+> - **A push starts `reconcile` within a minute, named `nudge`.** Merging `textbook`
+>   PR #43 pushed to `main` at 12:35:56, and `reconcile: nudge,
+>   social-research-methods` started at 12:36:05. Bringing `drafts` up to date with
+>   `main` pushed at 12:45:52, and its run started at 12:46:01. That run deployed
+>   `e7145120` to the drafts preview and confirmed the new marker at 12:47:22.
+> - **With no push, a `cron` run starts every 15 minutes:** 12:30:03, 12:45:02,
+>   13:00:03, each 2-3 s after the Cron time.
+> - **A token from an unregistered repository gets 403 and dispatches nothing.** A
+>   throwaway branch of `build-nudge` asked GitHub for a token with the Worker's
+>   audience and POSTed it (`build-nudge` Actions run 36000492313). Answer: 403,
+>   "textbookproject2026-alt/build-nudge is not the repository of a book on the
+>   builder in the registry". No `reconcile` run started.
+> - **A replayed nudge is coalesced, if it isn't simultaneous.** `nudge.yml` masks
+>   its token, so the replay was a re-run of book one's `nudge` jobs, which
+>   presents the same push again. Two re-runs 3 s apart: the first dispatched, and
+>   the second was answered "Coalesced: this book's nudged run hasn't started
+>   yet." Two re-runs **in the same second both dispatched**
+>   (`reconcile` 36002308094 and 36002308525). Neither could see the other: the
+>   in-memory check is per isolate and only set after the dispatch, and neither
+>   run was listed yet. That's accepted: the cost is one duplicate run that finds
+>   nothing to do (they took 17 and 18 s), which is what the design already allows for a
+>   forged or replayed nudge.
+> - **`builder-alive` is green** (registry Actions run 36000435373): it found the
+>   12:30 `cron` run, and the Worker reported its token works, with no warnings.
+> - **Running `reconcile` by hand doesn't need the Worker or its token,** so
+>   revoking the token wasn't run as a proof. Every one of the day's ten by-hand
+>   runs (10:20 to 11:45) was started from the Actions tab by
+>   `textbookproject2026-alt`, before the Worker's first deployment at 12:22:45,
+>   when `DISPATCH_TOKEN` didn't exist yet. The successful ones built and
+>   deployed both branches (for example 35988143260, 35989353978, 35994878472).
+> - **Still to run: the Cron Trigger removed for over an hour.** Remove it with
+>   `wrangler triggers deploy`, which changes triggers without making a Worker
+>   version, so the serving version keeps `DISPATCH_TOKEN`. Check that
+>   `builder-alive` goes red, then restore the trigger and check that it goes green.
+>   The latencies are in `docs/SCHEDULED-JOBS.md`.
 
 **11. The design preview gate.**
 - **Repo:** `quartz-book`.
