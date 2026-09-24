@@ -435,8 +435,7 @@ book that wants the editor brings its own Pages project and asks for one
   (`Iv23liqLqj5WU1m0PaNa`, the Client ID) and the secret `BOT_APP_PRIVATE_KEY` (a
   private key generated on the App's page, set 24 Sep 2026 17:26 UTC). Only
   `bump-extras` reads them. The key doesn't expire. Revoke it on the App's page
-  and generate a new one if it leaks. The App ID is **not recorded**: confirm it
-  on the App's settings page. **If it's gone** (App deleted or uninstalled, key
+  and generate a new one if it leaks. **App ID** 5063586. **If it's gone** (App deleted or uninstalled, key
   revoked), `bump-extras` fails at the token step. Unset the variable and the bot
   falls back to `GITHUB_TOKEN`.
 - **Its secrets**, readable only by `reconcile`'s deploy job:
