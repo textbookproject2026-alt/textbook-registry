@@ -99,15 +99,16 @@
   },
 
   "site": {
-    "domain": "platform-test-book.pages.dev",
+    "domain": "platform-test-book-2.pages.dev",
     "aliases": [],
     "host": {
       "kind": "static",
       "provider": "cloudflare-pages",
-      "project": "platform-test-book",
-      "paid_by": "platform"
+      "project": "platform-test-book-2",
+      "paid_by": "platform",
+      "builder": "quartz-book"
     },
-    "legacy_origins": [],
+    "legacy_origins": ["https://platform-test-book.pages.dev"],
     "dark": null
   },
 
