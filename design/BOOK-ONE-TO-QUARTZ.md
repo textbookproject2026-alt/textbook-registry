@@ -930,8 +930,7 @@ registry PR if it isn't.
   nothing else, and holds no secret.
 
 > **Built, 24 Sep 2026** (`build-nudge` PR #1, `textbook` PR #43, textbook-registry
-> PR #23). **Proven live the same day, except the last half of the Cron Trigger
-> removal: restoring the trigger and seeing `builder-alive` green again** (below). Choices the step left open:
+> PR #23). **Proven live the same day** (below). Choices the step left open:
 > - **Which repositories pass the filter:** the books `reconcile` builds, which are
 >   those with `site.host.builder` that aren't retired. Any other repository gets
 >   403. `nudge.yml` runs on every branch and names none: the Worker takes the live
@@ -1003,10 +1002,14 @@ registry PR if it isn't.
 >   `cron` run was 13:15:04 (`reconcile` 36004368098). `builder-alive` went red at
 >   14:31 and again at 14:33 (registry Actions runs 36013458023, 36013618329). Each
 >   found no `cron` run in the hour before, and each reported the token works. So it's the missing tick that turns it red, not the token.
-> - **Still to run: restore the trigger and see `builder-alive` green.** Deploy the
->   trigger in `wrangler.jsonc` again (`npx wrangler triggers deploy` in
->   `build-nudge`), wait for the next `cron` run, then run `builder-alive` by hand.
->   The latencies are in `docs/SCHEDULED-JOBS.md`.
+> - **With the trigger restored, `builder-alive` is green again.** The trigger in
+>   `wrangler.jsonc` was deployed again with `npx wrangler triggers deploy`, and the
+>   next `cron` run started at 14:45:42 (`reconcile` 36015135401). That first tick came
+>   42 s after the Cron time, not 2-3 s. `builder-alive` went green at 14:51 (registry
+>   Actions run 36015866318): it found that run, and version `5af4ed7b` reported its
+>   token works, expiring 23 Sep 2027, 22:00 UTC.
+>
+> The latencies are in `docs/SCHEDULED-JOBS.md`.
 
 **11. The design preview gate.**
 - **Repo:** `quartz-book`.
