@@ -838,8 +838,22 @@ registry PR if it isn't.
   suggest-edit form answers 403 on `pages.dev`, which is correct: that origin isn't
   registered.
 
-> **Built, 24 Sep 2026 (`quartz-book`, `builder/step-9-reconcile`). Live proof pending**
-> until the Pages project and the secrets exist. `reconcile.yml` compares and fans out;
+> **Built and proved, 24 Sep 2026 (`quartz-book`, `builder/step-9-reconcile`).** The
+> live proofs, all run by hand with `unrecorded_book`:
+> - **First run:** both branches built and deployed. `main` served book commit
+>   `c76f9a7`, `drafts` served `1b80418`, and the `drafts` preview answered
+>   `X-Robots-Tag: noindex`.
+> - **Second run, nothing changed:** the plan job ran alone; nothing was rebuilt.
+> - **Broken build** (`proof/step-9-broken-build`, `8f1350a`): the run went red, both
+>   deploy jobs were skipped, and the site kept serving builder `7aa4e7f`. After the
+>   revert, both branches rebuilt.
+> - **Registry change** (PR #19, book one's `suggest_edit.counted_from`, which no code
+>   reads): `registry_digest` went from `sha256:dc001e26…` to `sha256:4a30e168…` and
+>   book one rebuilt. After the revert (PR #20) it returned to `sha256:dc001e26…`.
+>
+> A blank secret surfaced only as a wrangler error deep in the deploy log, which cost
+> time during the proof. With `quartz-book` PR #3, the deploy job checks both secrets
+> first and names any that is missing. `reconcile.yml` compares and fans out;
 > `reconcile-book.yml` holds the build job (no secrets) and the deploy job (the token)
 > for one book and branch, and the `concurrency` group sits on the job that calls it,
 > so it covers both. Choices the step left open:
