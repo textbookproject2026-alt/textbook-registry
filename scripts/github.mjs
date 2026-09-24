@@ -76,3 +76,10 @@ export async function getFile(fullName, path, sha) {
   });
   return res.text();
 }
+
+/** A workflow's runs, newest first. `query` is the API's own filters (event, created…). */
+export async function listWorkflowRuns(fullName, workflow, query = {}) {
+  const qs = new URLSearchParams({ per_page: '100', ...query });
+  const res = await request(`/repos/${fullName}/actions/workflows/${encodeURIComponent(workflow)}/runs?${qs}`);
+  return (await res.json()).workflow_runs ?? [];
+}
