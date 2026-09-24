@@ -149,6 +149,10 @@
       "properties": {
         "slug": { "$ref": "#/$defs/slug" },
         "status": { "enum": ["preview", "live", "retired"] },
+        "sandbox": {
+          "type": "boolean",
+          "description": "A throwaway test book (book-requests' provision workflow, 'sandbox: true' in the request). Unlike every other book, its slug may be removed from the registry outright, by the remove workflow or by hand; validate.mjs allows dropping a slug only when the base entry had sandbox: true. Absent means false. Never set it on a book readers use: removal releases the slug and hostname for reuse, which is exactly what the permanence rule exists to prevent."
+        },
 
         "title": { "type": "string", "minLength": 1, "maxLength": 200 },
         "summary": { "type": "string", "minLength": 1, "maxLength": 300 },

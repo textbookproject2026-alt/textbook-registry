@@ -76,6 +76,33 @@ page for these yet, so send them in the PR thread:
 
 ---
 
+## Adding a book from a request (automated)
+
+Since 24 Sep 2026 the portal carries a **Publish your textbook here** form. It
+files a request in the private `textbookproject2026-alt/book-requests` repo (the
+requester's email and manuscript stay there, never here). Approving the request,
+by adding the `approved` label, runs that repo's `provision` workflow, which does
+every step in the table above itself, in dependency order: the content repo
+(platform-held, public, `main` + `drafts`), the App installation, the Pages
+project, the custom domain and DNS for `<slug>.confused4now.org`, then this
+registry's pull request, merged once `validate` is green, then a `reconcile` of
+the book. The entry goes in as `live` unless the request says otherwise, because
+only `live` books feed the portal's key-word graph, recent changes and topics.
+The procedure and its secrets are in `book-requests/README.md`.
+
+The approval is the review. The pull request is still opened, so the record the
+rules above ask for still exists.
+
+### Sandbox books
+
+An entry with `"sandbox": true` is a throwaway test. It is the one exception to
+slug permanence: `validate.mjs` lets a slug leave the registry when the base entry
+had `sandbox: true`. book-requests' `remove` workflow takes one out completely:
+registry entry, Pages project, DNS record, App installation and repository. Never
+set it on a book readers use.
+
+---
+
 ## Retiring a book that is finished (voluntary)
 
 This is the ordinary case, and **book two's is next**. It has no `removal`

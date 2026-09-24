@@ -235,7 +235,8 @@ export function validate(text, { baseText } = {}) {
     let base;
     try { base = JSON.parse(baseText); } catch { base = null; }
     // A base that doesn't parse (or predates the registry) has no slugs to protect.
-    const before = Array.isArray(base?.books) ? base.books.map((b) => b.slug) : [];
+    // A sandbox book (a throwaway test) is the one exception: it may leave outright.
+    const before = Array.isArray(base?.books) ? base.books.filter((b) => b?.sandbox !== true).map((b) => b.slug) : [];
     const after = new Set(books.map((b) => b.slug));
     for (const s of before)
       if (!after.has(s)) errors.push(`slug ${s} was removed or renamed; slugs are permanent (set status: retired instead)`);

@@ -170,6 +170,27 @@ test('removing a slug relative to the base fails', () => {
   assert.ok(errors.some((e) => e.includes('slug social-research-methods was removed or renamed')), errors.join('\n'));
 });
 
+test('removing a sandbox book relative to the base is fine', () => {
+  const base = real();
+  const b = secondBook(base);
+  b.sandbox = true;
+  assert.deepEqual(validate(REAL, { baseText: JSON.stringify(base) }), []);
+});
+
+test('removing a book that was not a sandbox in the base still fails', () => {
+  const base = real();
+  secondBook(base);
+  const after = real();
+  const errors = validate(JSON.stringify(after), { baseText: JSON.stringify(base) });
+  assert.ok(errors.some((e) => e.includes('slug second-book was removed')), errors.join('\n'));
+});
+
+test('sandbox must be a boolean', () => {
+  const r = real();
+  book(r).sandbox = 'yes';
+  assert.ok(validate(JSON.stringify(r)).some((e) => e.includes('sandbox')));
+});
+
 test('adding a book relative to the base is fine', () => {
   const r = real();
   secondBook(r);
