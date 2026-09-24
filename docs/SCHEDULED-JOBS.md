@@ -188,7 +188,7 @@ the way GitHub's `schedule:` runs are.
 
 | When | What | Where |
 |---|---|---|
-| by **24 Aug 2027** | renew the Cloudflare token `quartz-book reconcile` (expires 24 Sep 2027) | INFRASTRUCTURE.md §7 |
+| by **24 Aug 2027** | renew the Cloudflare token `quartz-book reconcile` (expires 25 Sep 2027, as the dashboard shows it in CEST) | INFRASTRUCTURE.md §7 |
 | by **23 Aug 2027** | renew the GitHub token `build-nudge dispatch` (expires 23 Sep 2027, 22:00 UTC). `builder-alive` also warns from 24 Aug | INFRASTRUCTURE.md §7, `build-nudge` README |
 
 ---

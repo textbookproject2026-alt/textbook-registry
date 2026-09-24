@@ -57,7 +57,7 @@ same dates as reminders. Add a row whenever a step creates an expiring credentia
 
 | Credential | Expires | Kept in | When it lapses |
 |---|---|---|---|
-| Cloudflare API token `quartz-book reconcile` (§7) | **24 Sep 2027** | `quartz-book` secret `CLOUDFLARE_API_TOKEN` | `reconcile` builds but can't deploy: every run goes red, and every book keeps serving its last deployment |
+| Cloudflare API token `quartz-book reconcile` (§7) | **25 Sep 2027**, as the Cloudflare dashboard shows it in CEST (a day after the date recorded before) | `quartz-book` secret `CLOUDFLARE_API_TOKEN` | `reconcile` builds but can't deploy: every run goes red, and every book keeps serving its last deployment |
 | GitHub fine-grained token `build-nudge dispatch` (§7) | **23 Sep 2027**, 22:00 UTC (the date GitHub set, a day before the one entered) | `build-nudge` Worker secret `DISPATCH_TOKEN` | the Worker can't start `reconcile`: nothing rebuilds on its own (no nudges, no 15-minute tick). `builder-alive` goes red within a day. `reconcile` still works by hand |
 | `PARITY_READ_TOKEN` (fine-grained, SCHEDULED-JOBS Part 1) | **not recorded — confirm** | registry secret | parity goes red every day |
 | `BOT_TOKEN` (§2d) | **not recorded — confirm** | Vercel | only the fallback for suggestions to a repo the App isn't installed on (§2e); nothing once the fallback is deleted |
@@ -410,8 +410,8 @@ book that wants the editor brings its own Pages project and asks for one
   `CLOUDFLARE_API_TOKEN`, a custom API token named **`quartz-book reconcile`** in
   `brandonproject2026`, with one permission, *Account → Cloudflare Pages → Edit*,
   on that account only. It can redeploy **every** book, which is why no book repo
-  may hold it (BOOK-ONE-TO-QUARTZ §0a). **It expires on 24 Sep 2027**: renew it a
-  month before, and replace the secret. `CLOUDFLARE_ACCOUNT_ID` is the account's
+  may hold it (BOOK-ONE-TO-QUARTZ §0a). **It expires on 25 Sep 2027** (the
+  Cloudflare dashboard's date, in CEST): renew it a month before, and replace the secret. `CLOUDFLARE_ACCOUNT_ID` is the account's
   ID, which is not a secret, but is kept beside the token. Delete, rename or
   privatise `quartz-book`, or let the token lapse, and no book rebuilds; each keeps
   serving its last deployment.

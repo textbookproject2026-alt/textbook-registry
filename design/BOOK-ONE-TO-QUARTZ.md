@@ -890,7 +890,7 @@ registry PR if it isn't.
 >   builder and book commit fails the build, since it would never compare as current.
 > - The Quartz plugin cache is restore-only in `reconcile`; `ci.yml` saves it. Nothing
 >   written after book content is read is kept for a later build.
-> - The token expires on 24 Sep 2027 (INFRASTRUCTURE §7).
+> - The token expires on 25 Sep 2027 (INFRASTRUCTURE §7).
 >
 > **Open, for step 10 (decide before it starts).** The input covers step 9's runs by
 > hand, but not the automatic ones. Steps 10, 12, 15 and 16 all expect book one to
@@ -930,8 +930,8 @@ registry PR if it isn't.
   nothing else, and holds no secret.
 
 > **Built, 24 Sep 2026** (`build-nudge` PR #1, `textbook` PR #43, textbook-registry
-> PR #23). **Proven live the same day, except the Cron Trigger removal, which is
-> still to run** (below). Choices the step left open:
+> PR #23). **Proven live the same day, except the last half of the Cron Trigger
+> removal: restoring the trigger and seeing `builder-alive` green again** (below). Choices the step left open:
 > - **Which repositories pass the filter:** the books `reconcile` builds, which are
 >   those with `site.host.builder` that aren't retired. Any other repository gets
 >   403. `nudge.yml` runs on every branch and names none: the Worker takes the live
@@ -997,10 +997,15 @@ registry PR if it isn't.
 >   `textbookproject2026-alt`, before the Worker's first deployment at 12:22:45,
 >   when `DISPATCH_TOKEN` didn't exist yet. The successful ones built and
 >   deployed both branches (for example 35988143260, 35989353978, 35994878472).
-> - **Still to run: the Cron Trigger removed for over an hour.** Remove it with
->   `wrangler triggers deploy`, which changes triggers without making a Worker
->   version, so the serving version keeps `DISPATCH_TOKEN`. Check that
->   `builder-alive` goes red, then restore the trigger and check that it goes green.
+> - **With the Cron Trigger removed for over an hour, `builder-alive` goes red.** The
+>   trigger was removed with `wrangler triggers deploy`, which makes no Worker
+>   version, so version `5af4ed7b` kept serving with `DISPATCH_TOKEN`. The last
+>   `cron` run was 13:15:04 (`reconcile` 36004368098). `builder-alive` went red at
+>   14:31 and again at 14:33 (registry Actions runs 36013458023, 36013618329). Each
+>   found no `cron` run in the hour before, and each reported the token works. So it's the missing tick that turns it red, not the token.
+> - **Still to run: restore the trigger and see `builder-alive` green.** Deploy the
+>   trigger in `wrangler.jsonc` again (`npx wrangler triggers deploy` in
+>   `build-nudge`), wait for the next `cron` run, then run `builder-alive` by hand.
 >   The latencies are in `docs/SCHEDULED-JOBS.md`.
 
 **11. The design preview gate.**
