@@ -1019,7 +1019,9 @@ registry PR if it isn't.
   merging, each book's marker shows the new builder commit within one `reconcile`.
 - **Must not break:** production for any book before the merge.
 
-> **Built, 24 Sep 2026 (`quartz-book` PR #5). Live proof pending.** Where §4b left a
+> **Built, 24 Sep 2026 (`quartz-book` PR #5). Proved live the same day, with a person
+> approving the bot's held runs. The App path (`quartz-book` #8) is still to prove.**
+> Where §4b left a
 > detail open, this is how it was settled:
 >
 > - **`stable` moves when `ci` passes on the push to `main`,** not at the moment of
@@ -1075,6 +1077,23 @@ registry PR if it isn't.
 >   Approving the held runs is part of the live proof.
 > - **The bot doesn't close the bot pull requests it supersedes.** An older one merged
 >   after a newer one would move the pins backwards.
+>
+> **The live proof, 24 Sep 2026 (UTC).**
+>
+> - **#7's held `pull_request` runs were approved by hand at 17:04.** `build` then
+>   counted on it, and a person merged it at 17:06 (`df122e1`). The bot didn't merge
+>   it: no workflow merges, and the repo has auto-merge off.
+> - **`ci` passed on the push, and `stable` moved to `df122e1` at 17:08** (run
+>   `36032190936`). Nothing went wrong with the tag this time.
+> - **One `reconcile` rebuilt every site.** Run `36032210513`, `reconcile: stable,
+>   every book` (17:08–17:10), built and deployed all four (`social-research-methods`
+>   and `platform-test-book`, `main` and `drafts`), then fired the portal's deploy
+>   hook. All four now serve builder `df122e1`.
+> - **#6 was closed by hand at 17:22,** as superseded by #7.
+> - **What's left:** a bot pull request with no approval step. `quartz-book` #8 opens
+>   bot pull requests as the GitHub App `quartz-book-bot` (INFRASTRUCTURE §7), whose
+>   `pull_request` runs aren't held. Its proof is the first bot pull request after #8
+>   merges.
 
 **12. "See the drafts" in the console.**
 - **Repo:** `authoring-assistant`.

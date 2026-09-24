@@ -70,7 +70,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 
 | Account | Kind | Holds | Who holds the login |
 |---|---|---|---|
-| `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), and the fine-grained token `build-nudge dispatch` (§7) | the platform owner |
+| `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), and the fine-grained token `build-nudge dispatch` (§7) | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
 | `aldogobot` | GitHub user (machine) | the fallback `BOT_TOKEN` (§2d) | **confirm at handover** |
 | `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep) |
@@ -419,8 +419,26 @@ book that wants the editor brings its own Pages project and asks for one
   no book rebuilds; run `stable` by hand with `main`'s head. The bot needs the repo
   setting *Allow GitHub Actions to create and approve pull requests*. `main` is
   protected (since 24 Sep 2026): pull requests only, the `build` check required,
-  admins included. A bot pull request's own `ci` run waits for approval
-  on the pull request before `build` counts.
+  no approvals required, admins included. The bot opens its pull requests as the
+  App `quartz-book-bot` (below), so their `ci` runs start at once and `build`
+  counts. Without the App, it falls back to `GITHUB_TOKEN`, and a person must
+  approve each bot pull request's held runs first. **The bot never merges:** no
+  workflow merges or turns on auto-merge, and the repo's *Allow auto-merge* is off.
+  A person merges every bot pull request. That rests on the workflows, not on a
+  rule. With no approvals required, a token with *Contents: write* could merge a
+  bot pull request once `build` passes.
+- **The GitHub App `quartz-book-bot`** (added 24 Sep 2026, `quartz-book` #8). It is
+  private and owned by `textbookproject2026-alt`, with no webhook. Its repository
+  permissions are *Contents* and *Pull requests* read and write (Metadata read),
+  and it is installed on `quartz-book` only. It is not the suggest-edit App (§2c),
+  which stays issues-only. `quartz-book` holds the variable `BOT_APP_CLIENT_ID`
+  (`Iv23liqLqj5WU1m0PaNa`, the Client ID) and the secret `BOT_APP_PRIVATE_KEY` (a
+  private key generated on the App's page, set 24 Sep 2026 17:26 UTC). Only
+  `bump-extras` reads them. The key doesn't expire. Revoke it on the App's page
+  and generate a new one if it leaks. The App ID is **not recorded**: confirm it
+  on the App's settings page. **If it's gone** (App deleted or uninstalled, key
+  revoked), `bump-extras` fails at the token step. Unset the variable and the bot
+  falls back to `GITHUB_TOKEN`.
 - **Its secrets**, readable only by `reconcile`'s deploy job:
   `CLOUDFLARE_API_TOKEN`, a custom API token named **`quartz-book reconcile`** in
   `brandonproject2026`, with one permission, *Account → Cloudflare Pages → Edit*,
@@ -518,6 +536,7 @@ rebuild publishes a dead link.
 | SSH keys `id_ed25519_textbook`, `id_ed25519_coord` | the platform owner's `~/.ssh/` | platform owner |
 | `gh` logins | the platform owner's keyring | platform owner |
 | GitHub App private key (`.pem`) | **not recorded** | platform owner |
+| `quartz-book-bot`'s private key, `quartz-book-bot.2026-09-24.private-key.pem` (§7) | the platform owner's `~/Downloads/`. Its only other copy is the `quartz-book` secret `BOT_APP_PRIVATE_KEY`, which can't be read back | platform owner |
 | Developer ID certificate, `notarytool` profile | the build Mac's keychain | platform owner |
 | An author's console token, DeepSeek key | the author's login Keychain, service `Authoring Assistant` | each author |
 | An author's console state and log | `~/Library/Application Support/Authoring Assistant/` | each author |
