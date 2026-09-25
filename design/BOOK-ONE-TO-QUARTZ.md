@@ -1166,6 +1166,22 @@ registry PR if it isn't.
   activation time measured in step 15.
 - **Rollback:** see below.
 
+> **Added 25 Sep 2026, from the in-site editor workstream (24 Sep).** The editor ("Edit
+> this page") already works on book one's Quartz build at
+> `social-research-methods.pages.dev`. The live address gets it at this step, and the
+> suggest-edit function needs no change for it: it already accepts
+> `https://social-research-methods.confused4now.org`. Add to **Proves it:** once the
+> domain points at the Pages project,
+>
+> ```sh
+> curl -s -H "Origin: https://social-research-methods.confused4now.org" \
+>   "https://suggest-edit-function.vercel.app/api/propose-edit?path=index.md"
+> ```
+>
+> returns JSON with `"branch":"drafts"`. Run it again after step 17 merges. **Watch:**
+> Hypothes.is annotations keyed to Publish-style URLs. The builder already emits 301s
+> from them (D14), and the step 15 test annotation is the check that they re-anchor.
+
 **17. Record the host.**
 - **Repo:** `textbook-registry`.
 - **Does:** switches book one's host kind. `builder` and `project` are already there
@@ -1181,6 +1197,14 @@ registry PR if it isn't.
   which reads `site.host.kind`: from here it stops treating book one as published from
   the folder, which is what step 2 kept the old wording behind the kind for. No other
   consumer reads `site.host` beyond validation and parity.
+
+> **Confirmed 25 Sep 2026, from the in-site editor workstream (24 Sep).** The editor's
+> handover gives the same `site.host` as **Does:** above, to be set only after the domain
+> points at the `social-research-methods` Pages project (step 16). The function accepts
+> a builder book from `https://<site.domain>` and from its own Pages deployments
+> (`<project>.pages.dev`, `<label>.<project>.pages.dev`), so this change doesn't alter
+> which origins it accepts. After the merge, repeat step 16's `propose-edit` check: it
+> must still return `"branch":"drafts"`.
 
 **18. Clean up book one, apart from the Publish files.**
 - **Repo:** `textbook`.
@@ -1226,6 +1250,18 @@ registry PR if it isn't.
   honeypot answer after the function redeploys. INTERIM-BOOK's T1 and T2 pass again.
 - **Must not break:** book one. Each book's `reconcile` is independent.
 
+> **Done, 24 Sep 2026 (`platform-test-book`, textbook-registry #25).** Book two now has
+> the builder layout (`index.md`, `chapters/`). Its vendored Quartz and suggest-edit form
+> are gone, and it has `nudge.yml` and a CC-BY-SA `LICENSE`. It is served from the new
+> Direct Upload project `platform-test-book-2` in `brandonproject2026`, at
+> `platform-test-book-2.pages.dev`. The registry entry names `builder: quartz-book`, and
+> the old origin is in `legacy_origins`. The old Git-integrated `platform-test-book`
+> project, in the second Cloudflare account, is retired but **not yet deleted**: delete
+> it once nothing points at it (INFRASTRUCTURE §8). The in-site editor was proved on
+> this origin on 24 Sep. **Gotcha:** the registry commit first landed on a local feature
+> branch, not `main`, so `reconcile` didn't know the book. Check which branch is checked
+> out before committing to the registry.
+
 **22. The edition template.**
 - **Repo:** `textbook-edition-template`.
 - **Does:** bump the extras pin to steps 3-6 (this also fixes the editions' dead citations),
@@ -1246,6 +1282,39 @@ registry PR if it isn't.
 - **Proves it:** link check green. A dry-run book from the template builds through the builder
   on a spare Pages project.
 - **Must not break:** the template's own weekly jobs, which skip in the template repo.
+
+> **Delivered as a patch, then merged, 24 Sep 2026 (textbook-template #6, `605cdec`). Not
+> yet proved.** The workstream record calls it a delivered patch,
+> `textbook-template-step-23.patch` (in `textbook_project/`), against `e5ab0b3`. On 25 Sep
+> that patch, applied to `e5ab0b3`, gave exactly the tree of `605cdec`, which #6 merged at
+> 14:46 UTC. **Proves it** hasn't been run: no link check and no dry-run book are
+> recorded. The change drops Path A (Publish) and the vendored-Quartz Path B. SETUP.md
+> step 6 becomes the builder path: a Direct Upload Pages project that the platform owner
+> creates before the merge, the builder layout, the first `reconcile`, the custom domain
+> and the drafts preview. `new-book.mjs` stops asking for a host kind. Every entry is
+> `static` / `cloudflare-pages` / `paid_by: platform` / `builder: quartz-book`, with the
+> Pages project name asked for. It writes `index.md` once from `scripts/seed-index.md`,
+> and `index.md` is no longer a configure.mjs-managed file. It deletes `suggest-edit/`,
+> `templates/suggest-edit/`, `scripts/add-suggest-edit.mjs` and
+> `docs/how-to-comment.md`, adds `nudge.yml` (skipped in the template repo), and
+> rewrites `docs/` for the builder. The editor's per-book requirements went in on top
+> (`a475a21`). **Still open:** the thin-caller weekly workflows (step 14), so a new book
+> gets no contributors/dashboard/derivatives/backup. There's also one note in
+> `word-to-markdown.md` about whether the app commits a converted chapter to `drafts`
+> itself.
+>
+> **Added 25 Sep 2026, from the in-site editor workstream (24 Sep).** These are two
+> per-book setup items for SETUP.md's go-live step. Neither is in SETUP.md yet. Book one
+> and book two need them done by hand:
+>
+> - **Plausible goals** for the editor's three custom events, `page_editor_opened`,
+>   `page_edit_submitted` and `github_signin`, with the custom properties `mode` and
+>   `outcome`, on each book's Plausible site.
+> - **Optional: a `main` ruleset on each book repo** that stops the suggest-edit App
+>   updating `main` (bypass: maintainers and GitHub Actions). Since 24 Sep the App has
+>   *Contents* and *Pull requests* write on every book repo, not just *Issues*
+>   (INFRASTRUCTURE §2c). Its proposals go to `drafts`, and a ruleset makes sure nothing
+>   else can.
 
 **24. The platform's records.**
 - **Repo:** `textbook-registry`.
