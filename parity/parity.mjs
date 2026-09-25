@@ -137,16 +137,20 @@ async function verifyRetired(check) {
   if (constant)
     return { check, status: 'FAIL', at: `${at}:${constant.line}`, detail: `retired (${label}) but the constant is still there: ${show(constant.value)}. Un-retire the check, or finish removing the constant.` };
 
+  // The registry read may live in another repo than the constant did (a script
+  // that moved, §8 step 14): `consumes.source` names it.
   const consumesPath = ret.consumes.path ?? check.path;
+  const consumesAt = ret.consumes.source && ret.consumes.source !== check.source ? `${ret.consumes.source} ${consumesPath}` : consumesPath;
   try {
     const { pattern } = ret.consumes;
-    const text = await readFile(src, consumesPath);
+    const csrc = ret.consumes.source ? await openSource(ret.consumes.source) : src;
+    const text = await readFile(csrc, consumesPath);
     const m = new RegExp(pattern.source, pattern.flags.replace('g', '')).exec(text);
     if (!m) throw new Error(`no match for ${pattern}`);
     const line = text.slice(0, m.index).split('\n').length;
-    return { check, status: 'retired', at, detail: `${label}: ${ret.reason}. Constant absent; registry read at ${consumesPath}:${line}.` };
+    return { check, status: 'retired', at, detail: `${label}: ${ret.reason}. Constant absent; registry read at ${consumesAt}:${line}.` };
   } catch (e) {
-    return { check, status: 'FAIL', at, detail: `retired (${label}) and the constant is gone, but ${consumesPath} does not show the registry read (${e.message}${readHint(e)}). A constant that vanished with no registry read in its place is a regression, not a migration.` };
+    return { check, status: 'FAIL', at, detail: `retired (${label}) and the constant is gone, but ${consumesAt} does not show the registry read (${e.message}${readHint(e)}). A constant that vanished with no registry read in its place is a regression, not a migration.` };
   }
 }
 

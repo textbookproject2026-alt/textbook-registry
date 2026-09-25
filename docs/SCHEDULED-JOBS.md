@@ -206,6 +206,16 @@ currently looks after them, and because the author's console shows four of them
 (Part 4). Book one's maintainer has a pointer to this file from
 `textbook/docs/troubleshooting.md`.
 
+**Since BOOK-ONE-TO-QUARTZ §8 step 14, the jobs themselves are the platform's.**
+Book one's `backup-annotations`, `weekly-snapshot`, `contributors`, `derivatives`,
+`dashboard`, `lint` and `link-check` are callers of about ten lines. They keep
+their names and schedules, and each calls a reusable workflow in `quartz-book`
+(`.github/workflows/book-*.yml`) at the `stable` tag. The scripts are in
+`quartz-book/automation/`. The run and its log are still in `textbook`'s Actions
+tab, under the caller's name. Each run's log starts with the line
+`quartz-book at stable: <commit>`. A change to a job reaches every book when
+`stable` moves (the `quartz-book` README, "Book automation").
+
 ### Auto-merge, and when it quietly doesn't
 
 `contributors`, `derivatives`, `dashboard` and the weekly `apply-config` push a
