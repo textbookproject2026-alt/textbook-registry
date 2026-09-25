@@ -1268,6 +1268,13 @@ registry PR if it isn't.
 - **Proves it:** the section exists, and every row says pass or names its fix.
 - **Must not break:** the live site. Everything here is read-only against it.
 
+> **Run, 25 Sep 2026.** The results are in *Proof run* below. The automated rows pass,
+> apart from two dead links: F1 is in the book, and F2 is a page step 22 adds. Both are
+> fixed before step 16. There are no annotations on the Definitions pages, and Pages
+> matches `+` and `%20` literally, so no zone Redirect Rule is needed. The rows marked
+> **by hand** are still open: the browser checks, the domain rehearsal, the test
+> annotation and D18.
+
 ### Phase 2: the live address
 
 **16. Cutover.** Not a PR: one DNS edit, plus the Pages custom domain.
@@ -1458,6 +1465,91 @@ revert step 17 for the record. The reverted host is a Publish host that still na
 builder and its project, so the builder carries on deploying previews to `pages.dev`. **Content drift:** Publish serves what was last uploaded, so
 anything merged to `main` since the cutover is missing until the technical contact
 republishes from an up-to-date vault. That is why the Publish files stay until step 20.
+
+---
+
+## Proof run (§8 step 15)
+
+Run on 25 Sep 2026, read-only against both sites. **Publish** is the live address,
+`social-research-methods.confused4now.org`. **Quartz** is `social-research-methods.pages.dev`,
+which is the `main` build, and `drafts.social-research-methods.pages.dev`. Expected values
+were written from this document, not from the builder's code, so a builder bug isn't copied
+into the check. A row either passes, names its fix, or waits on a check by hand (**by hand**).
+
+### The builds under test
+
+| Row | Result |
+|---|---|
+| `main` marker | `book_commit` `71ee756` = `main`'s head. `builder_commit` `74e86d6` = `stable` |
+| `drafts` marker | `6c3fc88` = `drafts`' head, the same builder. `X-Robots-Tag: noindex` on drafts, none on `main` |
+| Who built them | `reconcile` by itself: run 36135257204 (`stable, every book`, started by `github-actions[bot]` when `stable` moved), then run 36136281615 (`nudge`) for `main`. No run by hand, no extra input. **Pass** |
+
+### Pages and content
+
+| Row | Result |
+|---|---|
+| Inventory | Publish serves 59 files. 13 are book pages under the allowlist, and they are exactly `main`'s 13. Each is in Quartz's sitemap at its §3b URL. Quartz adds `/how-to-comment`, `/chapters/`, `/chapters/definitions/`, `/community/`, `/tags/`. The other 46 leave (§5). **Pass** |
+| Publish's upload against `main` | 10 of 13 are byte-identical. The 3 `community/` pages differ only because Publish has an older upload of the weekly pages: contributors 88 against 95 commits, dashboard 1 against 3 open pull requests, and step 14's derivatives link. Quartz has the newer ones. **Pass** |
+| `publish.js`, `publish.css` | Publish serves `main`'s copies, so §1a's line references describe what readers get today. **Pass** |
+| Each Quartz page against its source (13) | `<title>` is the first H1 and there is one H1 (D4). Every H2 to H6. Every prose paragraph. No `#%5E` href, and every same-page link has its target id (the 32 citations in Chapter 3). Callouts count. Paragraph numbers except on `/`. Edit and History name `main/<path>`, encoded per segment. Suggest button. Canonical names the live URL. Hypothes.is `openSidebar: false`, `showHighlights: 'always'`. Plausible guarded to `hostname === "social-research-methods.confused4now.org"`. **Pass** on 12. `/` fails: see F1 |
+| Shipped features | Graph, popovers, search (18 index entries, every book page), print CSS, tag helper, badge, and all six event names from §1a. `propose-edit` answers the `pages.dev` origin with `"branch":"drafts"`. **Pass** |
+
+### Redirects on `pages.dev`
+
+Every Publish URL, in both spellings where they differ (58 requests, no redirects followed):
+
+| Row | Result |
+|---|---|
+| Definitions pages | All six answer 301 to the Quartz URL, then 200, in the `+` and `%20` spellings. Pages matches `+` and `%20` literally and case-sensitively: the lowercase targets answer 200 and don't loop. **No zone Redirect Rule needed. Pass** |
+| `/index` | 301 to `/`. **Pass** |
+| Unchanged URLs | Chapters 1 and 3, `/glossary`, the three `community/` pages: 200. **Pass** |
+| `/docs/how-to-comment` | 301 to `/how-to-comment`, then 200. **Pass** |
+| `/docs/for-course-coordinators` | 301 to the edition template's `docs/for-course-coordinators.md`, which **404s**. See F2 |
+| Pages that leave | 404, including the stray `/2` (F3). `/templates/index` answers Pages' own 308 to `/templates/`, then 404. **Pass** |
+
+### Link check of the built output
+
+lychee 0.24.2 over the 18 sitemap pages on `pages.dev`, fragments included: 907 links, 171
+unique, 905 OK, **2 errors**, and both are F1 and F2 again.
+
+### Annotations (§3d)
+
+| `wildcard_uri` | Public annotations |
+|---|---|
+| `https://social-research-methods.confused4now.org/chapters/Definitions/*` | **0**. No decision needed |
+| `http://…/chapters/Definitions/*` | 0 |
+| `https://social-research-methods.confused4now.org/*` | 0 |
+| `https://bptext2026.xyz/*` | 8, unchanged since 22 Sep |
+
+### By hand
+
+| Row | Result |
+|---|---|
+| §1a rows, side by side in a browser | **by hand** |
+| Print | **by hand** |
+| Mobile | **by hand** |
+| Hypothes.is sidebar and badge, tag helper | **by hand** |
+| Plausible records nothing from `pages.dev` | **by hand**. The guard is in every page (above) |
+| Custom-domain rehearsal on `quartz-trial.confused4now.org`: activation time, what Pages does to the DNS record, removed afterwards | **by hand** |
+| Test annotation on Publish, for step 16's re-anchoring check | **by hand** |
+| Publish's Site options (D18) | **by hand** |
+
+### Fixes
+
+- **F1. The front page links a page Quartz doesn't have.** `index.md:47`'s
+  `[[for-course-coordinators|Setting up a department edition]]` resolves on Publish to
+  `docs/for-course-coordinators`, and on Quartz to a dead `/for-course-coordinators`. Fix:
+  bring step 18's `index.md` link forward, **before step 16**. Point it at the edition
+  template's `docs/department-edition-setup.md`, as step 14 did for `derivatives.md`. The
+  link text already names that page.
+- **F2. The coordinators' page doesn't exist yet.** The `/docs/for-course-coordinators`
+  redirect and `/how-to-comment`'s closing line both point at
+  `textbook-edition-template/docs/for-course-coordinators.md`, which step 22 adds. Fix: do
+  that part of step 22 **before step 16**. Step 22 may run any time after step 6. No
+  builder change is needed.
+- **F3. A stray page on Publish.** `2.md`, a pasted terminal transcript, is published at
+  `/2`. It holds no tokens, and it isn't in the repo, so it leaves at the cutover. Fix:
+  unpublish it from Publish now.
 
 ---
 
