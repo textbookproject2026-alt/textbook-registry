@@ -1107,6 +1107,46 @@ registry PR if it isn't.
   after 10 minutes.
 - **Must not break:** "Going live".
 
+> **Built, 24 Sep 2026 (`authoring-assistant` PR #8). Live proof passed.** Where the
+> step left something open, this is how it was settled:
+> - **The address uses the drafts branch's alias, not a literal `drafts.`**, named as
+>   `quartz-book`'s `branchAlias` names it, on `site.host.project`. It is offered only
+>   when the entry has both `builder` and `project`. That holds for book one now, and
+>   for book two.
+> - **"How long" comes from the drafts head's committer time**, not from when the
+>   console saw the head. Nothing is stored, so restarting the app doesn't reset the
+>   10 minutes. A commit made through the API, the app's or the CMS's, is timed when
+>   it's made. A `git push` of an older commit can raise the notice early. A head
+>   with no readable time never raises it.
+> - **A marker counts only if it names this book and its drafts branch.** Otherwise
+>   the preview is treated as not built.
+> - **Where it shows:** a "The drafts preview" block in the console, and a line on the
+>   screen after "Send to drafts". The page asks again every 20 s while the preview is
+>   building, every 60 s while it is stale or unknown, and stops when the screen
+>   changes. When it is stale, the link is still offered, labelled as the earlier
+>   version, or not offered if nothing was ever built.
+> - "Going live" is unchanged. Its wording still follows `site.host.kind`.
+>
+> **The live proof (reported 25 Sep 2026).** Every step of *Proves it* passed: after
+> a "Send to drafts" to book one, the console showed "building", then "See the
+> drafts" once the marker reached the commit. With `reconcile` disabled, the notice
+> "The preview is still at your previous version" appeared after 10 minutes.
+> "Going live" was not broken.
+>
+> - **The notice appeared only after the app was reopened.** On the first try the
+>   app stopped during the ten-minute wait, while its tab was in the background.
+>   The page checked in every 5 s, and the app gave up after 60 s without a
+>   check-in. A browser runs a hidden tab's timers late (Chrome: about once a
+>   minute after five minutes hidden), so the check-ins arrived right at the limit.
+>   The app's log didn't say why it stopped, so this cause is inferred, not
+>   observed. Nothing about the notice itself was wrong: after the reopen it showed
+>   at once, because the 10 minutes are counted from the drafts head's commit time.
+> - **Fixed in `authoring-assistant` PR #8 (`3ad51aa`).** Each check-in says whether
+>   the tab is hidden. A hidden tab is waited for 15 minutes, not 60 s. A check-in
+>   that fails while the tab is showing brings up "The tool has stopped" with the
+>   reason. The log now records when and why the app stopped. **Not yet proved
+>   live:** rerunning the ten-minute wait with the tab in the background.
+
 **13. Parity learns host kinds.**
 - **Repo:** `textbook-registry`.
 - **Does:** the four `reading-site.*` checks read the registry and the
