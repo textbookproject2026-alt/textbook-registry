@@ -76,6 +76,7 @@ test('manifest: a retired check says which migration retired it and what must re
     assert.equal(r.source, c.source, `${c.id}: retirement is for a different source`);
     assert.match(r.commit, /^[0-9a-f]{7,40}$/, `${c.id}: commit`);
     assert.ok(r.consumes?.pattern instanceof RegExp, `${c.id}: consumes.pattern`);
+    if (r.consumes.source) assert.ok(r.consumes.path, `${c.id}: a registry read in another source names its path`);
   }
 });
 

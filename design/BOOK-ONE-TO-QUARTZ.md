@@ -1207,6 +1207,51 @@ registry PR if it isn't.
 - **Must not break:** Sunday's snapshot and backup. This step is off the critical path. If it
   lands after step 16, D10's "full cycle of weekly jobs" counts from when it lands.
 
+> **Built, 25 Sep 2026 (quartz-book `automation/step-14`, textbook-registry
+> `parity/automation-step-14`, textbook `ci/thin-callers`).** Where the step left
+> something open, this is how it was settled:
+> - **Five reusable workflows**, `quartz-book/.github/workflows/book-*.yml`: backup,
+>   weekly snapshot, lint, link check, and one community-page workflow with
+>   `page: contributors | dashboard | derivatives`. The scripts and both config files
+>   are in `automation/`. Book one's callers keep their file names and schedules, so
+>   the console's weekly-jobs strip still finds them. `stats.yml` is gone.
+> - **Callers name `@stable`,** the same commit `reconcile` builds with. Each
+>   workflow fetches `automation/` at its `platform_ref` input (`stable` by default).
+>   The weekly jobs work on `branch` (`main`), whichever ref started them.
+> - **The secret is passed by name,** not with `secrets: inherit`, which stops at
+>   the organisation boundary, and books live in their maintainers' accounts.
+> - **Generalised, not copied:** `gen-derivatives` takes the edition template and
+>   the owners to skip from the registry (a book with `editions: null` gets no page).
+>   `gen-contributors` takes the bot logins, title, maintainer and licence from the
+>   registry. `.lycheeignore` holds `__SITE_DOMAIN__`, filled from the registry, so
+>   `templates/.lycheeignore` goes. That retires five more parity checks.
+> - **§2 #5:** `gen-contributors` writes `[[chapters/chapter-03\|Chapter 3]]`. The
+>   two dead wikilinks noted under step 8 (`for-trusted-contributors`,
+>   `for-course-coordinators`) are now GitHub links: the book's own
+>   `docs/for-trusted-contributors.md`, and the edition template's
+>   `docs/department-edition-setup.md`. The same applies in `gen-derivatives`.
+>   `index.md`'s own links are still step 18's.
+> - **§3c:** the backup's per-URI fallback asks for each page at its Quartz URL
+>   and, where different, its Publish URL. Annotations made on Publish stay on
+>   Publish-style paths on the same domain. `test/automation.test.mjs` holds the
+>   slug copy to Quartz's `slugifyFilePath`.
+> - **Parity** reads the moved scripts in the builder at `stable`. A retirement's
+>   registry read may now be in another source (`consumes.source`), so
+>   `config.plausible-public-url` stays on the book and finds its read in the builder.
+>   Proved locally against `stable` = `a57c2e0`: 28 ok, 1 drift, 30 retired, 0 failed,
+>   with book one's scripts present or deleted. With the host as step 17 writes it:
+>   22 ok, 6 n/a, 0 failed.
+> - **Proved locally on `textbook@1fa00d0`:** old against new, `contributors` differs
+>   only in the full-path links and the two guide links, and `derivatives` only in
+>   the walkthrough link. The lint rules are byte-identical (0 errors). lychee gives
+>   46 OK and 0 errors with both ignore lists. The snapshot script is the old one
+>   with `main` taken from an input. The backup and the dashboard need
+>   `HYPOTHESIS_API_TOKEN`; they are proved by hand after the merge.
+> - **Merge order:** quartz-book, then (after `stable` moves) textbook-registry,
+>   then textbook. Parity reads `automation/` at `stable`, and the callers call
+>   `@stable`.
+> - **Still open:** `textbook-template` gets the same callers (step 23's note).
+
 **15. The proof run.**
 - **Repo:** `textbook-registry` (this document gains a *Proof run* section recording results).
   No code.
@@ -1374,7 +1419,8 @@ registry PR if it isn't.
 > `templates/suggest-edit/`, `scripts/add-suggest-edit.mjs` and
 > `docs/how-to-comment.md`, adds `nudge.yml` (skipped in the template repo), and
 > rewrites `docs/` for the builder. The editor's per-book requirements went in on top
-> (`a475a21`). **Still open:** the thin-caller weekly workflows (step 14), so a new book
+> (`a475a21`). **Still open:** the thin-caller weekly workflows. Step 14 built them
+> (quartz-book `book-*.yml`), but the template doesn't call them yet, so a new book
 > gets no contributors/dashboard/derivatives/backup. There's also one note in
 > `word-to-markdown.md` about whether the app commits a converted chapter to `drafts`
 > itself.

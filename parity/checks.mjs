@@ -17,8 +17,9 @@
 //   - the constant is gone: the extractor finds zero copies (a constant still there,
 //     even partly, fails: the check was retired too early), and
 //   - the file reads the registry: `consumes.pattern` matches in `consumes.path`
-//     (default: the check's own path). A constant that vanished without a registry
-//     read in its place fails too; that is a regression, not a migration.
+//     (default: the check's own path) in `consumes.source` (default: the check's
+//     own source). A constant that vanished without a registry read in its place
+//     fails too; that is a regression, not a migration.
 // When every check is retired, delete the parity job (DESIGN §5 step 1, step 8).
 //
 // A check with `when(registry, book)` applies only when that returns null; otherwise
@@ -221,6 +222,23 @@ const LICENCE_HEADINGS = {
 // One entry per migration of one repo. `commit` is the source repo's commit that
 // replaced the constants; `consumes` is what must be in the file instead.
 
+// The builder's copy of the book automation (§8 step 14): quartz-book at `stable`.
+const AUTOMATION = 'automation/scripts';
+
+// Each step-14 retirement requires the line that now reads the value, in the
+// builder's script that every book's reusable workflow runs.
+function automationStep14(name, reason, path, pattern) {
+  return {
+    [name]: {
+      step: '14',
+      source: 'builder',
+      commit: 'a57c2e0',
+      reason,
+      consumes: { path, pattern },
+    },
+  };
+}
+
 function cmsStep4(name, key, token, field) {
   return {
     [name]: {
@@ -257,20 +275,38 @@ export const RETIREMENTS = {
     reason: 'the function resolves the book by Origin from the registry bundled at build (registry/bundled.mjs) and takes the origin, content.repo and live_branch from that entry',
     consumes: { pattern: /^import BUNDLE from '\.\.\/registry\/bundled\.mjs';$/m },
   },
-  backupStep3b: {
-    step: '3b',
-    source: 'content',
-    commit: 'e856e31',
-    reason: 'backup-annotations.mjs fetches the registry at run time (scripts/lib/registry.mjs) and takes the site, legacy origins and Hypothes.is groups from the book\'s entry',
-    consumes: { pattern: /^import \{[^}]*\bloadBook\b[^}]*\} from '\.\/lib\/registry\.mjs';$/m },
-  },
+  // Step 3b made the dashboard read the registry, in the book's scripts/. Step 14
+  // moved the script to the builder, so the registry read that replaced
+  // textbook.config.json's plausible_public_url is found there now.
   dashboardStep3b: {
     step: '3b',
     source: 'content',
     commit: 'e856e31',
-    reason: 'gen-dashboard.mjs fetches the registry at run time (scripts/lib/registry.mjs) and takes the repo, site, groups, edition template, fork owners and Plausible dashboard from the book\'s entry; the dashboard URL is derived from analytics.plausible.site, not stored',
-    consumes: { path: 'scripts/gen-dashboard.mjs', pattern: /^import \{[^}]*\bloadBook\b[^}]*\} from '\.\/lib\/registry\.mjs';$/m },
+    reason: 'gen-dashboard.mjs fetches the registry at run time (lib/registry.mjs) and takes the repo, site, groups, edition template, fork owners and Plausible dashboard from the book\'s entry; the dashboard URL is derived from analytics.plausible.site, not stored; since §8 step 14 the script is quartz-book\'s',
+    consumes: { source: 'builder', path: `${AUTOMATION}/gen-dashboard.mjs`, pattern: /^import \{[^}]*\bloadBook\b[^}]*\} from '\.\/lib\/registry\.mjs';$/m },
   },
+  // Step 14 (BOOK-ONE-TO-QUARTZ §8): the book's weekly jobs became quartz-book's
+  // reusable workflows, and the scripts that still held a constant read the registry.
+  // The backup and the dashboard already did (step 3b, textbook e856e31): their
+  // checks moved to the builder's copy with them.
+  ...automationStep14('backupStep14',
+    'backup-annotations.mjs fetches the registry at run time (lib/registry.mjs) and takes the site, legacy origins and Hypothes.is groups from the book\'s entry (since step 3b, textbook e856e31)',
+    `${AUTOMATION}/backup-annotations.mjs`, /^import \{[^}]*\bloadBook\b[^}]*\} from '\.\/lib\/registry\.mjs';$/m),
+  ...automationStep14('dashboardStep14',
+    'gen-dashboard.mjs fetches the registry at run time (lib/registry.mjs) and takes the repo, site, groups, edition template, fork owners and Plausible dashboard from the book\'s entry (since step 3b, textbook e856e31)',
+    `${AUTOMATION}/gen-dashboard.mjs`, /^import \{[^}]*\bloadBook\b[^}]*\} from '\.\/lib\/registry\.mjs';$/m),
+  ...automationStep14('derivativesTemplateStep14',
+    'gen-derivatives.mjs takes the edition template from the book\'s editions.template_repo',
+    `${AUTOMATION}/gen-derivatives.mjs`, /field\(book, 'editions\.template_repo', isString,/),
+  ...automationStep14('derivativesOwnersStep14',
+    'gen-derivatives.mjs takes the fork owners to skip from the book\'s editions.skip_fork_owners',
+    `${AUTOMATION}/gen-derivatives.mjs`, /field\(book, 'editions\.skip_fork_owners', isStringArray,/),
+  ...automationStep14('contributorsBotsStep14',
+    'gen-contributors.mjs takes the automation accounts from the registry\'s platform.automation_logins',
+    `${AUTOMATION}/gen-contributors.mjs`, /const logins = registry\.platform\?\.automation_logins;/),
+  ...automationStep14('linkCheckOriginStep14',
+    'the link check\'s ignore list holds a __SITE_DOMAIN__ token, which lychee-ignore.mjs fills from the book\'s site.domain',
+    `${AUTOMATION}/lychee-ignore.mjs`, /^(?=[\s\S]*domain = field\(book, 'site\.domain', isString, 'a hostname'\);)(?=[\s\S]*replaceAll\('__SITE_DOMAIN__', domain\))/),
   // admin/config.yml is rendered by configure.mjs, so the RENDERED file still holds these
   // values and a retirement checked there would fail. The hand-edited source is the
   // template, so these checks read templates/admin/config.yml. `consumes` requires the
@@ -376,49 +412,59 @@ export const checks = [
     extract: jsonKey('plausible_public_url'), expect: (r, b) => `https://plausible.io/${b.analytics.plausible.site}`,
     retired: RETIREMENTS.dashboardStep3b },
 
-  { id: 'link-check.canonical-origin', source: 'content', path: '.lycheeignore', design: '.lycheeignore:1',
-    extract: once(/^(https:\/\/[^\s/]+)\/?$/m), expect: (r, b) => origin(b) },
+  // ---- book automation: quartz-book's automation/, read at `stable` (§8 step 14) ----
+  // These scripts were the book's own until step 14. A `__TOKEN__` is a placeholder,
+  // not a hardcoded value.
+  { id: 'link-check.canonical-origin', source: 'builder', path: 'automation/.lycheeignore', design: 'book one\'s .lycheeignore:1, until §8 step 14',
+    extract: once(/^(https:\/\/(?!__[A-Z0-9_]+__)[^\s/]+)\/?$/m), expect: (r, b) => origin(b),
+    retired: RETIREMENTS.linkCheckOriginStep14 },
 
   { id: 'publish.site-id', source: 'content', path: '.obsidian/publish.json', design: '.obsidian/publish.json:2',
     when: onPublish, extract: jsonKey('siteId'), expect: (r, b) => b.site.host.site_id },
   { id: 'publish.host', source: 'content', path: '.obsidian/publish.json', design: '.obsidian/publish.json:3',
     when: onPublish, extract: jsonKey('host'), expect: (r, b) => b.site.host.publish_host },
 
-  { id: 'backup.hypothesis-groups', source: 'content', path: 'scripts/backup-annotations.mjs', design: 'backup-annotations.mjs:58-61',
+  { id: 'backup.hypothesis-groups', source: 'builder', path: 'automation/scripts/backup-annotations.mjs', design: 'backup-annotations.mjs:58-61',
     extract: jsGroups('ANNOTATION_GROUPS'), expect: (r, b) => b.annotations.hypothesis_groups,
-    retired: RETIREMENTS.backupStep3b },
-  { id: 'backup.default-site', source: 'content', path: 'scripts/backup-annotations.mjs', design: 'backup-annotations.mjs:64',
+    retired: RETIREMENTS.backupStep14 },
+  { id: 'backup.default-site', source: 'builder', path: 'automation/scripts/backup-annotations.mjs', design: 'backup-annotations.mjs:64',
     extract: once(/^const DEFAULT_SITE = '([^']*)';$/m), expect: (r, b) => origin(b),
-    retired: RETIREMENTS.backupStep3b },
-  { id: 'backup.legacy-origins', source: 'content', path: 'scripts/backup-annotations.mjs', design: 'backup-annotations.mjs:73',
+    retired: RETIREMENTS.backupStep14 },
+  { id: 'backup.legacy-origins', source: 'builder', path: 'automation/scripts/backup-annotations.mjs', design: 'backup-annotations.mjs:73',
     extract: jsStrings('LEGACY_SITES'), expect: (r, b) => b.site.legacy_origins,
-    retired: RETIREMENTS.backupStep3b },
+    retired: RETIREMENTS.backupStep14 },
 
-  { id: 'dashboard.repo-fallback', source: 'content', path: 'scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:93',
+  { id: 'dashboard.repo-fallback', source: 'builder', path: 'automation/scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:93',
     extract: once(/process\.env\.GITHUB_REPOSITORY \|\| '([^']*)'/), expect: (r, b) => b.content.repo,
-    retired: RETIREMENTS.dashboardStep3b },
-  { id: 'dashboard.template-repo', source: 'content', path: 'scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:98',
+    retired: RETIREMENTS.dashboardStep14 },
+  { id: 'dashboard.template-repo', source: 'builder', path: 'automation/scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:98',
     extract: once(/^const TEMPLATE_REPO = '([^']*)';$/m), expect: (r, b) => b.editions.template_repo,
-    retired: RETIREMENTS.dashboardStep3b },
-  { id: 'dashboard.skip-fork-owners', source: 'content', path: 'scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:99',
+    retired: RETIREMENTS.dashboardStep14 },
+  { id: 'dashboard.skip-fork-owners', source: 'builder', path: 'automation/scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:99',
     extract: jsStrings('SKIP_FORK_OWNERS'), expect: (r, b) => b.editions.skip_fork_owners,
-    retired: RETIREMENTS.dashboardStep3b },
-  { id: 'dashboard.hypothesis-groups', source: 'content', path: 'scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:109-112',
+    retired: RETIREMENTS.dashboardStep14 },
+  { id: 'dashboard.hypothesis-groups', source: 'builder', path: 'automation/scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:109-112',
     extract: jsGroups('ANNOTATION_GROUPS'), expect: (r, b) => b.annotations.hypothesis_groups,
-    retired: RETIREMENTS.dashboardStep3b },
-  { id: 'dashboard.site-url', source: 'content', path: 'scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:674',
+    retired: RETIREMENTS.dashboardStep14 },
+  { id: 'dashboard.site-url', source: 'builder', path: 'automation/scripts/gen-dashboard.mjs', design: 'gen-dashboard.mjs:674',
     extract: once(/^\s+site_url: '([^']*)',$/m), expect: (r, b) => origin(b),
-    retired: RETIREMENTS.dashboardStep3b },
+    retired: RETIREMENTS.dashboardStep14 },
 
-  { id: 'derivatives.template-repo', source: 'content', path: 'scripts/gen-derivatives.mjs', design: 'gen-derivatives.mjs:68',
-    extract: once(/^const UPSTREAM = '([^']*)';$/m), expect: (r, b) => b.editions.template_repo },
-  { id: 'derivatives.skip-fork-owners', source: 'content', path: 'scripts/gen-derivatives.mjs', design: 'gen-derivatives.mjs:71',
-    extract: jsStrings('SKIP_OWNERS'), expect: (r, b) => b.editions.skip_fork_owners },
-  { id: 'derivatives-workflow.template-repo', source: 'content', path: '.github/workflows/derivatives.yml', design: 'derivatives.yml:24 (comment)',
-    extract: once(/^# The forks of (\S+), over the/m), expect: (r, b) => b.editions.template_repo },
+  { id: 'derivatives.template-repo', source: 'builder', path: 'automation/scripts/gen-derivatives.mjs', design: 'gen-derivatives.mjs:68',
+    extract: once(/^const UPSTREAM = '([^']*)';$/m), expect: (r, b) => b.editions.template_repo,
+    retired: RETIREMENTS.derivativesTemplateStep14 },
+  { id: 'derivatives.skip-fork-owners', source: 'builder', path: 'automation/scripts/gen-derivatives.mjs', design: 'gen-derivatives.mjs:71',
+    extract: jsStrings('SKIP_OWNERS'), expect: (r, b) => b.editions.skip_fork_owners,
+    retired: RETIREMENTS.derivativesOwnersStep14 },
+  // The book's derivatives.yml named the template in a comment; the workflow is the
+  // builder's book-community-page.yml since step 14, and the book's is a caller.
+  { id: 'derivatives-workflow.template-repo', source: 'builder', path: '.github/workflows/book-community-page.yml', design: 'book one\'s derivatives.yml:24 (comment), until §8 step 14',
+    extract: once(/^# The forks of (\S+), over the/m), expect: (r, b) => b.editions.template_repo,
+    retired: RETIREMENTS.derivativesTemplateStep14 },
 
-  { id: 'contributors.automation-logins', source: 'content', path: 'scripts/gen-contributors.mjs', design: 'gen-contributors.mjs:61',
-    extract: jsStrings('EXTRA_BOTS'), expect: (r) => r.platform.automation_logins },
+  { id: 'contributors.automation-logins', source: 'builder', path: 'automation/scripts/gen-contributors.mjs', design: 'gen-contributors.mjs:61',
+    extract: jsStrings('EXTRA_BOTS'), expect: (r) => r.platform.automation_logins,
+    retired: RETIREMENTS.contributorsBotsStep14 },
 
   { id: 'licence.text', source: 'content', path: 'LICENSE', design: 'LICENSE (not in §0a)',
     extract: (text) => ({ value: text.split('\n')[0].trim(), line: 1 }),
