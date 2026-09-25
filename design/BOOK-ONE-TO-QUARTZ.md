@@ -1272,8 +1272,9 @@ registry PR if it isn't.
 - **Must not break:** the live site. Everything here is read-only against it.
 
 > **Run, 25 Sep 2026.** The results are in *Proof run* below. The automated rows pass,
-> apart from two dead links: F1 is in the book, and F2 is a page step 22 adds. Both are
-> fixed before step 16. There are no annotations on the Definitions pages, and Pages
+> apart from two dead links: F1 is in the book, and F2 is a page step 22 adds. The check
+> by hand found F4 (no hover previews) and F5 (a citation's jump isn't highlighted). All
+> four have fix pull requests that must merge before step 16. There are no annotations on the Definitions pages, and Pages
 > matches `+` and `%20` literally, so no zone Redirect Rule is needed. The rows marked
 > **by hand** are still open: the browser checks, the domain rehearsal, the test
 > annotation and D18.
@@ -1545,7 +1546,7 @@ unique, 905 OK, **2 errors**, and both are F1 and F2 again.
 
 | Row | Result |
 |---|---|
-| §1a rows, side by side in a browser | **by hand** |
+| §1a rows, side by side in a browser | **by hand**. Two failures found on 25 Sep: hover previews (F4) and the citation's jump (F5) |
 | Print | **by hand** |
 | Mobile | **by hand** |
 | Hypothes.is sidebar and badge, tag helper | **by hand** |
@@ -1559,17 +1560,64 @@ unique, 905 OK, **2 errors**, and both are F1 and F2 again.
 - **F1. The front page links a page Quartz doesn't have.** `index.md:47`'s
   `[[for-course-coordinators|Setting up a department edition]]` resolves on Publish to
   `docs/for-course-coordinators`, and on Quartz to a dead `/for-course-coordinators`. Fix:
-  bring step 18's `index.md` link forward, **before step 16**. Point it at the edition
-  template's `docs/department-edition-setup.md`, as step 14 did for `derivatives.md`. The
-  link text already names that page.
+  step 18's `index.md` link, brought forward. It now points at the coordinators' page in
+  the edition template (F2), as step 18 says. **textbook #51**, merged after the edition
+  template's #9.
 - **F2. The coordinators' page doesn't exist yet.** The `/docs/for-course-coordinators`
   redirect and `/how-to-comment`'s closing line both point at
-  `textbook-edition-template/docs/for-course-coordinators.md`, which step 22 adds. Fix: do
-  that part of step 22 **before step 16**. Step 22 may run any time after step 6. No
-  builder change is needed.
+  `textbook-edition-template/docs/for-course-coordinators.md`, which step 22 adds. Fix:
+  that part of step 22, done now. Book one's page is moved as it is, except for four links
+  that must work on GitHub, and the setup guide links it. **textbook-edition-template #9.**
+  No builder change is needed.
 - **F3. A stray page on Publish.** `2.md`, a pasted terminal transcript, is published at
   `/2`. It holds no tokens, and it isn't in the repo, so it leaves at the cutover. Fix:
   unpublish it from Publish now.
+- **F4. No hover previews on Quartz** (by hand, 25 Sep). Hovering a concept link on
+  `pages.dev` showed nothing. The console said: `Access to fetch at
+  'https://social-research-methods.confused4now.org/chapters/definitions/critical-realism'
+  from origin 'https://social-research-methods.pages.dev' has been blocked by CORS policy`.
+  **Cause:** Quartz's popover (`fetchCanonical`, `quartz/components/scripts/util.ts`) reads
+  a tag of exactly `<link rel="canonical" href="…">` as an alias redirect and fetches its
+  href instead. The builder writes that tag on every page, pointing at `site.domain`. So
+  every hover fetched the live page, which is Publish, with no CORS header. After step 16
+  it would have loaded, but a drafts or design preview would have shown the live text.
+  **Fix:** the builder's tag ends with `data-builder="quartz-book"`, which the pattern
+  doesn't match. A test reads the pattern from Quartz's source. `enableSPA` stays off.
+  **quartz-book #11.** **Proved in Chrome** (Playwright driving the installed Chrome, with
+  real hovers) on a local build of `main` `71ee756`:
+  - "Critical Realism" and "Unobservables" in Chapter 3 open a visible popover with the
+    definition, which closes when the mouse leaves.
+  - All 6 concept links on `/` open one.
+  - A citation's popover shows the reference list at that reference.
+  - There are no console errors.
+- **F5. A citation's jump isn't highlighted as on Publish** (by hand, 25 Sep). Both
+  readings were checked in Chrome.
+  - **The citation's look matches Publish.** On desktop, a 390px phone viewport and the
+    drafts preview, all 32 citation links are `rgb(124,108,240)`, weight 600 and
+    underlined, on both sites. Quartz adds its pale link pill. The same 5 citations are
+    plain text on both sites (Cooper, 1998; Petticrew and Roberts, 2006; and three more),
+    because the chapter doesn't link them. That is content, not the build.
+  - **The target isn't highlighted as on Publish.** Publish flashes the reference
+    `rgb(253,242,179)` (`is-flashing`) for about 3.0 s and stops it 60px from the top.
+    Quartz had no flash. The only styling was the paragraph numbers' `:target` wash
+    (`#EEEBFD`), the same pale lavender as the link pill. Quartz also scrolls smoothly, so
+    a flash timed from the click would be over before the reader got there.
+  - **A page opened at `#ref-…` never reached its target** (a cross-page citation, or a ¶
+    link). The smooth scroll stopped when the page grew during load: y=4753, with the
+    reference 22,961px further down. Publish arrives and flashes.
+
+  **Fix:** a `targetFlash` script in `edition-integrations`, always on like the
+  block-reference fix. It flashes the target in `design.yaml`'s `mark` (`#FDF2B3`) for
+  3 s once the target stops moving. It adds `scroll-margin-top: 3.75rem`, re-flashes on a
+  second click, and brings the target into view after load. **quartz-edition-extras #7**,
+  then the bot's pin pull request in `quartz-book`. **Proved in Chrome** on the same local
+  build:
+  - After a citation click, the reference reaches 60px at about 1.5 s, flashes from 1.8 s
+    to about 4.3 s, then clears.
+  - A second click on the same citation flashes again once the reference settles.
+  - `/chapters/chapter-03#ref-sayer-2000` is brought into view (414px, the page's end;
+    Publish gives 471) and flashes.
+  - On a phone viewport, `#p40` is at 66px and flashing.
 
 ---
 

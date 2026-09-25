@@ -47,7 +47,7 @@ These are the services every book uses. Each one bakes in or reads
 
 | Slug | Status | Content repo (owner) | Site | Host | Paid by |
 |---|---|---|---|---|---|
-| `social-research-methods` | `live` | `textbookproject2026-alt/textbook` | <https://social-research-methods.confused4now.org> | Obsidian Publish, site `1443b409…` | not recorded (`paid_by` absent) — **confirm at handover** |
+| `social-research-methods` | `live` | `textbookproject2026-alt/textbook` | <https://social-research-methods.confused4now.org> | Obsidian Publish, site `1443b409…` | the platform owner (D16, 25 Sep 2026): the Publish subscription until it is cancelled (BOOK-ONE-TO-QUARTZ §8 step 20), and the Pages project from the cutover. The registry records it as `paid_by: platform` at §8 step 17; its `obsidian-publish` host has no `paid_by` until then |
 | `platform-test-book` | `preview` | `dept-coordinator-test/platform-test-book` | <https://platform-test-book-2.pages.dev> | Cloudflare Pages `platform-test-book-2` (Direct Upload, built by `quartz-book`; the old Git-integrated `platform-test-book` is retired, §8 step 21) | `platform` |
 
 The registry is the source of truth for everything in this table. If it and this
@@ -78,7 +78,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), the fine-grained token `build-nudge dispatch` (§7), the classic token `PLATFORM_TOKEN` (§1, `book-requests`), and every book made from a request | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
 | `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | **confirm at handover** |
-| `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep) |
+| `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep), the sole administrator, who also pays for it (D16, 25 Sep 2026) |
 | a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | **confirm at handover** |
 | Vercel | Vercel | the suggest-edit function (S2) | **confirm at handover** |
 | Plausible | Plausible | one *site* per book or edition that has analytics | **confirm at handover** |
