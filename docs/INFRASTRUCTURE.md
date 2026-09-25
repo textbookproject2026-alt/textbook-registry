@@ -77,7 +77,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 |---|---|---|---|
 | `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), the fine-grained token `build-nudge dispatch` (§7), the classic token `PLATFORM_TOKEN` (§1, `book-requests`), and every book made from a request | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
-| `aldogobot` | GitHub user (machine) | the fallback `BOT_TOKEN` (§2d), which is no longer set in Vercel (25 Sep) | **confirm at handover** |
+| `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | **confirm at handover** |
 | `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep) |
 | a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | **confirm at handover** |
 | Vercel | Vercel | the suggest-edit function (S2) | **confirm at handover** |
@@ -226,7 +226,7 @@ Vercel's instant rollback rolls back code and registry together.
 |---|---|---|---|
 | `GITHUB_APP_ID` | Vercel env (production) | the App's numeric ID | falls back to `BOT_TOKEN`, or 500 |
 | `GITHUB_APP_PRIVATE_KEY` | Vercel env, **Sensitive** | the App's `.pem`, base64 on one line | as above |
-| `BOT_TOKEN` | **not set** (the platform owner checked Vercel, 25 Sep) | was the temporary fallback PAT (§2d) | nothing: a repo without the App gets a 502 |
+| `BOT_TOKEN` | **not set** (the platform owner checked Vercel, 25 Sep) | was the temporary fallback PAT (§2d). The token was revoked on 17 Sep | nothing: a repo without the App gets a 502 |
 | `GITHUB_OAUTH_CLIENT_ID` | Vercel env | the *Textbook sign-in* OAuth App's client ID (§2f). Not the GitHub App's | "Sign in with GitHub" fails. Anonymous proposals still work |
 | `GITHUB_OAUTH_CLIENT_SECRET` | Vercel env, **Sensitive** | that OAuth App's client secret. **Expiry: unconfirmed** | as above |
 | `IDENTITY_SECRET` | Vercel env | 32 or more random characters that sign the editor's identity tokens (§2f). It doesn't expire. Rotating it signs every reader out | as above |
@@ -245,7 +245,8 @@ owner).** On 22 Sep this couldn't be checked, and it mattered: while `BOT_TOKEN`
 was set, a book whose repo didn't have the App installed still got its
 suggestions, filed silently under the bot's personal token. That hid a missing
 installation, which is the trap `INTERIM-BOOK.md` warns about. The fallback's code
-is still in the function, so it would come back if the variable were set again.
+is still in the function, but the token was revoked on 17 Sep, so setting the old
+value again would not bring the fallback back.
 The editor's live proof on 24 Sep showed `credential=app` in the logs. **Still
 unverified:** whether `GITHUB_APP_INSTALLATION_ID` is set.
 
@@ -282,9 +283,10 @@ reader suggestions under a fine-grained PAT before the App existed.
 `platform.automation_logins` lists it so that contributor counts leave it out,
 and `check-github.mjs` checks that the account exists. The token is a fallback,
 and the plan is to delete it along with its code (`suggest-edit-function/README.md`).
-**On 25 Sep 2026 the variable was confirmed unset in Vercel.** The code path is
-still there, and the token itself hasn't been recorded as revoked. Revoke it on
-`aldogobot`'s account, then delete the code.
+**The token was revoked on 17 Sep 2026, after the App was proven, and on 25 Sep
+the variable was confirmed unset in Vercel.** Only the fallback's code is left in
+the function. Delete it; the account can stay, since `automation_logins` still
+names it.
 Deleting it is a change to the function's configuration, not to any book.
 
 ### 2e. What breaks, and the standing caveats
@@ -641,8 +643,8 @@ Tracked here so nobody rediscovers them the hard way. See
 - `textbook-registry` `main` isn't branch-protected (§1).
 - `ALLOWED_DOMAINS` isn't generated or checked (§3).
 - DNS isn't generated or checked (§5).
-- `BOT_TOKEN` is unset in Vercel (25 Sep), but the token isn't recorded as revoked
-  and its code path is still in the function (§2d).
+- `BOT_TOKEN` was revoked on 17 Sep and is unset in Vercel, but its code path is
+  still in the function (§2d).
 - Expiry **unconfirmed** for `PLATFORM_TOKEN`, `book-requests`' Cloudflare token and
   the *Textbook sign-in* client secret (§1, §2b).
 - Owners marked **confirm at handover**: Vercel, Plausible, Obsidian Publish,

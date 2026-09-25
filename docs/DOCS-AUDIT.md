@@ -119,9 +119,9 @@ relevant doc as it is today, not as it ought to be.
    refuse a dark book's origin. Parking is by hand, onto a portal whose response
    for a parked hostname hasn't been tested.
 6. **`ALLOWED_DOMAINS` and DNS are maintained by hand and checked by nothing.**
-7. **Resolved 25 Sep (the platform owner checked Vercel: it isn't set).** The
-   token isn't recorded as revoked, and the fallback code remains
-   (INFRASTRUCTURE §2d). **`BOT_TOKEN` may still be set on Vercel.** It couldn't be checked (no CLI
+7. **Resolved.** The token was revoked on 17 Sep, after the App was proven, and
+   on 25 Sep the platform owner confirmed it isn't set in Vercel. The fallback's
+   code remains (INFRASTRUCTURE §2d). **`BOT_TOKEN` may still be set on Vercel.** It couldn't be checked (no CLI
    access). If it is set, a book whose repo lacks the App still gets suggestions,
    filed by `aldogobot`, and the missing installation stays hidden.
 8. **Book one duplicates registry facts in `textbook.config.json`** (title,
@@ -168,3 +168,19 @@ relevant doc as it is today, not as it ought to be.
     both variables are set, an approved request produces a book whose author can't
     follow the emailed instructions. The app's Word import to `drafts` still needs a
     local vault ("Download a copy" first).
+16. **`PLATFORM_TOKEN` can delete repositories.** It's a classic personal access
+    token of `textbookproject2026-alt`, with the scopes `repo`, `workflow` and
+    `delete_repo` (INFRASTRUCTURE §1). A classic token can't be narrowed to certain
+    repositories, so it reaches every repository the platform account owns: the
+    registry, the function, the builder, book one's `textbook`, and the private
+    `authoring-assistant` and `book-requests`. Anyone who can change `book-requests`'
+    workflows, or who gets the secret, could delete any of them. `remove` refuses
+    anything that isn't `sandbox: true`, but that check is in the workflow, not in
+    the token. **The fix:** move provisioning and removal to a GitHub App installed
+    on the platform account, with only the permissions each step needs. Deletion
+    should be limited to the repositories the App itself created. One step needs a
+    user token today: adding a repo to the suggest-edit App's installation. A GitHub
+    App can't call that endpoint either, so decide how that step is done first
+    (for example, by hand when a request is approved). Until the move, keep
+    `book-requests` private, keep its workflows reviewed, and record the token's
+    expiry (unconfirmed, INFRASTRUCTURE §1).
