@@ -119,7 +119,9 @@ relevant doc as it is today, not as it ought to be.
    refuse a dark book's origin. Parking is by hand, onto a portal whose response
    for a parked hostname hasn't been tested.
 6. **`ALLOWED_DOMAINS` and DNS are maintained by hand and checked by nothing.**
-7. **`BOT_TOKEN` may still be set on Vercel.** It couldn't be checked (no CLI
+7. **Resolved.** The token was revoked on 17 Sep, after the App was proven, and
+   on 25 Sep the platform owner confirmed it isn't set in Vercel. The fallback's
+   code remains (INFRASTRUCTURE §2d). **`BOT_TOKEN` may still be set on Vercel.** It couldn't be checked (no CLI
    access). If it is set, a book whose repo lacks the App still gets suggestions,
    filed by `aldogobot`, and the missing installation stays hidden.
 8. **Book one duplicates registry facts in `textbook.config.json`** (title,
@@ -139,3 +141,46 @@ relevant doc as it is today, not as it ought to be.
 13. **`docs/` is excluded from lint and link-check in the vault.** Cross-links
     between the guides, including the new ones into this repo, are checked by
     nobody.
+
+**Added 25 Sep 2026**, from the book-requests workstream of 24 Sep:
+
+14. **Books use two chapter-naming conventions.** Book one, the template's guides
+    (`docs/word-to-markdown.md`, `docs/editing-the-textbook.md`) and
+    BOOK-ONE-TO-QUARTZ §8 step 1 name a chapter `chapters/chapter-NN.md`, with its
+    pictures in `assets/chapter-NN/`. Nothing enforces this: the app suggests the Word
+    file's name, and the guide asks the author to rename it. Books made from a request
+    keep the Word file's name, for example `chapters/Chapter 3 – X.md` with
+    `assets/Chapter 3 – X/`, so that importing again from the app replaces the chapter
+    rather than duplicating it. This comes from book-requests' delivered follow-up
+    `2ff0f51`, which isn't on `main` on 25 Sep. The builder builds page addresses from
+    file names, and chapter-to-chapter links are written from them, so the two
+    conventions give two URL styles and two ways to write links. The template's guides
+    describe only the first. Pick one convention, or document both.
+15. **The request workflow depends on an Authoring Assistant build that doesn't
+    exist yet.** For a request-made book, the author works only in the app
+    (decided 24 Sep), and first accepts the invitation to their book from inside it.
+    That needs the scope `public_repo repo:invite` and the invitations screen, which
+    are on `authoring-assistant` `main` (`c90f2ed`) and need a new signed,
+    notarised build, which isn't recorded as made by 25 Sep. The welcome email's download link (`APP_DOWNLOAD_URL`) points at a
+    release on `authoring-assistant-releases`, which has none, and the variable
+    isn't set (INFRASTRUCTURE §1, §6). The follow-up `2ff0f51` also pins the
+    converter to the app build's pandoc (`PANDOC_VERSION`), which is unset too. Until a build ships and
+    both variables are set, an approved request produces a book whose author can't
+    follow the emailed instructions. The app's Word import to `drafts` still needs a
+    local vault ("Download a copy" first).
+16. **`PLATFORM_TOKEN` can delete repositories.** It's a classic personal access
+    token of `textbookproject2026-alt`, with the scopes `repo`, `workflow` and
+    `delete_repo` (INFRASTRUCTURE §1). A classic token can't be narrowed to certain
+    repositories, so it reaches every repository the platform account owns: the
+    registry, the function, the builder, book one's `textbook`, and the private
+    `authoring-assistant` and `book-requests`. Anyone who can change `book-requests`'
+    workflows, or who gets the secret, could delete any of them. `remove` refuses
+    anything that isn't `sandbox: true`, but that check is in the workflow, not in
+    the token. **The fix:** move provisioning and removal to a GitHub App installed
+    on the platform account, with only the permissions each step needs. Deletion
+    should be limited to the repositories the App itself created. One step needs a
+    user token today: adding a repo to the suggest-edit App's installation. A GitHub
+    App can't call that endpoint either, so decide how that step is done first
+    (for example, by hand when a request is approved). Until the move, keep
+    `book-requests` private, keep its workflows reviewed, and record the token's
+    expiry (unconfirmed, INFRASTRUCTURE §1).

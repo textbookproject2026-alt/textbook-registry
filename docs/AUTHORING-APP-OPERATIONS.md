@@ -89,10 +89,17 @@ no client secret, no callback in use, no relay.
 - **"Enable Device Flow" must be ticked** on the OAuth App, or every author's
   sign-in fails with `incorrect_client_credentials`, shown to them as "The
   sign-in identifier in Settings is not recognised."
-- **Scope: `public_repo`.** It's enough to reply to and close suggestions, merge
+- **Scope: `public_repo repo:invite`** (since `authoring-assistant` `c90f2ed`,
+  24 Sep 2026). `public_repo` is enough to reply to and close suggestions, merge
   draft changes into `drafts` and open the publish PR, and it gives no access to
   private repositories. **This is why every content repo must be public**, and
-  the registry's CI enforces it. Don't widen the scope.
+  the registry's CI enforces it. `repo:invite` only lets the author see and accept
+  an invitation to a repository, so an author of a request-made book can accept
+  the invitation to their book inside the app. It grants no access to any
+  repository's contents. Builds from before `c90f2ed` ask for `public_repo`
+  alone. An author who signed in with one of those is asked to sign in again, and
+  the new scope reaches authors only with a new signed, notarised build
+  (DOCS-AUDIT item 15). Don't widen the scope further.
 - **It's one app for every book.** Revoking it signs out every author on every
   book. Each author can revoke their own grant at
   <https://github.com/settings/applications>.

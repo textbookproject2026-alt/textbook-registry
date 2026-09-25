@@ -19,6 +19,10 @@ file says **confirm at handover** instead of guessing. Resolve those rows first.
 
 **Last checked live: 22 September 2026.** Facts marked *(verified)* were checked
 against the running service that day. Everything else comes from the repositories.
+**Updated 25 Sep 2026** for the three workstreams of 24 Sep (the in-site editor,
+portal sections and graphs, book requests). Those facts come from their records and
+the repositories, and from GitHub checks on 25 Sep where this file says so. Where
+a record doesn't give a credential's scope or expiry, it says **unconfirmed**.
 
 ---
 
@@ -60,7 +64,8 @@ same dates as reminders. Add a row whenever a step creates an expiring credentia
 | Cloudflare API token `quartz-book reconcile` (§7) | **25 Sep 2027**, as the Cloudflare dashboard shows it in CEST (a day after the date recorded before) | `quartz-book` secret `CLOUDFLARE_API_TOKEN` | `reconcile` builds but can't deploy: every run goes red, and every book keeps serving its last deployment |
 | GitHub fine-grained token `build-nudge dispatch` (§7) | **23 Sep 2027**, 22:00 UTC (the date GitHub set, a day before the one entered) | `build-nudge` Worker secret `DISPATCH_TOKEN` | the Worker can't start `reconcile`: nothing rebuilds on its own (no nudges, no 15-minute tick). `builder-alive` goes red within a day. `reconcile` still works by hand |
 | `PARITY_READ_TOKEN` (fine-grained, SCHEDULED-JOBS Part 1) | **not recorded — confirm** | registry secret | parity goes red every day |
-| `BOT_TOKEN` (§2d) | **not recorded — confirm** | Vercel | only the fallback for suggestions to a repo the App isn't installed on (§2e); nothing once the fallback is deleted |
+| `PLATFORM_TOKEN` (§1, `book-requests`) | **unconfirmed** | `book-requests` secret | `provision` and `remove` fail: no approved request becomes a book, and no sandbox book can be removed. Nothing live breaks |
+| `GITHUB_OAUTH_CLIENT_SECRET`, the *Textbook sign-in* OAuth App's secret (§2f) | **unconfirmed** | Vercel env | "Sign in with GitHub" in the editor fails. Anonymous proposals still work |
 | `HYPOTHESIS_API_TOKEN` (§9) | **not recorded — confirm** whether it expires | `textbook` secret | book one's Sunday annotation backup and dashboard fail |
 
 Book two is a throwaway test book (`MULTI-BOOK-HOSTING.md` §6). It is meant to be
@@ -70,9 +75,9 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 
 | Account | Kind | Holds | Who holds the login |
 |---|---|---|---|
-| `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), and the fine-grained token `build-nudge dispatch` (§7) | the platform owner |
+| `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), the fine-grained token `build-nudge dispatch` (§7), the classic token `PLATFORM_TOKEN` (§1, `book-requests`), and every book made from a request | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
-| `aldogobot` | GitHub user (machine) | the fallback `BOT_TOKEN` (§2d) | **confirm at handover** |
+| `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | **confirm at handover** |
 | `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep) |
 | a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | **confirm at handover** |
 | Vercel | Vercel | the suggest-edit function (S2) | **confirm at handover** |
@@ -99,9 +104,35 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `build-nudge` | public | S7's trigger: the `build-nudge` Cloudflare Worker. Deployed by hand with `wrangler`, so the repo holds no credential (§7) | platform |
 | `sveltia-cms-auth` | public | the relay's source (S3). A copy of upstream `sveltia/sveltia-cms-auth` that hardcodes scope `repo,user` | platform |
 | `textbook-template` | public | the starting point for a new book (`SETUP.md`, `scripts/new-book.mjs`) | platform |
+| `book-requests` | **private** | the "Publish your textbook" requests: one issue per request, the uploaded manuscripts under `requests/`, and the `provision` and `remove` workflows. Private so that requesters' emails and unpublished manuscripts never reach a public repo. Added 24 Sep 2026 (see below) | platform |
+| `authoring-assistant-releases` | public | meant to host the Authoring Assistant's `.dmg` for authors, as a release asset named `Authoring-Assistant.dmg`. Created 24 Sep 2026, 19:10 UTC. **It had no releases on 25 Sep** (§6) | platform |
+| `<slug>`, one per book made from a request | public | a request-made book's content repo, created by `provision` with `PLATFORM_TOKEN`. None exists on 25 Sep: the only one, the sandbox test, was removed (registry #27, #28) | the book (held by the platform, `paid_by: platform`) |
 | `textbook` | public | **book one's** content repo, its weekly workflows and its maintainer docs | book one |
 | `textbook-edition-template` | public | **book one's** department-edition template (`editions.template_repo`) | book one |
 | `code_repo` | private | not mentioned in any repository or doc | **unaccounted for — confirm at handover** |
+
+### `book-requests`: the request workflow's credentials
+
+Added 24 Sep 2026. The portal's form posts to the function's `/api/request-book`
+(§2), which files the request as an issue here with the App. The `approved` label
+starts `provision`; the `remove` label, or a manual run, starts `remove`, which
+refuses anything that isn't `sandbox: true`. The full procedure is in
+`book-requests/README.md`, and in [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE.md). Under
+Settings → Secrets and variables → Actions:
+
+| Name | Kind | What | If it's missing or wrong |
+|---|---|---|---|
+| `PLATFORM_TOKEN` | secret, set 24 Sep 18:20 UTC | Classic personal access token of `textbookproject2026-alt`. **Scopes, per `book-requests/README.md`:** `repo`, `workflow`, `delete_repo` (not confirmed against the token's own settings page). **Expiry: unconfirmed.** It creates and deletes book repos, pushes their workflows, adds each new repo to the App's installation (an endpoint that takes only a user token), opens and merges registry PRs, and starts `reconcile`. `provision` refuses a token that belongs to anyone else. The delivered follow-up `2ff0f51`, which isn't on `main` on 25 Sep, also uses it to check out the private `authoring-assistant` for the app's converter | `provision` and `remove` fail |
+| `CLOUDFLARE_API_TOKEN` | secret | *Account → Cloudflare Pages → Edit*, and *Zone → DNS → Edit* for `confused4now.org` only. It's a different token from `quartz-book reconcile` (§7). **Expiry: unconfirmed** | new books get no Pages project, custom domain or DNS record |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` | secrets | `brandonproject2026`'s account ID, and the `confused4now.org` zone ID | as above |
+| `PORTAL_DEPLOY_HOOK` | secret | the portal's deploy hook, the same URL as the registry's (§4) | the portal doesn't list a new book until its next build |
+| `APP_INSTALLATION_ID` | variable | `161872702`, the suggest-edit App's installation on `textbookproject2026-alt` (§2c) | new repos aren't added to the App |
+| `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` | optional | the welcome email. **Not set on 25 Sep**, so the maintainer sends the prepared email by hand | — |
+| `APP_DOWNLOAD_URL`, `PANDOC_VERSION` | variables, used by the delivered follow-up | the welcome email's download link (meant to be `…/authoring-assistant-releases/releases/latest/download/Authoring-Assistant.dmg`), and the pandoc version, pinned to the app build's own. **Neither is set on 25 Sep** | — |
+| `APPROVERS` | variable, optional | a JSON list of logins, besides the repo owner, whose `approved` and `remove` labels count. Not set | only the owner's labels count |
+
+The suggest-edit App must be installed on `book-requests` with *Issues* and
+*Contents* read and write, or the form's requests fail.
 
 Book one's two repositories sit under the platform account for historical
 reasons: book one came first. The registry doesn't require this.
@@ -158,6 +189,18 @@ HTTPS and authenticate through `gh`.
   files the suggestion as an issue on that book's `content.repo`, labelled
   `suggested-edit` and `needs-triage`. An unknown origin, a missing origin or a
   retired book gets 403. The full contract is in `suggest-edit-function/README.md`.
+- **Its other endpoints (added 24 Sep 2026)**, beside `/api/suggest-edit`:
+  `/api/propose-edit`, the in-site editor's back end. A GET reads a page's source
+  from `drafts`. A POST makes one commit on a `proposed-edits/…` branch and opens a
+  PR into `drafts`, labelled `proposed-edit` and `needs-triage`. If `drafts` has
+  moved under the reader, it files an issue with the diff instead.
+  `/api/github-auth` handles "Sign in with GitHub" (§2f). `/api/request-book` takes
+  the portal's "Publish your textbook" form and files the request in `book-requests`
+  (§1). **Origins:** a builder book (`host.builder: "quartz-book"`) or a book on
+  Cloudflare Pages is also accepted from its own Pages deployments,
+  `https://<project>.pages.dev` and `https://<label>.<project>.pages.dev`, where
+  `project` is `site.host.project`. The function refuses to load a registry in which
+  two books share a Pages project.
 - **Registry version (verified):** every response carries `X-Registry-Version`.
   On 22 Sep it was `051597c`, which is registry `main`.
 
@@ -183,7 +226,12 @@ Vercel's instant rollback rolls back code and registry together.
 |---|---|---|---|
 | `GITHUB_APP_ID` | Vercel env (production) | the App's numeric ID | falls back to `BOT_TOKEN`, or 500 |
 | `GITHUB_APP_PRIVATE_KEY` | Vercel env, **Sensitive** | the App's `.pem`, base64 on one line | as above |
-| `BOT_TOKEN` | Vercel env | **temporary** fallback PAT (§2d) | nothing, once the App is proven |
+| `BOT_TOKEN` | **not set** (the platform owner checked Vercel, 25 Sep) | was the temporary fallback PAT (§2d). The token was revoked on 17 Sep | nothing: a repo without the App gets a 502 |
+| `GITHUB_OAUTH_CLIENT_ID` | Vercel env | the *Textbook sign-in* OAuth App's client ID (§2f). Not the GitHub App's | "Sign in with GitHub" fails. Anonymous proposals still work |
+| `GITHUB_OAUTH_CLIENT_SECRET` | Vercel env, **Sensitive** | that OAuth App's client secret. **Expiry: unconfirmed** | as above |
+| `IDENTITY_SECRET` | Vercel env | 32 or more random characters that sign the editor's identity tokens (§2f). It doesn't expire. Rotating it signs every reader out | as above |
+| `GITHUB_OAUTH_REDIRECT_URI` | Vercel env, optional | defaults to `https://<request host>/api/github-auth`. **Unconfirmed** whether it's set | sign-in's callback fails if the OAuth App's callback URL differs |
+| `REQUESTS_REPO` | Vercel env, optional | only needed if `book-requests` is ever renamed | — |
 | `GITHUB_APP_INSTALLATION_ID` | Vercel env | **no longer read**. If it's set, startup logs a warning | delete it |
 | `REGISTRY_REF` | Vercel build env, optional | pins the registry to a SHA or branch | while set, `deploy.yml` stays red by design |
 | `SUGGEST_EDIT_DEPLOY_HOOK` | `textbook-registry` repo secret | the Vercel deploy hook's URL, a credential | `deploy.yml` fails and says so |
@@ -192,23 +240,36 @@ The App's `.pem` file itself is kept outside any repository. **Where the only
 copy is kept is not recorded. Confirm at handover.** If it's lost, generate a
 new key in the App's settings. No code changes.
 
-**Unverified on 22 Sep:** whether `BOT_TOKEN` and `GITHUB_APP_INSTALLATION_ID`
-are still set. There was no Vercel CLI access. The latest suggestions on both
-books (`textbook#30`, `platform-test-book#1`) were filed by
-`textbook-suggest-edit[bot]`, which shows that the App path works. They don't
-show that the fallback is gone. As long as `BOT_TOKEN` is set, a book whose repo
-*doesn't* have the App installed still gets its suggestions filed, silently,
-under the bot's personal token. That hides a missing installation, and it's
-the trap `INTERIM-BOOK.md` warns about.
+**`BOT_TOKEN` is not set (25 Sep 2026, checked in Vercel by the platform
+owner).** On 22 Sep this couldn't be checked, and it mattered: while `BOT_TOKEN`
+was set, a book whose repo didn't have the App installed still got its
+suggestions, filed silently under the bot's personal token. That hid a missing
+installation, which is the trap `INTERIM-BOOK.md` warns about. The fallback's code
+is still in the function, but the token was revoked on 17 Sep, so setting the old
+value again would not bring the fallback back.
+The editor's live proof on 24 Sep showed `credential=app` in the logs. **Still
+unverified:** whether `GITHUB_APP_INSTALLATION_ID` is set.
 
 ### 2c. The GitHub App `textbook-suggest-edit`
 
 - **App ID** 4951384. **Public**, so accounts other than the owner can install it.
   Owned by `textbookproject2026-alt`. Confirm at handover.
-- **Permissions:** Issues read and write, Metadata read. No webhook.
-- **Installations:** one per book repository, always **only selected
-  repositories**. Today: `textbookproject2026-alt/textbook` and
-  `dept-coordinator-test/platform-test-book`.
+- **Permissions (widened 24 Sep 2026 for the in-site editor):** Issues, Contents
+  and Pull requests read and write, and Metadata read. No webhook. Until 24 Sep it
+  had Issues and Metadata only. Each installation made before then had to accept
+  the permissions request once. Per the editor's record, both installations below
+  have accepted.
+- **Tokens:** the function still narrows each token to what the endpoint needs.
+  `/api/suggest-edit` asks for *Issues* only. `/api/propose-edit` asks for
+  *Contents*, *Pull requests* and *Issues*, on the one repository. An installation
+  still grants all three on every repo it covers, which is why BOOK-ONE-TO-QUARTZ
+  §8 step 23 suggests a `main` ruleset on each book repo.
+- **Installations:** always **only selected repositories**. On
+  `textbookproject2026-alt`: installation `161872702`, covering `textbook` and
+  `book-requests`. `provision` adds each request-made book to it with
+  `PLATFORM_TOKEN`, and `remove` takes a sandbox book off it. On
+  `dept-coordinator-test`: `platform-test-book`. The repo lists come from the
+  records. The installation couldn't be read with the `gh` token on 25 Sep.
 - The function looks up the installation for each repository, and refuses a
   token that covers more than that one repository.
 - **A repository with no installation** gets 502
@@ -222,6 +283,10 @@ reader suggestions under a fine-grained PAT before the App existed.
 `platform.automation_logins` lists it so that contributor counts leave it out,
 and `check-github.mjs` checks that the account exists. The token is a fallback,
 and the plan is to delete it along with its code (`suggest-edit-function/README.md`).
+**The token was revoked on 17 Sep 2026, after the App was proven, and on 25 Sep
+the variable was confirmed unset in Vercel.** Only the fallback's code is left in
+the function. Delete it; the account can stay, since `automation_logins` still
+names it.
 Deleting it is a change to the function's configuration, not to any book.
 
 ### 2e. What breaks, and the standing caveats
@@ -238,6 +303,24 @@ Deleting it is a change to the function's configuration, not to any book.
 - **The build requires at least one routable book** (`test/registry.test.mjs`).
   Retiring the last `preview`/`live` book fails the build, and the old
   deployment keeps serving it.
+
+### 2f. "Sign in with GitHub": the OAuth App *Textbook sign-in* and `IDENTITY_SECRET`
+
+Added 24 Sep 2026 for the in-site editor.
+
+- **The OAuth App *Textbook sign-in*.** It asks for **no scopes**, so all it proves
+  is who the reader is. `/api/github-auth` swaps the code for a GitHub token, reads
+  the login, and **revokes the GitHub token at once**. Its client ID and secret are
+  in Vercel (§2b). **Which account owns it: unconfirmed**, so confirm at handover.
+  It's separate from the *Textbook CMS* OAuth App (§3), the *Textbook Author
+  Console* OAuth App (§6) and the GitHub App (§2c).
+- **`IDENTITY_SECRET`** signs the identity token the function gives back instead: it
+  lasts 8 hours and is bound to the origin of the page that asked. A signed-in
+  reader's commit is authored as `<id>+<login>@users.noreply.github.com`. An
+  anonymous one is authored by the App, with the name and masked email in the PR
+  body only.
+- **If it's gone:** sign-in fails with a reader-facing message. Anonymous proposals,
+  and *Suggest an edit*, carry on.
 
 ---
 
@@ -360,7 +443,17 @@ book that wants the editor brings its own Pages project and asks for one
   Its client ID is public by design, and comes from
   `platform.console_oauth_client_id` in the registry. A value pasted into
   Settings overrides it. The scope is `public_repo`, which is why every content
-  repo must be public.
+  repo must be public. **Widening to `public_repo repo:invite`** lets an author
+  accept an invitation to their book from inside the app, which is what
+  request-made books rely on. It is on `authoring-assistant` `main` (`c90f2ed`,
+  24 Sep 2026), and **needs a new signed, notarised build**, which isn't
+  recorded as made by 25 Sep. Authors on the old
+  scope are asked to sign in again.
+- **Distribution:** the `.dmg` is meant to go out as the release asset
+  `Authoring-Assistant.dmg` on the public `authoring-assistant-releases` (§1).
+  Request-made books' welcome email links to it through `book-requests`'
+  `APP_DOWNLOAD_URL`. On 25 Sep the repo has no releases and the variable isn't
+  set.
 - **Signing:** a Developer ID Application certificate on the build machine, and
   a `notarytool` keychain profile read through `NOTARY_PROFILE`. **Confirm at
   handover** which Apple account holds them.
@@ -550,9 +643,12 @@ Tracked here so nobody rediscovers them the hard way. See
 - `textbook-registry` `main` isn't branch-protected (§1).
 - `ALLOWED_DOMAINS` isn't generated or checked (§3).
 - DNS isn't generated or checked (§5).
-- Whether `BOT_TOKEN` is still set (§2b).
+- `BOT_TOKEN` was revoked on 17 Sep and is unset in Vercel, but its code path is
+  still in the function (§2d).
+- Expiry **unconfirmed** for `PLATFORM_TOKEN`, `book-requests`' Cloudflare token and
+  the *Textbook sign-in* client secret (§1, §2b).
 - Owners marked **confirm at handover**: Vercel, Plausible, Obsidian Publish,
   Apple, the second Cloudflare account, the registrar, the *Textbook CMS* OAuth
-  App, the App's key file, `code_repo`.
+  App, the *Textbook sign-in* OAuth App, the App's key file, `code_repo`.
 - There's no site-health probe (`MULTI-BOOK-HOSTING.md` §5b). A Publish book that
   lapses, or a `<slug>` record taken over, goes unnoticed until someone looks.
