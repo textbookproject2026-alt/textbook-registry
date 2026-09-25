@@ -1,7 +1,7 @@
 # Book one to Quartz: plan
 
-**Status:** plan, decided except D12, D15 and D16, which are with the client (see
-*Decisions*). §0a designs the build trigger that D2 left open. §8 is the order of work, as
+**Status:** plan. D12, D15 and D16 were settled for phase 1 on 25 Sep 2026, to be reviewed
+when phase 1 finishes, and D19 was added (see *Decisions*). §0a designs the build trigger that D2 left open. §8 is the order of work, as
 PR-sized steps. No code, repository, registry entry or DNS record has changed.
 **Date:** 22 Sep 2026. Decisions recorded the same day. Amended the same day: the 15-minute
 poll in §0a runs from a Cron Trigger on the `build-nudge` Worker, not a GitHub schedule.
@@ -89,7 +89,9 @@ I think it is the right move, on two conditions. Here is what gave me pause.
    this move, a lapse, lockout or handover mistake on that account takes down every book at
    once. **Condition:** a second administrator on the account, and INFRASTRUCTURE.md stating
    who pays, before the cutover. That is D16, pending with the client, and §8 step 16 is
-   gated on it.
+   gated on it. **Settled for phase 1 (25 Sep, D16):** the platform owner stays the sole
+   administrator and pays for everything, so the single point of failure is accepted for
+   now and step 16 is not blocked.
 2. **The move removes the author's only publishing path before its replacement exists.** The
    authoring app writes to a local folder, and only Obsidian publishes that folder
    (`docs/word-to-markdown.md:390`: "Nothing to sync or commit"). If the cutover happens
@@ -520,6 +522,7 @@ Two values wait for the client (D12, pending): `publish.css`'s "AA-strict" accen
 (`#6A57E0` for link text, because `#7C6CF0` measures about 4.0:1), and whether dark mode
 stays off. Until D12 is settled, `design.yaml` is seeded with what readers see today:
 `#7C6CF0`, dark mode off. Settling it is then a one-line edit by the route above.
+**Settled for phase 1 (25 Sep, D12):** the link colour stays `#7C6CF0`, so nothing is edited.
 
 ---
 
@@ -1278,9 +1281,9 @@ registry PR if it isn't.
 ### Phase 2: the live address
 
 **16. Cutover.** Not a PR: one DNS edit, plus the Pages custom domain.
-- **Gate:** steps 1-15 done. **D16 settled:** a second administrator on
-  `brandonproject2026`, and INFRASTRUCTURE.md saying who pays. The author's Mac runs the app
-  build from step 12.
+- **Gate:** steps 1-15 done. The author's Mac runs the app build from step 12. **D16 is
+  settled** (25 Sep, for phase 1): the platform owner is the sole administrator on
+  `brandonproject2026` and pays for everything, so no second administrator is needed first.
 - **Does:** in Pages, add `social-research-methods.confused4now.org` to the project, and
   change the CNAME from `publish-main.obsidian.md` to `social-research-methods.pages.dev`.
   **Don't touch Publish's custom-domain setting.**
@@ -1333,6 +1336,23 @@ registry PR if it isn't.
 > (`<project>.pages.dev`, `<label>.<project>.pages.dev`), so this change doesn't alter
 > which origins it accepts. After the merge, repeat step 16's `propose-edit` check: it
 > must still return `"branch":"drafts"`.
+
+**17a. One Plausible site for the platform (D19).** Added 25 Sep 2026, numbered 17a so that
+the later steps keep their numbers.
+- **Repos:** `textbook-registry`, `quartz-edition-extras` (`edition-integrations`),
+  `quartz-book`, `textbook-portal`.
+- **Does:** one Plausible site that covers the portal and every book's address. The
+  registry names it once for the platform, not per book (`analytics.plausible` today). The
+  builder passes it to every book, and the portal uses the same site. The hostname guard
+  counts on the portal's domain and on every registered `site.domain`, and never on a
+  preview (`*.pages.dev`, drafts, design previews). **Settled in this step:** whether the
+  site is a new one or an existing one renamed, and what happens to each book's Plausible
+  history. §1a kept the six event names so that history would continue.
+- **Proves it:** a pageview from book one's live address and one from the portal both
+  arrive in the one site, and each is recorded under its own address. Nothing arrives from
+  `social-research-methods.pages.dev`, its drafts or a design preview.
+- **Must not break:** the six event names from §1a, and the editor's three events.
+  Parity's Plausible checks change in the same PR as the registry field.
 
 **18. Clean up book one, apart from the Publish files.**
 - **Repo:** `textbook`.
@@ -1555,9 +1575,9 @@ unique, 905 OK, **2 errors**, and both are F1 and F2 again.
 
 ## Decisions
 
-Recorded on 22 Sep 2026. **D12, D15 and D16 are for the client and are pending.** Nothing in
-§8 waits on D12 or D15 except where a step says so. The cutover (§8 step 16) is gated on
-D16.
+Recorded on 22 Sep 2026. **D12, D15 and D16 were settled on 25 Sep 2026 for phase 1, and are
+to be reviewed when phase 1 finishes.** D19 was added the same day. Nothing now blocks the
+cutover (§8 step 16).
 
 | # | Topic | Status | Decision |
 |---|---|---|---|
@@ -1572,13 +1592,14 @@ D16.
 | D9 | Local folder | **decided** | Keep "Download a copy" |
 | D10 | Probation | **decided** | Four weeks. "Proven" means: a full cycle of the weekly jobs green; one real chapter from Word to readers via "Send to drafts" and "Going live"; link check clean; every redirect tested (§8 step 19) |
 | D11 | Editions and the graph | **decided** | The graph is on in the edition template too, with the same block as the builder (§8 step 22) |
-| D12 | Design | **pending (client)** | The AA-strict accent (`#6A57E0` for link text), and whether dark mode stays off. Until then `design.yaml` carries today's values |
+| D12 | Design | **decided for phase 1** (25 Sep; review when phase 1 finishes) | The link colour stays as it is (`#7C6CF0`). The AA-strict accent (`#6A57E0`) is not adopted. Dark mode wasn't part of this decision and stays as today, off |
 | D13 | Drafts previews | **decided** | Public but `noindex` (§0) |
 | D14 | Redirects | **decided** | Generated by the builder for every book (§3c) |
-| D15 | Hosting policy | **pending (client)** | The policy text, the exit commitment (a 12-month 301?), and who other than the platform owner reviews a removal. Needed before a second maintainer-owned book joins |
-| D16 | Cloudflare | **pending (client)** | Who is the second administrator on `brandonproject2026`, and who pays. Gates the cutover |
+| D15 | Hosting policy | **decided for phase 1** (25 Sep; review when phase 1 finishes) | The policy will be written later: its text, the exit commitment (a 12-month 301?), and who other than the platform owner reviews a removal. It is still needed before a second maintainer-owned book joins, as are the removal automation in §7g (i) and the sections step 24 leaves waiting |
+| D16 | Cloudflare | **decided for phase 1** (25 Sep; review when phase 1 finishes) | The platform owner is the sole administrator on `brandonproject2026` and pays for everything. No second administrator. Step 16 is no longer blocked |
 | D17 | Book two | **decided** | Moves onto the builder, and is kept for demonstration (§8 step 21) |
 | D18 | Publish site options | **decided** | Record them before cancelling (§8 step 15) |
+| D19 | Analytics and annotations | **decided for phase 1** (25 Sep; review when phase 1 finishes) | Global across the platform. Plausible moves to one site covering the portal and every book's address, excluding previews, as its own step after step 17 (§8 step 17a). Annotations are the one public Hypothes.is layer for every book |
 
 ---
 
