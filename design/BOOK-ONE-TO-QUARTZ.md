@@ -1159,6 +1159,42 @@ registry PR if it isn't.
 - **Must not break:** the daily parity run. **This must merge before step 17**, or parity goes
   red every day.
 
+> **Built, 25 Sep 2026 (textbook-registry, `parity/host-kinds-step-13`).** Where the
+> step left something open, this is how it was settled:
+> - **The builder is a parity source,** `quartz-book` at the `stable` tag (the commit
+>   `reconcile` builds every book with), named in `parity/sources.json`.
+> - **The builder holds no copy of the values,** so `reading-site.*` read
+>   `builder/lib.mjs`: `renderConfig` must pass the plugin option on from `opts`, and
+>   the `bookOptions` line that reads it from the registry is evaluated for book one.
+>   A hardcoded value, a read of the wrong field or an expression parity doesn't know
+>   fails. `reading-site.live-branch` reads the branch `reconcileTargets` deploys to
+>   production. The suggest-edit endpoint is expected only when `suggest_edit.enabled`.
+>   They apply to any book with `builder: "quartz-book"`, so book one is checked on
+>   both host kinds.
+> - **Checks now carry `when`.** One that doesn't apply to the host is printed `n/a`
+>   with the reason, never as a pass. The old `reading-site.*` checks on `publish.js`
+>   are kept, renamed `publish.js.*`, and like `publish.site-id` and `publish.host`
+>   apply only while the host is `obsidian-publish`: until step 16, Publish is what
+>   readers get.
+> - **D11:** `graph.edition-template-matches-builder` compares the graph's plugin entry
+>   in the two `quartz.config.yaml` files line for line, ignoring comments and blank
+>   lines. It is **known drift** until step 22: the template still ships upstream's
+>   graph, switched off. Step 22 removes the drift entry.
+> - **D7:** `cms.config.repo`, `cms.config.drafts-branch` and `cms.config.auth-relay`
+>   read the `admin/config.yml` the CMS host serves (today `configure.mjs`'s output).
+>   Only when `cms.enabled`.
+> - **Proved locally, 25 Sep:** against GitHub, `main`'s registry gives 33 ok, 1 known
+>   drift, 25 retired, 0 n/a, 0 failed. The same registry with book one's host as
+>   step 17 writes it gives 27 ok, 1 drift, 25 retired, 6 n/a, 0 failed. `--local ..`
+>   agrees. `npm test` covers the evaluator, a hardcoded builder value, the graph
+>   block and which checks apply to which host.
+> - **Left for step 18:** it deletes `templates/` and trims `textbook.config.json`, so
+>   in that PR the step-4 retirements of `cms.repo`, `cms.drafts-branch` and
+>   `cms.auth-relay` (which require the token lines in `templates/admin/config.yml`),
+>   `landing.summary` (`templates/index.md`) and `config.title`, `config.maintainer`,
+>   `config.site-url` and `config.licence` must be retired or re-pointed, or parity
+>   goes red. The `cms.config.*` checks above then carry D7 alone.
+
 **14. Book automation as thin callers.**
 - **Repos:** `quartz-book` (the reusable workflows), then `textbook` (the callers).
 - **Does:** D6. The backup, contributors, dashboard, derivatives, weekly snapshot, lint and

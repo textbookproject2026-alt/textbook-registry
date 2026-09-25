@@ -14,7 +14,8 @@
 // How each repo is found, and why this survives repos moving:
 //   - content, edition template and extras repos are located from registry.json,
 //     so moving one is a registry change and parity follows it in the same commit;
-//   - the two service repos are named in parity/sources.json;
+//   - the service repos and the builder are named in parity/sources.json (the
+//     builder at its `stable` tag, the commit every book is built with);
 //   - every repo is first resolved through GET /repos/{owner}/{name}. GitHub answers
 //     a renamed or transferred repo with a redirect, so parity keeps reading it at
 //     its new home and warns that the name on file is stale;
@@ -128,7 +129,7 @@ async function verifyRetired(check) {
 
   let constant;
   try {
-    constant = check.extract(await readFile(src, check.path));
+    constant = check.extract(await readFile(src, check.path), { registry, book });
   } catch (e) {
     if (!(e instanceof NotFound) && e.status !== 404)
       return { check, status: 'FAIL', at, detail: `retired (${label}) but the constant is not cleanly gone: ${e.message}${readHint(e)}` };
@@ -149,24 +150,40 @@ async function verifyRetired(check) {
   }
 }
 
+// The expected value of a check that compares two repos (expectFrom) is read from
+// the second one; every other check's comes from the registry.
+async function expectedValue(check) {
+  if (!check.expectFrom) return check.expect(registry, book);
+  const { source, path, extract } = check.expectFrom;
+  const src = await openSource(source);
+  const { value } = extract(await readFile(src, path), { registry, book });
+  return value;
+}
+
 for (const check of checks) {
   if (check.retired) {
     results.push(await verifyRetired(check));
     continue;
   }
-  const expected = check.expect(registry, book);
+  const notApplicable = check.when?.(registry, book);
+  if (notApplicable) {
+    results.push({ check, status: 'n/a', at: `${check.source} ${check.path}`, detail: notApplicable });
+    continue;
+  }
   try {
+    const expected = await expectedValue(check);
     const src = await openSource(check.source);
     const text = await readFile(src, check.path);
-    const { value, line } = check.extract(text);
+    const { value, line } = check.extract(text, { registry, book });
     const at = `${src.label} ${src.sha.slice(0, 7)} ${check.path}:${line}`;
 
+    const from = check.expectFrom ? `${check.expectFrom.source} ${check.expectFrom.path} has` : 'registry says';
     if (isDeepStrictEqual(value, expected)) {
       results.push({ check, status: 'ok', at });
     } else if (check.drift && isDeepStrictEqual(value, check.drift.value)) {
-      results.push({ check, status: 'drift', at, detail: `${show(value)} (registry: ${show(expected)}). ${check.drift.note}` });
+      results.push({ check, status: 'drift', at, detail: `${show(value)} (${from} ${show(expected)}). ${check.drift.note}` });
     } else {
-      results.push({ check, status: 'FAIL', at, detail: `found ${show(value)}, registry says ${show(expected)}` });
+      results.push({ check, status: 'FAIL', at, detail: `found ${show(value)}, ${from} ${show(expected)}` });
     }
   } catch (e) {
     results.push({ check, status: 'FAIL', at: `${check.source} ${check.path}`, detail: `${e.message}${readHint(e)}` });
@@ -177,7 +194,7 @@ for (const check of checks) {
 
 const width = Math.max(...checks.map((c) => c.id.length));
 for (const r of results) {
-  const tag = { ok: 'ok     ', drift: 'DRIFT  ', retired: 'retired', FAIL: 'FAIL   ' }[r.status];
+  const tag = { ok: 'ok     ', drift: 'DRIFT  ', retired: 'retired', 'n/a': 'n/a    ', FAIL: 'FAIL   ' }[r.status];
   console.log(`${tag} ${r.check.id.padEnd(width)}  ${r.at ?? ''}`);
   if (r.status !== 'ok') console.log(`        ${' '.repeat(width)}  ${r.detail}`);
 }
@@ -200,6 +217,6 @@ console.log('\nNot checked by parity (no repository holds these):');
 for (const u of unverifiable) console.log(`  - ${u.field}: ${u.where}`);
 
 const count = (s) => results.filter((r) => r.status === s).length;
-console.log(`\n${count('ok')} ok, ${count('drift')} known drift, ${count('retired')} retired by migration, ${count('FAIL')} failed.`);
+console.log(`\n${count('ok')} ok, ${count('drift')} known drift, ${count('retired')} retired by migration, ${count('n/a')} not applicable to ${SLUG}'s host (${book.site.host.kind}), ${count('FAIL')} failed.`);
 
 if (count('FAIL')) process.exit(1);
