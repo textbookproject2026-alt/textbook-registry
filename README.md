@@ -217,8 +217,9 @@ built-in `fetch`, so nothing is cloned and there are no dependencies.
 - The content repo, edition template repo and extras repo are **located from
   `registry.json` itself**. If one of them moves, you update the registry, and parity
   follows in the same commit.
-- `suggest-edit-function` and `authoring-assistant` aren't in the registry. They are
-  named in `parity/sources.json`.
+- `suggest-edit-function`, `authoring-assistant` and the builder (`quartz-book`) aren't
+  in the registry. They are named in `parity/sources.json`. The builder is read at its
+  `stable` tag, the commit `reconcile` builds every book with.
 - Every repo is first resolved with `GET /repos/{owner}/{name}`. GitHub redirects
   requests for a renamed or transferred repo, so parity keeps working and emits a
   warning that the recorded name is stale. (`github-facts` treats a moved content repo
@@ -311,10 +312,32 @@ If the fetch fails, or the book or any field they need can't be resolved, they
 exit 1 before calling any API. So a change merged here reaches them at their next
 scheduled run, and a broken `registry.json` on `main` fails those jobs loudly.
 
-**Known drift.** A check can carry `drift: { value, note }` when the registry records
-the corrected value and a repo still holds the stale one. The stale value passes with a
-warning, the corrected value passes silently, and anything else fails. There are
-none today.
+**Host kinds (BOOK-ONE-TO-QUARTZ §8 step 13).** A check can carry `when(registry,
+book)`, which returns the reason it doesn't apply to the book's host, or null. Such a
+check is printed as `n/a` with that reason and counted separately, never as a pass.
+
+- `reading-site.*` read what the builder builds, not `publish.js`: `quartz-book`'s
+  `builder/lib.mjs` at `stable`. The builder holds no copy of the values, so each check
+  requires `renderConfig` to pass the plugin option on from `opts`, evaluates the
+  `bookOptions` line that reads it from the registry, and compares the result. A
+  hardcoded value, or a read of the wrong field, fails. They apply to builder books
+  (`site.host.builder: "quartz-book"`), which book one is on either host kind.
+- `publish.js.*` (the old `reading-site.*` checks) and `publish.site-id`, `publish.host`
+  apply only while the host is `obsidian-publish`. From step 17 they are `n/a`: the
+  files are the rollback copy until step 20 deletes them.
+- `cms.config.*` compare the `admin/config.yml` the CMS host serves with the registry
+  (D7): it is hand-kept once `configure.mjs` goes (step 18).
+- `graph.edition-template-matches-builder` compares the graph's plugin entry in the
+  edition template's `quartz.config.yaml` with the builder's (D11), line for line with
+  comments and blank lines ignored. Its expected value comes from the builder
+  (`expectFrom`), not from the registry.
+
+**Known drift.** A check can carry `drift: { value, note }` when the registry (or, for
+an `expectFrom` check, the other repo) records the corrected value and a repo still
+holds the stale one. The stale value passes with a warning, the corrected value passes
+silently, and anything else fails. Today there is one:
+`graph.edition-template-matches-builder`, because the edition template still ships
+upstream's graph, switched off, until §8 step 22.
 
 **Not checkable by parity**, because no repository holds the value. These are printed
 on every run: the console OAuth client ID (read by the console from here since

@@ -21,6 +21,11 @@
 //     read in its place fails too; that is a regression, not a migration.
 // When every check is retired, delete the parity job (DESIGN §5 step 1, step 8).
 //
+// A check with `when(registry, book)` applies only when that returns null; otherwise
+// it is reported n/a with the reason returned (host kinds, §8 step 13). A check with
+// `expectFrom: { source, path, extract }` takes its expected value from a second
+// repo instead of from `expect(registry, book)`.
+//
 // A check whose file still holds a known-stale value that the registry has
 // already corrected carries `drift: { value, note }`. The stale value passes with
 // a warning, the corrected value passes silently, anything else fails. Remove the
@@ -97,6 +102,109 @@ export const joined = (sep, ...extractors) => (text) => {
   const parts = outcomes.map((o) => o.part);
   return { value: parts.map((p) => p.value).join(sep), line: parts.map((p) => p.line).join(',') };
 };
+
+// --- the builder (quartz-book) ------------------------------------------------
+// A builder book has no copy of the reading site's values: builder/lib.mjs takes
+// them from the registry at build time (BOOK-ONE-TO-QUARTZ §0). So a builder check
+// reads the two places a value passes through on its way to the reader:
+// `bookOptions`, which reads it from the book's entry, and `renderConfig`, which
+// puts it into a plugin's options. The first is evaluated against the registry
+// being checked, so the value compared is the one the builder would build with.
+// An expression the evaluator doesn't know fails: parity must not guess.
+// Every extractor gets `(text, { registry, book })`; the others ignore the second.
+
+/** The body of `export function NAME(` up to the first `}` in column 0. */
+const fnBody = (text, name) => {
+  const starts = [...text.matchAll(new RegExp(`^export function ${name}\\(`, 'gm'))];
+  if (!starts.length) throw new NotFound(`expected exactly one "export function ${name}", found 0`);
+  if (starts.length !== 1) throw new Error(`expected exactly one "export function ${name}", found ${starts.length}`);
+  const end = text.indexOf('\n}\n', starts[0].index);
+  if (end < 0) throw new Error(`"function ${name}" is not closed`);
+  return { body: text.slice(starts[0].index, end), line: lineOf(text, starts[0].index) };
+};
+
+/** The `const NAME = <expr>` lines of a function body, one line each. */
+const constsOf = (body) => Object.fromEntries([...body.matchAll(/^\s+const (\w+) = (.+)$/gm)].map((m) => [m[1], m[2]]));
+
+/**
+ * The expressions builder/lib.mjs uses to read the registry: `book.a?.b`,
+ * `registry.a?.b`, `X ?? ""`, `X === true`, `A ? B : ""`, and a name bound by a
+ * `const` in the same function.
+ */
+export function evaluate(expr, scope, consts = {}, depth = 0) {
+  const e = expr.trim();
+  if (depth > 8) throw new Error(`the builder's expression \`${e}\` nests too deeply to evaluate`);
+  const again = (x) => evaluate(x, scope, consts, depth + 1);
+  let m;
+  if ((m = /^(\w+) \? (\w+) : "([^"]*)"$/.exec(e))) return again(m[1]) ? again(m[2]) : m[3];
+  if ((m = /^(.+) === true$/.exec(e))) return again(m[1]) === true;
+  if ((m = /^(.+) \?\? "([^"]*)"$/.exec(e))) return again(m[1]) ?? m[2];
+  if ((m = /^(book|registry)((?:\??\.\w+)*)$/.exec(e)))
+    return m[2].split(/\??\./).slice(1).reduce((v, k) => v?.[k], scope[m[1]]);
+  if (/^\w+$/.test(e) && Object.hasOwn(consts, e)) return again(consts[e]);
+  throw new Error(`the builder's expression \`${e}\` is not one parity can evaluate`);
+}
+
+/**
+ * The value the builder gives `plugin`'s option `key` for this book: renderConfig
+ * must set it from `opts.<optKey>`, and bookOptions' `<optKey>:` is evaluated.
+ */
+export const builderOption = (plugin, key, optKey = key) => (text, { registry, book }) => {
+  const render = fnBody(text, 'renderConfig');
+  const assign = new RegExp(`Object\\.assign\\(plugin\\("${plugin}"\\)\\.options, \\{([^}]*)\\}\\)`).exec(render.body);
+  if (!assign) throw new NotFound(`renderConfig does not fill ${plugin}'s options`);
+  if (!new RegExp(`^\\s+${key}: opts\\.${optKey},$`, 'm').test(assign[1]))
+    throw new NotFound(`renderConfig does not set ${plugin}'s ${key} from opts.${optKey}`);
+  const opts = fnBody(text, 'bookOptions');
+  const field = once(new RegExp(`^\\s+${optKey}: (.+),$`, 'm'))(opts.body);
+  return { value: evaluate(field.value, { registry, book }, constsOf(opts.body)), line: opts.line + field.line - 1 };
+};
+
+/** The value of `const NAME = <expr>` in function `fn`, evaluated for this book. */
+export const builderConst = (fn, name) => (text, { registry, book }) => {
+  const { body, line } = fnBody(text, fn);
+  const found = once(new RegExp(`^\\s+const ${name} = (.+)$`, 'm'))(body);
+  return { value: evaluate(found.value, { registry, book }, constsOf(body)), line: line + found.line - 1 };
+};
+
+/**
+ * The graph's entry in a quartz.config.yaml plugin list (upstream's graph or the
+ * platform's textbook-graph), as its lines: comments and blank lines dropped,
+ * indentation kept relative to the `- source:` line. D11 wants the same block in
+ * the builder and the edition template, so two configs compare line for line.
+ */
+export const graphBlock = (text) => {
+  const lines = text.split('\n');
+  const strip = (l) => (/^\s*#/.test(l) ? '' : l.replace(/\s+#.*$/, '').trimEnd());
+  const indent = (l) => l.length - l.trimStart().length;
+  const blocks = [];
+  lines.forEach((l, i) => {
+    if (!/^\s*- source:/.test(l)) return;
+    const own = indent(l);
+    const body = [l.slice(own).trimEnd()];
+    for (let j = i + 1; j < lines.length; j++) {
+      const s = strip(lines[j]);
+      if (!s) continue;
+      if (indent(s) <= own) break;
+      body.push(s.slice(own));
+    }
+    if (body.some((b) => /\bquartz-community\/graph\b|\bplugins\/textbook-graph\b/.test(b))) blocks.push({ body, line: i + 1 });
+  });
+  if (!blocks.length) throw new NotFound('no graph plugin in the plugin list');
+  if (blocks.length !== 1) throw new Error(`expected exactly one graph plugin, found ${blocks.length} (lines ${blocks.map((b) => b.line).join(',')})`);
+  return { value: blocks[0].body, line: blocks[0].line };
+};
+
+// --- when a check applies (by the book's host) -----------------------------------
+// `when(registry, book)` returns null when the check applies, or the reason it
+// doesn't. A check that doesn't apply is printed as n/a with that reason, so
+// nobody mistakes it for a pass.
+
+const onPublish = (r, b) => (b.site.host.kind === 'obsidian-publish' ? null
+  : `host is ${b.site.host.kind}, not obsidian-publish; Publish's files are kept only for rollback until §8 step 20`);
+const onBuilder = (r, b) => (b.site.host.builder === 'quartz-book' ? null
+  : 'the builder does not build this book (no site.host.builder "quartz-book")');
+const withCms = (r, b) => (b.cms?.enabled ? null : 'cms.enabled is false');
 
 // --- derived values (DESIGN §0b) --------------------------------------------
 
@@ -203,15 +311,46 @@ export const RETIREMENTS = {
 // --- the manifest -------------------------------------------------------------
 
 export const checks = [
+  // ---- the reading site: what the builder builds (BOOK-ONE-TO-QUARTZ §8 step 13) --
+  // Read at the `stable` tag, the builder commit every book is built with.
+  { id: 'reading-site.repo', source: 'builder', path: 'builder/lib.mjs', design: 'quartz-book lib.mjs bookOptions → renderConfig (edit-on-github repo)',
+    when: onBuilder, extract: builderOption('edit-on-github', 'repo'), expect: (r, b) => b.content.repo },
+  { id: 'reading-site.live-branch', source: 'builder', path: 'builder/lib.mjs', design: 'quartz-book lib.mjs reconcileTargets (the branch deployed to production)',
+    when: onBuilder, extract: builderConst('reconcileTargets', 'live'), expect: (r, b) => b.content.live_branch },
+  { id: 'reading-site.suggest-edit-endpoint', source: 'builder', path: 'builder/lib.mjs', design: 'quartz-book lib.mjs bookOptions → renderConfig (edit-on-github suggestEndpoint)',
+    when: onBuilder, extract: builderOption('edit-on-github', 'suggestEndpoint'),
+    expect: (r, b) => (b.suggest_edit?.enabled ? r.platform.suggest_edit_endpoint : '') },
+  { id: 'reading-site.plausible-script', source: 'builder', path: 'builder/lib.mjs', design: 'quartz-book lib.mjs bookOptions → renderConfig (edition-integrations plausibleScriptSrc)',
+    when: onBuilder, extract: builderOption('edition-integrations', 'plausibleScriptSrc'), expect: (r, b) => b.analytics?.plausible?.script_src ?? '' },
+
+  // D11: the edition template's graph is the builder's graph. The expected value is
+  // read from the builder's config, not from the registry.
+  { id: 'graph.edition-template-matches-builder', source: 'edition-template', path: 'quartz.config.yaml', design: 'BOOK-ONE-TO-QUARTZ §4a, D11',
+    extract: graphBlock, expectFrom: { source: 'builder', path: 'quartz.config.yaml', extract: graphBlock },
+    drift: { value: ['- source: github:quartz-community/graph', '  enabled: false', '  layout:', '    position: right', '    priority: 10'],
+      note: 'The edition template still ships upstream\'s graph, switched off. §8 step 22 gives it the builder\'s block; then remove this drift entry.' } },
+
   // ---- textbook (the content repo, read at live_branch) ---------------------
-  { id: 'reading-site.repo', source: 'content', path: 'publish.js', design: 'publish.js:12',
-    extract: once(/^const REPO = '([^']*)';$/m), expect: (r, b) => b.content.repo },
-  { id: 'reading-site.live-branch', source: 'content', path: 'publish.js', design: 'publish.js:13',
-    extract: once(/^const BRANCH = '([^']*)';$/m), expect: (r, b) => b.content.live_branch },
-  { id: 'reading-site.suggest-edit-endpoint', source: 'content', path: 'publish.js', design: 'publish.js:44',
-    extract: once(/^const SUGGEST_EDIT_ENDPOINT = '([^']*)';$/m), expect: (r) => r.platform.suggest_edit_endpoint },
-  { id: 'reading-site.plausible-script', source: 'content', path: 'publish.js', design: 'publish.js:791',
-    extract: once(/\bs\.src = '(https:\/\/plausible\.io\/[^']*)';/), expect: (r, b) => b.analytics.plausible.script_src },
+  // Publish's copy of the reading site's values. Checked only while Publish serves
+  // readers; from §8 step 17 these files are the rollback copy, and step 20 deletes them.
+  { id: 'publish.js.repo', source: 'content', path: 'publish.js', design: 'publish.js:12',
+    when: onPublish, extract: once(/^const REPO = '([^']*)';$/m), expect: (r, b) => b.content.repo },
+  { id: 'publish.js.live-branch', source: 'content', path: 'publish.js', design: 'publish.js:13',
+    when: onPublish, extract: once(/^const BRANCH = '([^']*)';$/m), expect: (r, b) => b.content.live_branch },
+  { id: 'publish.js.suggest-edit-endpoint', source: 'content', path: 'publish.js', design: 'publish.js:44',
+    when: onPublish, extract: once(/^const SUGGEST_EDIT_ENDPOINT = '([^']*)';$/m), expect: (r) => r.platform.suggest_edit_endpoint },
+  { id: 'publish.js.plausible-script', source: 'content', path: 'publish.js', design: 'publish.js:791',
+    when: onPublish, extract: once(/\bs\.src = '(https:\/\/plausible\.io\/[^']*)';/), expect: (r, b) => b.analytics.plausible.script_src },
+
+  // D7: admin/config.yml is hand-kept once configure.mjs goes (§8 step 18), so the
+  // file the CMS host serves is compared with the registry directly. Until then it
+  // is configure.mjs's output, and these pass for the same reason.
+  { id: 'cms.config.repo', source: 'content', path: 'admin/config.yml', design: 'admin/config.yml backend.repo (D7)',
+    when: withCms, extract: once(/^ {2}repo: (\S+)$/m), expect: (r, b) => b.content.repo },
+  { id: 'cms.config.drafts-branch', source: 'content', path: 'admin/config.yml', design: 'admin/config.yml backend.branch (D7, load-bearing line)',
+    when: withCms, extract: once(/^ {2}branch: (\S+)$/m), expect: (r, b) => b.content.drafts_branch },
+  { id: 'cms.config.auth-relay', source: 'content', path: 'admin/config.yml', design: 'admin/config.yml backend.base_url (D7)',
+    when: withCms, extract: once(/^ {2}base_url: (\S+)$/m), expect: (r) => r.platform.cms_auth_relay },
 
   { id: 'cms.title-comment', source: 'content', path: 'admin/config.yml', design: 'admin/config.yml:1',
     extract: once(/^# Sveltia CMS configuration — (.+) textbook$/m), expect: (r, b) => b.title },
@@ -241,9 +380,9 @@ export const checks = [
     extract: once(/^(https:\/\/[^\s/]+)\/?$/m), expect: (r, b) => origin(b) },
 
   { id: 'publish.site-id', source: 'content', path: '.obsidian/publish.json', design: '.obsidian/publish.json:2',
-    extract: jsonKey('siteId'), expect: (r, b) => b.site.host.site_id },
+    when: onPublish, extract: jsonKey('siteId'), expect: (r, b) => b.site.host.site_id },
   { id: 'publish.host', source: 'content', path: '.obsidian/publish.json', design: '.obsidian/publish.json:3',
-    extract: jsonKey('host'), expect: (r, b) => b.site.host.publish_host },
+    when: onPublish, extract: jsonKey('host'), expect: (r, b) => b.site.host.publish_host },
 
   { id: 'backup.hypothesis-groups', source: 'content', path: 'scripts/backup-annotations.mjs', design: 'backup-annotations.mjs:58-61',
     extract: jsGroups('ANNOTATION_GROUPS'), expect: (r, b) => b.annotations.hypothesis_groups,

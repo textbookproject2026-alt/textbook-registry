@@ -3,13 +3,15 @@
     "Where the parity job finds the repos that are NOT named in registry.json.",
     "The content, edition template and extras repos are located from the registry itself,",
     "so moving one of those is a registry change and parity follows it automatically.",
-    "ref null = the repo's default branch at the time of the run.",
+    "ref null = the repo's default branch at the time of the run. The builder is read at `stable`,",
+    "the tag reconcile builds every book with, so parity sees what readers are served.",
     "local_dir = directory name beside this repo, used only by `--local`."
   ],
   "content": { "from_registry": "books[slug].content.repo @ live_branch", "local_dir": "Obsidian Vault" },
   "edition-template": { "from_registry": "books[slug].editions.template_repo", "local_dir": "textbook-edition-template" },
   "edition-extras": { "from_registry": "platform.edition_extras_repo", "local_dir": "quartz-edition-extras" },
   "suggest-edit-function": { "repo": "textbookproject2026-alt/suggest-edit-function", "ref": null, "local_dir": "suggest-edit-function" },
+  "builder": { "repo": "textbookproject2026-alt/quartz-book", "ref": "stable", "local_dir": "quartz-book" },
   "authoring-assistant": { "repo": "textbookproject2026-alt/authoring-assistant", "ref": null, "local_dir": "authoring-assistant" },
   "cms-auth-worker": { "repo": "textbookproject2026-alt/sveltia-cms-auth", "ref": null, "local_dir": null }
 }
