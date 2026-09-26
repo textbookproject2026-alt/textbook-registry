@@ -43,7 +43,6 @@ const staticBook = (r) => {
       legacy_origins: [],
       dark: null,
     },
-    analytics: { plausible: null },
     annotations: { hypothesis_groups: [] },
     suggest_edit: { enabled: true, counted_from: null },
     cms: { enabled: false, host: null },
@@ -115,12 +114,20 @@ test('duplicate keys in one object are caught, not silently merged', () => {
   assert.ok(validate(text).some((e) => e.includes('duplicate key /books/0/site/domain')));
 });
 
+test('a book may no longer name its own Plausible site (D19, §8 step 17a)', () =>
+  expectFail((r) => { book(r).analytics = { plausible: null }; }, 'must NOT have additional properties'));
+test('platform analytics may be null', () => {
+  const r = JSON.parse(REAL);
+  r.platform.analytics.plausible = null;
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+
 test('unknown schema_version', () => expectFail((r) => { r.schema_version = 2; }, '/schema_version'));
 
-for (const field of ['slug', 'status', 'title', 'licence', 'maintainer', 'content', 'site', 'analytics', 'annotations', 'suggest_edit', 'cms', 'editions']) {
+for (const field of ['slug', 'status', 'title', 'licence', 'maintainer', 'content', 'site', 'annotations', 'suggest_edit', 'cms', 'editions']) {
   test(`required book field: ${field}`, () => expectFail((r) => { delete book(r)[field]; }, `must have required property '${field}'`));
 }
-for (const field of ['suggest_edit_endpoint', 'cms_auth_relay', 'cms_auth_relay_scope', 'edition_extras_repo', 'console_oauth_client_id', 'automation_logins']) {
+for (const field of ['suggest_edit_endpoint', 'cms_auth_relay', 'cms_auth_relay_scope', 'edition_extras_repo', 'console_oauth_client_id', 'automation_logins', 'analytics']) {
   test(`required platform field: ${field}`, () => expectFail((r) => { delete r.platform[field]; }, `must have required property '${field}'`));
 }
 test('required content.drafts_branch', () => expectFail((r) => { delete book(r).content.drafts_branch; }, "'drafts_branch'"));
@@ -165,8 +172,8 @@ for (const [where, set, bad] of [
   ['legacy_origins', (r, v) => { book(r).site.legacy_origins = [v]; }, 'bptext2026.xyz'],
   ['legacy_origins', (r, v) => { book(r).site.legacy_origins = [v]; }, 'https://bptext2026.xyz/'],
   ['template_preview', (r, v) => { book(r).editions.template_preview = v; }, 'https://textbook-edition-template.pages.dev:8443'],
-  ['script_src', (r, v) => { book(r).analytics.plausible.script_src = v; }, 'https://evil.example/js/pa-x.js'],
-  ['script_src', (r, v) => { book(r).analytics.plausible.script_src = v; }, 'https://plausible.io/js/pa x.js'],
+  ['script_src', (r, v) => { r.platform.analytics.plausible.script_src = v; }, 'https://evil.example/js/pa-x.js'],
+  ['script_src', (r, v) => { r.platform.analytics.plausible.script_src = v; }, 'https://plausible.io/js/pa x.js'],
 ]) {
   test(`malformed URL in ${where}: ${bad}`, () => expectFail((r) => set(r, bad), 'schema:'));
 }

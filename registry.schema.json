@@ -18,7 +18,8 @@
         "cms_auth_relay_scope",
         "edition_extras_repo",
         "console_oauth_client_id",
-        "automation_logins"
+        "automation_logins",
+        "analytics"
       ],
       "properties": {
         "suggest_edit_endpoint": { "$ref": "#/$defs/https_url" },
@@ -70,6 +71,38 @@
             "book_parent": {
               "oneOf": [{ "$ref": "#/$defs/hostname" }, { "type": "null" }],
               "description": "New books get <slug>.<book_parent>. Any book hostname under it must be exactly one label deep, to stay inside Universal SSL."
+            }
+          }
+        },
+        "analytics": {
+          "type": "object",
+          "description": "The platform's one Plausible site (BOOK-ONE-TO-QUARTZ D19, §8 step 17a). It covers the portal and every live book, each counted only on its own address; null means no analytics anywhere.",
+          "additionalProperties": false,
+          "required": ["plausible"],
+          "properties": {
+            "plausible": {
+              "oneOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["script_src", "site", "dashboard_public"],
+                  "properties": {
+                    "script_src": {
+                      "type": "string",
+                      "pattern": "^https://plausible\\.io/js/[A-Za-z0-9._-]+\\.js$"
+                    },
+                    "site": {
+                      "$ref": "#/$defs/hostname",
+                      "description": "The site's name in the Plausible account. The public dashboard's address is derived from it, https://plausible.io/<site>, and is never stored."
+                    },
+                    "dashboard_public": {
+                      "type": "boolean",
+                      "description": "Whether https://plausible.io/<site> is viewable logged out. The vault's community dashboard links readership there only when this is true."
+                    }
+                  }
+                }
+              ]
             }
           }
         }
@@ -144,7 +177,7 @@
       "additionalProperties": false,
       "required": [
         "slug", "status", "title", "summary", "licence", "maintainer",
-        "content", "site", "analytics", "annotations", "suggest_edit", "cms", "editions"
+        "content", "site", "annotations", "suggest_edit", "cms", "editions"
       ],
       "properties": {
         "slug": { "$ref": "#/$defs/slug" },
@@ -252,38 +285,6 @@
                     "notified": {
                       "description": "When the maintainer was told. null if they could not be reached.",
                       "oneOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }]
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        },
-
-        "analytics": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["plausible"],
-          "properties": {
-            "plausible": {
-              "oneOf": [
-                { "type": "null" },
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": ["script_src", "site", "dashboard_public"],
-                  "properties": {
-                    "script_src": {
-                      "type": "string",
-                      "pattern": "^https://plausible\\.io/js/[A-Za-z0-9._-]+\\.js$"
-                    },
-                    "site": {
-                      "$ref": "#/$defs/hostname",
-                      "description": "The site's name in the Plausible account. The public dashboard's address is derived from it, https://plausible.io/<site>, and is never stored."
-                    },
-                    "dashboard_public": {
-                      "type": "boolean",
-                      "description": "Whether https://plausible.io/<site> is viewable logged out. The vault's community dashboard links readership there only when this is true."
                     }
                   }
                 }

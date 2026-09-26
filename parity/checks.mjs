@@ -129,8 +129,8 @@ const constsOf = (body) => Object.fromEntries([...body.matchAll(/^\s+const (\w+)
 
 /**
  * The expressions builder/lib.mjs uses to read the registry: `book.a?.b`,
- * `registry.a?.b`, `X ?? ""`, `X === true`, `A ? B : ""`, and a name bound by a
- * `const` in the same function.
+ * `registry.a?.b`, `X ?? ""`, `A ?? B`, `X === true`, `X === "literal"`,
+ * `A ? B : ""`, and a name bound by a `const` in the same function.
  */
 export function evaluate(expr, scope, consts = {}, depth = 0) {
   const e = expr.trim();
@@ -140,6 +140,8 @@ export function evaluate(expr, scope, consts = {}, depth = 0) {
   if ((m = /^(\w+) \? (\w+) : "([^"]*)"$/.exec(e))) return again(m[1]) ? again(m[2]) : m[3];
   if ((m = /^(.+) === true$/.exec(e))) return again(m[1]) === true;
   if ((m = /^(.+) \?\? "([^"]*)"$/.exec(e))) return again(m[1]) ?? m[2];
+  if ((m = /^(.+?) \?\? (.+)$/.exec(e))) return again(m[1]) ?? again(m[2]);
+  if ((m = /^(.+) === "([^"]*)"$/.exec(e))) return again(m[1]) === m[2];
   if ((m = /^(book|registry)((?:\??\.\w+)*)$/.exec(e)))
     return m[2].split(/\??\./).slice(1).reduce((v, k) => v?.[k], scope[m[1]]);
   if (/^\w+$/.test(e) && Object.hasOwn(consts, e)) return again(consts[e]);
@@ -357,7 +359,9 @@ export const checks = [
     when: onBuilder, extract: builderOption('edit-on-github', 'suggestEndpoint'),
     expect: (r, b) => (b.suggest_edit?.enabled ? r.platform.suggest_edit_endpoint : '') },
   { id: 'reading-site.plausible-script', source: 'builder', path: 'builder/lib.mjs', design: 'quartz-book lib.mjs bookOptions → renderConfig (edition-integrations plausibleScriptSrc)',
-    when: onBuilder, extract: builderOption('edition-integrations', 'plausibleScriptSrc'), expect: (r, b) => b.analytics?.plausible?.script_src ?? '' },
+    when: onBuilder, extract: builderOption('edition-integrations', 'plausibleScriptSrc'),
+    // D19 (§8 step 17a): the platform's one site, for live books only.
+    expect: (r, b) => (b.status === 'live' ? r.platform.analytics.plausible?.script_src ?? '' : '') },
 
   // D11: the edition template's graph is the builder's graph. The expected value is
   // read from the builder's config, not from the registry.
@@ -376,7 +380,7 @@ export const checks = [
   { id: 'publish.js.suggest-edit-endpoint', source: 'content', path: 'publish.js', design: 'publish.js:44',
     when: onPublish, extract: once(/^const SUGGEST_EDIT_ENDPOINT = '([^']*)';$/m), expect: (r) => r.platform.suggest_edit_endpoint },
   { id: 'publish.js.plausible-script', source: 'content', path: 'publish.js', design: 'publish.js:791',
-    when: onPublish, extract: once(/\bs\.src = '(https:\/\/plausible\.io\/[^']*)';/), expect: (r, b) => b.analytics.plausible.script_src },
+    when: onPublish, extract: once(/\bs\.src = '(https:\/\/plausible\.io\/[^']*)';/), expect: (r) => r.platform.analytics.plausible?.script_src },
 
   // D7: admin/config.yml is hand-kept once configure.mjs goes (§8 step 18), so the
   // file the CMS host serves is compared with the registry directly. Until then it
@@ -409,7 +413,7 @@ export const checks = [
   { id: 'config.licence', source: 'content', path: 'textbook.config.json', design: 'textbook.config.json:5',
     extract: jsonKey('licence'), expect: (r, b) => b.licence },
   { id: 'config.plausible-public-url', source: 'content', path: 'textbook.config.json', design: 'textbook.config.json:6',
-    extract: jsonKey('plausible_public_url'), expect: (r, b) => `https://plausible.io/${b.analytics.plausible.site}`,
+    extract: jsonKey('plausible_public_url'), expect: (r) => `https://plausible.io/${r.platform.analytics.plausible?.site}`,
     retired: RETIREMENTS.dashboardStep3b },
 
   // ---- book automation: quartz-book's automation/, read at `stable` (§8 step 14) ----
@@ -555,7 +559,7 @@ export const unverifiable = [
   { field: 'platform.console_oauth_client_id', where: 'read by the console from the registry at launch since step 5 (no repo holds a copy); a value pasted into a Mac\'s state.json still overrides it; verified by hand 2026-09-15' },
   { field: 'books[].maintainer.github', where: 'supplied by the maintainer; no repo records it' },
   { field: 'books[].cms.host (live value)', where: 'the Worker\'s ALLOWED_DOMAINS variable and the Pages project name live in Cloudflare; parity checks the docs that describe them' },
-  { field: 'books[].analytics.plausible.site / dashboard_public', where: 'Plausible account settings; checked by hand 2026-09-15' },
+  { field: 'platform.analytics.plausible.site / dashboard_public', where: 'Plausible account settings (one site for the platform since §8 step 17a); checked by hand when the site was renamed' },
   { field: 'books[].status, books[].suggest_edit.enabled, books[].cms.enabled', where: 'registry-only' },
   { field: 'books[].site.host.builder', where: 'registry-only: quartz-book reads it at build time (BOOK-ONE-TO-QUARTZ §8 step 8), so no repo holds a copy. check-github.mjs proves each builder book can be read anonymously' },
   { field: 'books[].site.host.project (on an obsidian-publish host)', where: 'the Pages project the builder previews a Publish book on (BOOK-ONE-TO-QUARTZ §8 step 7, amended 24 Sep 2026) lives in Cloudflare; the build marker at <project>.pages.dev/.well-known/textbook.json shows it is the one being deployed' },

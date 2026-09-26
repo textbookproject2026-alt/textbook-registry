@@ -85,10 +85,13 @@ test('manifest: a retired check says which migration retired it and what must re
 const LIB = `export function bookOptions(registry, book, branch, { preview = false } = {}) {
   const suggestEnabled = book.suggest_edit?.enabled === true
   const endpoint = registry.platform?.suggest_edit_endpoint ?? ""
+  const counted = book.status === "live"
+  const platformSrc = registry.platform?.analytics?.plausible?.script_src
+  const plausibleSrc = platformSrc ?? book.analytics?.plausible?.script_src ?? ""
   return {
     repo: book.content.repo,
     suggestEndpoint: suggestEnabled ? endpoint : "",
-    plausibleScriptSrc: book.analytics?.plausible?.script_src ?? "",
+    plausibleScriptSrc: counted ? plausibleSrc : "",
   }
 }
 
@@ -109,8 +112,8 @@ export function reconcileTargets(registry, { slug = "" } = {}) {
   })
 }
 `;
-const REG = { platform: { suggest_edit_endpoint: 'https://f/api/suggest-edit' } };
-const BOOK = { content: { repo: 'o/book', live_branch: 'main' }, suggest_edit: { enabled: true }, analytics: { plausible: { script_src: 'https://p/s.js' } } };
+const REG = { platform: { suggest_edit_endpoint: 'https://f/api/suggest-edit', analytics: { plausible: { script_src: 'https://p/s.js' } } } };
+const BOOK = { status: 'live', content: { repo: 'o/book', live_branch: 'main' }, suggest_edit: { enabled: true } };
 const ctx = { registry: REG, book: BOOK };
 
 test('evaluate: the registry reads builder/lib.mjs uses, and nothing else', () => {
@@ -118,7 +121,10 @@ test('evaluate: the registry reads builder/lib.mjs uses, and nothing else', () =
   assert.equal(evaluate('book.content.repo', scope), 'o/book');
   assert.equal(evaluate('book.analytics?.missing?.x ?? ""', scope), '');
   assert.equal(evaluate('on ? ep : ""', scope, { on: 'book.suggest_edit?.enabled === true', ep: 'registry.platform?.suggest_edit_endpoint ?? ""' }), 'https://f/api/suggest-edit');
+  assert.equal(evaluate('book.content.live_branch === "main"', scope), true);
+  assert.equal(evaluate('book.missing ?? book.content.repo ?? ""', scope), 'o/book');
   assert.throws(() => evaluate('"o/book"', scope), /not one parity can evaluate/);
+  assert.throws(() => evaluate('book.missing ?? "o" + "x"', scope), /not one parity can evaluate/);
   assert.throws(() => evaluate('process.env.REPO', scope), /not one parity can evaluate/);
 });
 
@@ -127,6 +133,10 @@ test('builderOption: the value the builder would build this book with', () => {
   assert.equal(builderOption('edit-on-github', 'suggestEndpoint')(LIB, ctx).value, 'https://f/api/suggest-edit');
   assert.equal(builderOption('edit-on-github', 'suggestEndpoint')(LIB, { ...ctx, book: { ...BOOK, suggest_edit: { enabled: false } } }).value, '');
   assert.equal(builderOption('edition-integrations', 'plausibleScriptSrc')(LIB, ctx).value, 'https://p/s.js');
+  assert.equal(builderOption('edition-integrations', 'plausibleScriptSrc')(LIB, { ...ctx, book: { ...BOOK, status: 'preview' } }).value, '');
+  // Before the registry had platform.analytics (§8 step 17a), the book's own site.
+  const own = { ...BOOK, analytics: { plausible: { script_src: 'https://p/own.js' } } };
+  assert.equal(builderOption('edition-integrations', 'plausibleScriptSrc')(LIB, { registry: { platform: {} }, book: own }).value, 'https://p/own.js');
   assert.equal(builderConst('reconcileTargets', 'live')(LIB, ctx).value, 'main');
 });
 

@@ -81,7 +81,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep), the sole administrator, who also pays for it (D16, 25 Sep 2026) |
 | a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | **confirm at handover** |
 | Vercel | Vercel | the suggest-edit function (S2) | **confirm at handover** |
-| Plausible | Plausible | one *site* per book or edition that has analytics | **confirm at handover** |
+| Plausible | Plausible | the platform's one site, `confused4now.org`, for the portal and every live book (`platform.analytics.plausible`, BOOK-ONE-TO-QUARTZ D19, §8 step 17a), plus any site an edition has of its own | **confirm at handover** |
 | `AlecGordon` | Hypothes.is | book one's API token. No groups are in use | a person, not the platform. Transfer at handover (§9) |
 | Obsidian | Obsidian Publish | book one's Publish site | **confirm at handover** |
 | Apple Developer | Apple | the Developer ID that signs the Authoring Assistant | **confirm at handover** |
@@ -596,14 +596,18 @@ handover.
 |---|---|---|---|
 | Obsidian Publish site `1443b409…` | book one's reading site | **confirm** | `textbook/docs/what-this-book-runs-on.md` |
 | Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | a person | `textbook/docs/annotation-restore.md` |
-| Plausible site `social-research-methods.confused4now.org` (verified: the public dashboard answers 200, and the old name `confused4now.org` is gone) | book one's analytics | **confirm** | `textbook/docs/what-this-book-runs-on.md` |
 | `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook/docs/the-browser-editor.md` |
 
-**The Plausible site name must equal `analytics.plausible.site`.** The dashboard
-URL is derived from that field, never stored. A domain move is therefore two
-changes that have to land together: rename the site in Plausible, and change the
-registry field. Get them out of step and the book's next weekly dashboard
-rebuild publishes a dead link.
+Book one's Plausible site is no longer the book's. Since §8 step 17a it is the
+platform's one site, `confused4now.org` (renamed from
+`social-research-methods.confused4now.org`, so book one's history is in it), and
+is listed with the accounts in §1. **Its name must equal
+`platform.analytics.plausible.site`.** Every book's dashboard link is derived from
+that field, filtered to the book's hostname, never stored. Renaming the site is
+therefore two changes that land together: rename it in Plausible, and change the
+registry field. Get them out of step and every book's next weekly dashboard
+rebuild publishes a dead link. A book's domain move changes nothing in Plausible:
+its pageviews simply arrive under the new hostname.
 
 ---
 

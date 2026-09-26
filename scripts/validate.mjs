@@ -133,6 +133,7 @@ export function validate(text, { baseText } = {}) {
 
   checkUrl(errors, 'platform.suggest_edit_endpoint', platform.suggest_edit_endpoint);
   checkUrl(errors, 'platform.cms_auth_relay', platform.cms_auth_relay, { origin: true });
+  if (platform.analytics.plausible) checkUrl(errors, 'platform.analytics.plausible.script_src', platform.analytics.plausible.script_src);
 
   for (const [n, b] of books.entries()) {
     const at = `books[${n}] (${b.slug})`;
@@ -161,7 +162,6 @@ export function validate(text, { baseText } = {}) {
 
     for (const [k, o] of b.site.legacy_origins.entries()) checkUrl(errors, `${at}.site.legacy_origins[${k}]`, o, { origin: true });
     if (b.editions?.template_preview) checkUrl(errors, `${at}.editions.template_preview`, b.editions.template_preview, { origin: true });
-    if (b.analytics.plausible) checkUrl(errors, `${at}.analytics.plausible.script_src`, b.analytics.plausible.script_src);
 
     const host = b.cms.host;
     if (host && SHARED_SUFFIXES.includes(host))
