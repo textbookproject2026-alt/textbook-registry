@@ -131,7 +131,51 @@
   },
 
   "editions": null
-}
+},
+    {
+      "slug": "ontology-for-social-research-a-criti",
+      "status": "live",
+      "title": "Ontology for Social Research: A Critical Introduction",
+      "summary": "To go beyond the quantitative and qualitative divide in the social sciences, this book proposes ontology as the way forward. You will learn how to situate methods based on their assumptions about social reality and how to implement this philosophy into practical research.",
+      "licence": "CC-BY-SA-4.0",
+      "maintainer": {
+        "name": "Brandon Sommer, Caroline Laschkolnig",
+        "github": "BrandonAndCaroline"
+      },
+      "content": {
+        "repo": "textbookproject2026-alt/ontology-for-social-research-a-criti",
+        "live_branch": "main",
+        "drafts_branch": "drafts"
+      },
+      "site": {
+        "domain": "ontology-for-social-research-a-criti.confused4now.org",
+        "aliases": [],
+        "host": {
+          "kind": "static",
+          "provider": "cloudflare-pages",
+          "project": "ontology-for-social-research-a-criti",
+          "paid_by": "platform",
+          "builder": "quartz-book"
+        },
+        "legacy_origins": [],
+        "dark": null
+      },
+      "analytics": {
+        "plausible": null
+      },
+      "annotations": {
+        "hypothesis_groups": []
+      },
+      "suggest_edit": {
+        "enabled": true,
+        "counted_from": "2026-09-26"
+      },
+      "cms": {
+        "enabled": false,
+        "host": null
+      },
+      "editions": null
+    }
 
   ]
 }
