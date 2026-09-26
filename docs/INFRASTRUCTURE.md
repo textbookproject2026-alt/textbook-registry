@@ -101,7 +101,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `authoring-assistant` | **private** | S5. Cloned over HTTPS, not over the SSH alias | platform |
 | `quartz-edition-extras` | public | S6: the `edition-integrations` and `edit-on-github` Quartz plugins | platform |
 | `quartz-book` | public | S7: the shared builder. Quartz v5, the one shared `quartz.config.yaml`, `build-book.sh`, the extras pinned in `quartz.lock.json`, and the `reconcile` workflow that deploys. Secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (§7) | platform |
-| `build-nudge` | public | S7's trigger: the `build-nudge` Cloudflare Worker. Deployed by hand with `wrangler`, so the repo holds no credential (§7) | platform |
+| `build-nudge` | public | S7's trigger: the `build-nudge` Cloudflare Worker. Deployed on every merge to `main` by its `deploy.yml` (build-nudge #3, 26 Sep 2026), with the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. It holds no GitHub token (§7) | platform |
 | `sveltia-cms-auth` | public | the relay's source (S3). A copy of upstream `sveltia/sveltia-cms-auth` that hardcodes scope `repo,user` | platform |
 | `textbook-template` | public | the starting point for a new book (`SETUP.md`, `scripts/new-book.mjs`) | platform |
 | `book-requests` | **private** | the "Publish your textbook" requests: one issue per request, the uploaded manuscripts under `requests/`, and the `provision` and `remove` workflows. Private so that requesters' emails and unpublished manuscripts never reach a public repo. Added 24 Sep 2026 (see below) | platform |
@@ -217,6 +217,11 @@ HTTPS and authenticate through `gh`.
    `registry/bundled.mjs` and runs the tests. **If any step fails, the old
    deployment stays live.**
 4. A schedule at `41 */6 * * *` re-runs the same check as a staleness alarm.
+5. A merge to the function itself leaves `X-Registry-Version` unchanged, so it
+   is checked by the function's own `.github/workflows/deployed.yml`
+   (suggest-edit-function #2, 26 Sep 2026). That workflow polls
+   `X-Function-Version`, the function's commit, for up to 10 minutes and fails
+   red on the merge commit.
 
 Vercel's instant rollback rolls back code and registry together.
 
@@ -354,8 +359,13 @@ Added 24 Sep 2026 for the in-site editor.
   and not retired. Adding a book's CMS means adding a host here. Retiring a book
   means removing its host.
 - **Deploy:** the Worker was created with Sveltia's *Deploy to Cloudflare* button
-  from the `sveltia-cms-auth` repo. **Whether a push to that repo redeploys the
-  Worker hasn't been checked. Confirm.**
+  from the `sveltia-cms-auth` repo. **A push to its `main` redeploys it**, through
+  Cloudflare's Workers Builds (checked 26 Sep 2026: each of the last three pushes, on
+  19 Aug, has a green *Workers Builds: sveltia-cms-auth* check about 40 seconds later).
+  A failed build or deploy turns that check red. The Worker reports no commit, so
+  nothing proves which one is serving. That was left alone on purpose: the code is
+  Sveltia's, and `workers.dev` puts no edge layer between a successful deploy and
+  what is served.
 - **The OAuth App *Textbook CMS*** is registered under an individual account,
   not the platform's. **Confirm which one.** Its callback URL is the Worker URL
   plus `/callback`.
@@ -377,7 +387,9 @@ book that wants the editor brings its own Pages project and asks for one
 - **URL:** <https://confused4now.org>, `platform.portal.domain`. Pages project
   `textbook-portal` in `brandonproject2026`.
 - **Verified 22 Sep:** `/` answers 200. `/version.txt` returns `051597c…`, which is
-  registry `main`. `/chapters/x` answers **301** to
+  registry `main`. **`/version.txt` is the registry's commit, not the portal's.**
+  A merge to `textbook-portal` leaves it unchanged. The portal's own commit is
+  in the page, as `<meta name="portal-version" content="…">` (textbook-portal #2). `/chapters/x` answers **301** to
   `https://social-research-methods.confused4now.org/chapters/x`.
 - **What it does:** one static page, generated at build from the registry. It
   lists `live` books first and `preview` books under *Not for readers*.
@@ -387,8 +399,12 @@ book that wants the editor brings its own Pages project and asks for one
   `textbook-registry/.github/workflows/portal.yml`, which POSTs the Pages deploy
   hook, polls `https://confused4now.org/version.txt` for 10 minutes, and fails red
   if the portal is behind. It also runs at `17 */6 * * *`. A push to
-  `textbook-portal` `main` rebuilds the portal through Pages' Git integration.
-  A build that fails leaves the previous page live.
+  `textbook-portal` `main` rebuilds the portal through Pages' Git integration
+  (`main` is the production branch; other branches get previews). The portal's
+  own `.github/workflows/deployed.yml` then polls the apex's `portal-version`
+  for 10 minutes and fails red on the merge commit if it doesn't match. If the
+  push hasn't built after four minutes, it fires the optional `PORTAL_DEPLOY_HOOK`
+  secret in `textbook-portal` once. A build that fails leaves the previous page live.
 - **Secrets and settings:**
   - `PORTAL_DEPLOY_HOOK`: a `textbook-registry` repo secret (the hook URL is a
     credential).
@@ -545,8 +561,13 @@ book that wants the editor brings its own Pages project and asks for one
 - **`build-nudge`** (added 24 Sep 2026, BOOK-ONE-TO-QUARTZ §8 step 10) is a
   Cloudflare Worker in `brandonproject2026`, at
   `https://build-nudge.brandonproject2026.workers.dev`. Source: the `build-nudge`
-  repo, deployed by hand with `wrangler` from the platform owner's Mac (its
-  README). It starts `reconcile` two ways. **The nudge:** each builder book's
+  repo. Every merge to its `main` is deployed by its `.github/workflows/deploy.yml`,
+  after `test` is green: `wrangler deploy --tag <commit>`, then a wait of up to five
+  minutes for `GET /` to report that `commit` with a working token. It is red on the
+  merge commit otherwise. It uses the repo secrets `CLOUDFLARE_API_TOKEN` (Workers
+  Scripts: Edit on `brandonproject2026`) and `CLOUDFLARE_ACCOUNT_ID` (build-nudge #3,
+  26 Sep 2026). Before that it was deployed by hand with `wrangler`, which still works
+  (its README). It starts `reconcile` two ways. **The nudge:** each builder book's
   `.github/workflows/nudge.yml` POSTs a GitHub OIDC token on every push. The Worker
   checks it against GitHub's public keys, and that its repository is a book on
   the builder in the registry, then dispatches `reconcile` for that book
@@ -609,6 +630,15 @@ registry field. Get them out of step and every book's next weekly dashboard
 rebuild publishes a dead link. A book's domain move changes nothing in Plausible:
 its pageviews simply arrive under the new hostname.
 
+**Custom properties are not broken down (a known limit, not a to-do).** Plausible
+shows custom properties only on a paid tier, and the site is on the plan without
+them. The events still send their properties: the editor's `mode` and `outcome`,
+and §1a's `tag` and `to`. Each event and goal is counted, but the dashboard can't split them by
+property. The site's goals are the three editor events (`page_editor_opened`,
+`page_edit_submitted`, `github_signin`). **Shields → Hostnames** allows only
+`*confused4now.org`, so a pageview from any `*.pages.dev` address is dropped even if
+a page's hostname guard were wrong.
+
 ---
 
 ## 10. How a registry change reaches each consumer
@@ -619,11 +649,36 @@ its pageviews simply arrive under the new hostname.
 | S4 portal | generated at build | on the deploy that `portal.yml` triggers | `portal.yml` (`/version.txt`) |
 | S3 relay | **not at all** | when someone edits `ALLOWED_DOMAINS` by hand | nothing |
 | S5 console | fetched at launch | the author's next launch | nothing |
-| The builder (S7) | fetched from `main` at every build | the book's next `reconcile`: the Worker's 15-minute tick, at the latest | the build marker's `registry_digest` (`/.well-known/textbook.json`) |
+| The builder (S7) | fetched from `main` at every build | **at the next `*/15` tick of `build-nudge`, not at the merge.** A registry merge starts no `reconcile` of its own, so a book changes up to 15 minutes later, plus the build (step 17a: #38 merged 12:32, the 12:45 tick rebuilt every book) | the build marker's `registry_digest` (`/.well-known/textbook.json`) |
 | A book's Actions (backup, dashboard) | fetched at job start | the next scheduled run | the job fails if the registry can't be read, or the book is retired |
 | A book's rendered files (`publish.js`, `admin/config.yml`, README…) | `configure.mjs` | a PR touching the config, **or** the weekly Monday `apply-config` run (book one and the template). Book one's title, maintainer, licence and `site_url` come from its own `textbook.config.json`, so a change to those also needs an edit there; parity flags the mismatch | parity (book one), nothing for a book without the weekly run (book two has none) |
 | A Publish book's **live** `publish.js` | the maintainer's Publish dialog | when the maintainer next publishes | nothing. This is why platform endpoints never move |
 | Parity | read per run | every run | itself |
+
+### 10a. How a merge to each platform repo reaches its service
+
+A merge that should change a running service must start that service's deploy
+and prove the service serves it, with a red check on the merge commit if it
+doesn't, as `deploy.yml` and `portal.yml` do for registry changes. Each check needs
+a marker of **the repo's own commit**. The registry SHA that `/version.txt` and
+`X-Registry-Version` carry doesn't move on a merge to the service's own repo.
+Audited 26 Sep 2026:
+
+| Repo | Service | Deploy on merge | Proof it is served | Before 26 Sep |
+|---|---|---|---|---|
+| `textbook-registry` | S2 function, S4 portal | `deploy.yml`, `portal.yml` (deploy hooks) | `X-Registry-Version`, `/version.txt` | had both |
+| `quartz-book` | every book | `ci` → `stable` → `reconcile: stable` | `reconcile-book` waits for Pages to serve the new marker | had both |
+| `textbook-portal` | S4 portal | Pages Git integration (`main` = production) | `deployed.yml` polls the apex's `<meta name="portal-version">` (textbook-portal #2) | deployed, **nothing proved it** |
+| `suggest-edit-function` | S2 function | Vercel Git integration (`main` = production) | `deployed.yml` polls `X-Function-Version` (suggest-edit-function #2) | deployed, **nothing proved it** |
+| `build-nudge` | S7's Worker | `deploy.yml`, `wrangler deploy --tag <commit>` (build-nudge #3) | `deploy.yml` polls `GET /`'s `commit` and `token` | **deployed by hand only** |
+| `sveltia-cms-auth` | S3 relay | Workers Builds | its check goes red if the deploy fails; no served-commit marker (§3) | unchanged |
+| `quartz-edition-extras` | none directly | the pin bot: the next tick opens a quartz-book PR, which deploys when merged (the design-preview gate, §7) | through quartz-book | unchanged, by design |
+| `textbook-edition-template` | its preview (`textbook-edition-template.pages.dev`) | Pages Git integration | Pages check on the commit | unchanged: a coordinator preview, not a reader address |
+| `book-requests` | none (Actions run from `main` when an issue is labelled) | n/a | n/a | n/a |
+| content repos (`textbook`, the request-made books, book two) | their book | `nudge.yml` → `build-nudge` → `reconcile` | the marker's `book_commit` | had both |
+
+The Authoring Assistant (S5) is a desktop app released by hand (its `BUILD.md`), not a
+deployed service. `textbook-template` and `code_repo` deploy nothing.
 
 ---
 

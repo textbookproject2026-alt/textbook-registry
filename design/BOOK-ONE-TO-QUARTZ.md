@@ -1430,6 +1430,50 @@ the later steps keep their numbers.
 > address. The builder's fallback to a book's own field goes in a follow-up once 4
 > is proven.
 
+> **Done 26 Sep 2026.** All five PRs merged in order: quartz-book #13, textbook-portal
+> #1, the hand steps, registry #38 (`79e67e5`), book-requests #4. By hand: the site was
+> renamed to `confused4now.org`, **Shields → Hostnames** is `*confused4now.org`, and
+> the editor's three goals (`page_editor_opened`, `page_edit_submitted`,
+> `github_signin`) are on the site. #38 merged at 12:32 UTC. It reached the books at
+> the next `*/15` tick (`reconcile: cron`, run 36242915512, 12:45), not at the merge:
+> the registry only reaches a book through `reconcile`. That one run rebuilt all eight
+> book branches. Checked afterwards:
+>
+> | Check | Result |
+> |---|---|
+> | Every book's marker names its new digest | book one `sha256:6cb8a393…` (was `d605ffad…`), ontology-for `de83298f…` (was `a5937c64…`), from-ontology `020c56cd…` (was `9fb44f08…`), book two `ffbac1f2…` (was `b3d15908…`), on both `main` and `drafts`; builder `d101bc0` on all four. Each is the digest the builder's `registryDigest` gives for the live registry |
+> | The three live books load `pa-eii3VlmU1ClI0VxGOsCTe.js` on their own domain | yes, each served page's guard run with its own hostname appends the script |
+> | The portal loads it on `confused4now.org` | yes |
+> | Book two (preview) | no script in its pages at all |
+> | Every `*.pages.dev` address (each project's production alias, every `drafts.` alias, `textbook-portal.pages.dev`) | loads nothing. The live books' pages carry the loader (a Pages deployment serves the same files on every alias), but the guard compares `location.hostname` with the book's `site.domain` and stops. Shields drops a `pages.dev` pageview anyway |
+> | A pageview from book one's address and one from the portal, each under its own hostname | **by hand**: Plausible's stats endpoints need a dashboard session |
+>
+> **Known limit: custom properties aren't broken down.** Plausible shows custom
+> properties only on a paid tier, so none were added to the site. The events still
+> send them: `page_editor_opened {mode}`, `page_edit_submitted {outcome, mode}`,
+> `github_signin {outcome}`, and §1a's `annotation_tag_copied {tag}` and
+> `paragraph_numbers_toggled {to}`. Plausible counts each event and each goal, but
+> the dashboard can't split them by property. This is a limit of the plan, not a
+> to-do. Adding the properties later needs no code change, and Plausible keeps the
+> values it has already received.
+>
+> **Follow-ups, made the same day.** quartz-book #14 removes the builder's fallback to
+> a book's own `analytics` field. It also fixes `test/check-book-one.mjs`, which read
+> `book.analytics.plausible.script_src` from the live registry and would have failed
+> quartz-book's CI on its next run once #38 removed the key. No digest moves.
+>
+> **The portal looked unserved after its merge, and wasn't.** textbook-portal #1's
+> merge (`b213047`) was built for production by Pages' Git integration at 12:12:36.
+> It showed no script because the portal takes `script_src` from the registry, and
+> `platform.analytics` arrived only with #38. The `portal` run for #38 rebuilt it at
+> 12:33:52, and that is when the script appeared. The manual `portal` dispatch at
+> 12:15 did nothing ("Already current; nothing to deploy."), because
+> **`/version.txt` is the registry's commit, not the portal's**. A portal-only merge
+> leaves it unchanged, so it can't show whether a portal merge is live. The real gap
+> is that no platform repo apart from the registry and quartz-book proved its merges
+> were served, and `build-nudge` didn't deploy on merge at all. Fixed per repo
+> (INFRASTRUCTURE §10a): textbook-portal #2, suggest-edit-function #2, build-nudge #3.
+
 **18. Clean up book one, apart from the Publish files.**
 - **Repo:** `textbook`.
 - **Does:** the rest of §5: `templates/`, `configure.mjs`, `apply-config.yml`, the maintainer
@@ -1657,6 +1701,11 @@ unique, 905 OK, **2 errors**, and both are F1 and F2 again.
   (59 files, as on 25 Sep), and `/access/1443b409…/2.md` answers 200, both uncached
   (`cf-cache-status: DYNAMIC`) and with a cache-busting query. The unpublish didn't reach
   the server. It leaves at the cutover whatever happens.
+  **Checked again 26 Sep, after the cutover:** readers can't reach it. `/2` on the live
+  domain answers 404 from Pages. It is still on Publish's own host, though:
+  `publish-01.obsidian.md/access/1443b409…/2.md` answers 200, and the site's file index
+  still lists `2.md` among 59 files. It goes when the page is unpublished from the Publish
+  dialog, or with the site at step 20.
 - **F4. No hover previews on Quartz** (by hand, 25 Sep). Hovering a concept link on
   `pages.dev` showed nothing. The console said: `Access to fetch at
   'https://social-research-methods.confused4now.org/chapters/definitions/critical-realism'
