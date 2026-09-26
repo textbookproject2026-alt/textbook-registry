@@ -1,7 +1,7 @@
 # Book one to Quartz: plan
 
-**Status:** plan, decided except D12, D15 and D16, which are with the client (see
-*Decisions*). §0a designs the build trigger that D2 left open. §8 is the order of work, as
+**Status:** plan. D12, D15 and D16 were settled for phase 1 on 25 Sep 2026, to be reviewed
+when phase 1 finishes, and D19 was added (see *Decisions*). §0a designs the build trigger that D2 left open. §8 is the order of work, as
 PR-sized steps. No code, repository, registry entry or DNS record has changed.
 **Date:** 22 Sep 2026. Decisions recorded the same day. Amended the same day: the 15-minute
 poll in §0a runs from a Cron Trigger on the `build-nudge` Worker, not a GitHub schedule.
@@ -89,7 +89,9 @@ I think it is the right move, on two conditions. Here is what gave me pause.
    this move, a lapse, lockout or handover mistake on that account takes down every book at
    once. **Condition:** a second administrator on the account, and INFRASTRUCTURE.md stating
    who pays, before the cutover. That is D16, pending with the client, and §8 step 16 is
-   gated on it.
+   gated on it. **Settled for phase 1 (25 Sep, D16):** the platform owner stays the sole
+   administrator and pays for everything, so the single point of failure is accepted for
+   now and step 16 is not blocked.
 2. **The move removes the author's only publishing path before its replacement exists.** The
    authoring app writes to a local folder, and only Obsidian publishes that folder
    (`docs/word-to-markdown.md:390`: "Nothing to sync or commit"). If the cutover happens
@@ -341,7 +343,7 @@ The six events, which must keep their exact names so Plausible's history continu
 One thing I can't check from the repo: **Publish's site options** (stacked pages, theme
 toggle, which panes are shown) are stored by Publish, not in `.obsidian/publish.json`.
 **Decided (D18):** record them off *Site options* before cancelling the subscription (§8
-step 15), and note anything readers would miss.
+step 20; moved from step 15 on 26 Sep), and note anything readers would miss.
 
 ### 1b. Where each piece should live, so that every Quartz book gets it
 
@@ -520,6 +522,7 @@ Two values wait for the client (D12, pending): `publish.css`'s "AA-strict" accen
 (`#6A57E0` for link text, because `#7C6CF0` measures about 4.0:1), and whether dark mode
 stays off. Until D12 is settled, `design.yaml` is seeded with what readers see today:
 `#7C6CF0`, dark mode off. Settling it is then a one-line edit by the route above.
+**Settled for phase 1 (25 Sep, D12):** the link colour stays `#7C6CF0`, so nothing is edited.
 
 ---
 
@@ -1268,12 +1271,27 @@ registry PR if it isn't.
 - **Proves it:** the section exists, and every row says pass or names its fix.
 - **Must not break:** the live site. Everything here is read-only against it.
 
+> **Run, 25 Sep 2026.** The results are in *Proof run* below. The automated rows pass,
+> apart from two dead links: F1 is in the book, and F2 is a page step 22 adds. The check
+> by hand found F4 (no hover previews) and F5 (a citation's jump isn't highlighted). All
+> four have fix pull requests that must merge before step 16. There are no annotations on the Definitions pages, and Pages
+> matches `+` and `%20` literally, so no zone Redirect Rule is needed. The rows marked
+> **by hand** are still open: the browser checks, the domain rehearsal, the test
+> annotation and D18.
+
+> **Finished, 26 Sep 2026.** The browser checks, print, mobile, the Hypothes.is sidebar and
+> badge, the tag helper and Plausible all match Publish, after F4 and F5 merged. Three items
+> changed. **The domain rehearsal** wasn't run and is dropped, because step 16 measures its
+> own outage. **The test annotation** is dropped: the book has no annotations, so the
+> re-anchoring check has nothing to test. **D18** moves to before Publish is cancelled
+> (step 20). F3 isn't done yet: `2.md` is still served (*Fixes*).
+
 ### Phase 2: the live address
 
 **16. Cutover.** Not a PR: one DNS edit, plus the Pages custom domain.
-- **Gate:** steps 1-15 done. **D16 settled:** a second administrator on
-  `brandonproject2026`, and INFRASTRUCTURE.md saying who pays. The author's Mac runs the app
-  build from step 12.
+- **Gate:** steps 1-15 done. The author's Mac runs the app build from step 12. **D16 is
+  settled** (25 Sep, for phase 1): the platform owner is the sole administrator on
+  `brandonproject2026` and pays for everything, so no second administrator is needed first.
 - **Does:** in Pages, add `social-research-methods.confused4now.org` to the project, and
   change the CNAME from `publish-main.obsidian.md` to `social-research-methods.pages.dev`.
   **Don't touch Publish's custom-domain setting.**
@@ -1281,10 +1299,10 @@ registry PR if it isn't.
   `reconcile` on its own, since book one has been on the builder in the registry since
   step 7's amendment. A Plausible pageview
   arrives from the live domain. A honeypot POST from the live origin gets the honeypot
-  answer. Every redirect answers 301. The step 15 test annotation re-anchors. The CMS, the
-  console and the portal work as before.
-- **Must not break:** annotations on unchanged URLs, which keep their URI. The outage is the
-  activation time measured in step 15.
+  answer. Every redirect answers 301. The CMS, the console and the portal work as before.
+- **Must not break:** annotations on unchanged URLs, which keep their URI (there are none
+  today). The outage runs from the DNS edit until the live hostname serves the marker, and
+  is measured there.
 - **Rollback:** see below.
 
 > **Added 25 Sep 2026, from the in-site editor workstream (24 Sep).** The editor ("Edit
@@ -1302,6 +1320,10 @@ registry PR if it isn't.
 > returns JSON with `"branch":"drafts"`. Run it again after step 17 merges. **Watch:**
 > Hypothes.is annotations keyed to Publish-style URLs. The builder already emits 301s
 > from them (D14), and the step 15 test annotation is the check that they re-anchor.
+
+> **Changed 26 Sep 2026.** Step 15 ran no domain rehearsal and made no test annotation
+> (see its note). So **Proves it** no longer checks re-anchoring, since the book has no
+> annotations to re-anchor, and the outage is timed at the switch, not taken from step 15.
 
 **17. Record the host.**
 - **Repo:** `textbook-registry`.
@@ -1327,6 +1349,23 @@ registry PR if it isn't.
 > which origins it accepts. After the merge, repeat step 16's `propose-edit` check: it
 > must still return `"branch":"drafts"`.
 
+**17a. One Plausible site for the platform (D19).** Added 25 Sep 2026, numbered 17a so that
+the later steps keep their numbers.
+- **Repos:** `textbook-registry`, `quartz-edition-extras` (`edition-integrations`),
+  `quartz-book`, `textbook-portal`.
+- **Does:** one Plausible site that covers the portal and every book's address. The
+  registry names it once for the platform, not per book (`analytics.plausible` today). The
+  builder passes it to every book, and the portal uses the same site. The hostname guard
+  counts on the portal's domain and on every registered `site.domain`, and never on a
+  preview (`*.pages.dev`, drafts, design previews). **Settled in this step:** whether the
+  site is a new one or an existing one renamed, and what happens to each book's Plausible
+  history. §1a kept the six event names so that history would continue.
+- **Proves it:** a pageview from book one's live address and one from the portal both
+  arrive in the one site, and each is recorded under its own address. Nothing arrives from
+  `social-research-methods.pages.dev`, its drafts or a design preview.
+- **Must not break:** the six event names from §1a, and the editor's three events.
+  Parity's Plausible checks change in the same PR as the registry field.
+
 **18. Clean up book one, apart from the Publish files.**
 - **Repo:** `textbook`.
 - **Does:** the rest of §5: `templates/`, `configure.mjs`, `apply-config.yml`, the maintainer
@@ -1351,7 +1390,8 @@ registry PR if it isn't.
 
 **20. Cancel Publish.**
 - **Repos:** Obsidian account (by hand), then `textbook`, then `textbook-registry`.
-- **Does:** cancel the subscription and clear Publish's custom domain. Delete `publish.js`,
+- **Does:** record Publish's Site options (D18, moved here from step 15 on 26 Sep), then
+  cancel the subscription and clear Publish's custom domain. Delete `publish.js`,
   `publish.css`, `.obsidian/` and `tests/test-path-mapping.js`. INFRASTRUCTURE drops Publish,
   and MULTI-BOOK-HOSTING open question 7 closes.
 - **Proves it:** the live marker is unchanged, and parity is green without the `publish.*`
@@ -1461,11 +1501,147 @@ republishes from an up-to-date vault. That is why the Publish files stay until s
 
 ---
 
+## Proof run (§8 step 15)
+
+Run on 25 Sep 2026, read-only against both sites. **Publish** is the live address,
+`social-research-methods.confused4now.org`. **Quartz** is `social-research-methods.pages.dev`,
+which is the `main` build, and `drafts.social-research-methods.pages.dev`. Expected values
+were written from this document, not from the builder's code, so a builder bug isn't copied
+into the check. A row either passes, names its fix, or waits on a check by hand (**by hand**).
+
+### The builds under test
+
+| Row | Result |
+|---|---|
+| `main` marker | `book_commit` `71ee756` = `main`'s head. `builder_commit` `74e86d6` = `stable` |
+| `drafts` marker | `6c3fc88` = `drafts`' head, the same builder. `X-Robots-Tag: noindex` on drafts, none on `main` |
+| Who built them | `reconcile` by itself: run 36135257204 (`stable, every book`, started by `github-actions[bot]` when `stable` moved), then run 36136281615 (`nudge`) for `main`. No run by hand, no extra input. **Pass** |
+
+### Pages and content
+
+| Row | Result |
+|---|---|
+| Inventory | Publish serves 59 files. 13 are book pages under the allowlist, and they are exactly `main`'s 13. Each is in Quartz's sitemap at its §3b URL. Quartz adds `/how-to-comment`, `/chapters/`, `/chapters/definitions/`, `/community/`, `/tags/`. The other 46 leave (§5). **Pass** |
+| Publish's upload against `main` | 10 of 13 are byte-identical. The 3 `community/` pages differ only because Publish has an older upload of the weekly pages: contributors 88 against 95 commits, dashboard 1 against 3 open pull requests, and step 14's derivatives link. Quartz has the newer ones. **Pass** |
+| `publish.js`, `publish.css` | Publish serves `main`'s copies, so §1a's line references describe what readers get today. **Pass** |
+| Each Quartz page against its source (13) | `<title>` is the first H1 and there is one H1 (D4). Every H2 to H6. Every prose paragraph. No `#%5E` href, and every same-page link has its target id (the 32 citations in Chapter 3). Callouts count. Paragraph numbers except on `/`. Edit and History name `main/<path>`, encoded per segment. Suggest button. Canonical names the live URL. Hypothes.is `openSidebar: false`, `showHighlights: 'always'`. Plausible guarded to `hostname === "social-research-methods.confused4now.org"`. **Pass** on 12. `/` fails: see F1 |
+| Shipped features | Graph, popovers, search (18 index entries, every book page), print CSS, tag helper, badge, and all six event names from §1a. `propose-edit` answers the `pages.dev` origin with `"branch":"drafts"`. **Pass** |
+
+### Redirects on `pages.dev`
+
+Every Publish URL, in both spellings where they differ (58 requests, no redirects followed):
+
+| Row | Result |
+|---|---|
+| Definitions pages | All six answer 301 to the Quartz URL, then 200, in the `+` and `%20` spellings. Pages matches `+` and `%20` literally and case-sensitively: the lowercase targets answer 200 and don't loop. **No zone Redirect Rule needed. Pass** |
+| `/index` | 301 to `/`. **Pass** |
+| Unchanged URLs | Chapters 1 and 3, `/glossary`, the three `community/` pages: 200. **Pass** |
+| `/docs/how-to-comment` | 301 to `/how-to-comment`, then 200. **Pass** |
+| `/docs/for-course-coordinators` | 301 to the edition template's `docs/for-course-coordinators.md`, which **404s**. See F2 |
+| Pages that leave | 404, including the stray `/2` (F3). `/templates/index` answers Pages' own 308 to `/templates/`, then 404. **Pass** |
+
+### Link check of the built output
+
+lychee 0.24.2 over the 18 sitemap pages on `pages.dev`, fragments included: 907 links, 171
+unique, 905 OK, **2 errors**, and both are F1 and F2 again.
+
+### Annotations (§3d)
+
+| `wildcard_uri` | Public annotations |
+|---|---|
+| `https://social-research-methods.confused4now.org/chapters/Definitions/*` | **0**. No decision needed |
+| `http://…/chapters/Definitions/*` | 0 |
+| `https://social-research-methods.confused4now.org/*` | 0 |
+| `https://bptext2026.xyz/*` | 8, unchanged since 22 Sep |
+
+### By hand
+
+| Row | Result |
+|---|---|
+| §1a rows, side by side in a browser | Two failures found on 25 Sep: hover previews (F4) and the citation's jump (F5). Checked again on 26 Sep after their fixes merged: every row matches Publish. **Pass** |
+| Print | Matches Publish (26 Sep). **Pass** |
+| Mobile | Matches Publish (26 Sep). **Pass** |
+| Hypothes.is sidebar and badge, tag helper | Match Publish (26 Sep). **Pass** |
+| Plausible records nothing from `pages.dev` | Nothing recorded (26 Sep). The guard is in every page (above). **Pass** |
+| Custom-domain rehearsal on `quartz-trial.confused4now.org`: activation time, what Pages does to the DNS record, removed afterwards | **Not run, and dropped** (26 Sep). Step 16 measures the outage itself |
+| Test annotation on Publish, for step 16's re-anchoring check | **Dropped** (26 Sep). The book has no annotations (§3d, and 0 again on 26 Sep), so nothing can fail to re-anchor, and step 16 doesn't check it |
+| Publish's Site options (D18) | **Moved** (26 Sep): recorded before Publish is cancelled (step 20), not here |
+
+### Fixes
+
+- **F1. The front page links a page Quartz doesn't have.** `index.md:47`'s
+  `[[for-course-coordinators|Setting up a department edition]]` resolves on Publish to
+  `docs/for-course-coordinators`, and on Quartz to a dead `/for-course-coordinators`. Fix:
+  step 18's `index.md` link, brought forward. It now points at the coordinators' page in
+  the edition template (F2), as step 18 says. **textbook #51**, merged after the edition
+  template's #9.
+- **F2. The coordinators' page doesn't exist yet.** The `/docs/for-course-coordinators`
+  redirect and `/how-to-comment`'s closing line both point at
+  `textbook-edition-template/docs/for-course-coordinators.md`, which step 22 adds. Fix:
+  that part of step 22, done now. Book one's page is moved as it is, except for four links
+  that must work on GitHub, and the setup guide links it. **textbook-edition-template #9.**
+  No builder change is needed.
+- **F3. A stray page on Publish.** `2.md`, a pasted terminal transcript, is published at
+  `/2`. It holds no tokens, and it isn't in the repo, so it leaves at the cutover. Fix:
+  unpublish it from Publish now. **Still published on 26 Sep, 11:06 UTC**, after it was
+  unpublished: Publish's file index for the site (`/cache/1443b409…`) still lists `2.md`
+  (59 files, as on 25 Sep), and `/access/1443b409…/2.md` answers 200, both uncached
+  (`cf-cache-status: DYNAMIC`) and with a cache-busting query. The unpublish didn't reach
+  the server. It leaves at the cutover whatever happens.
+- **F4. No hover previews on Quartz** (by hand, 25 Sep). Hovering a concept link on
+  `pages.dev` showed nothing. The console said: `Access to fetch at
+  'https://social-research-methods.confused4now.org/chapters/definitions/critical-realism'
+  from origin 'https://social-research-methods.pages.dev' has been blocked by CORS policy`.
+  **Cause:** Quartz's popover (`fetchCanonical`, `quartz/components/scripts/util.ts`) reads
+  a tag of exactly `<link rel="canonical" href="…">` as an alias redirect and fetches its
+  href instead. The builder writes that tag on every page, pointing at `site.domain`. So
+  every hover fetched the live page, which is Publish, with no CORS header. After step 16
+  it would have loaded, but a drafts or design preview would have shown the live text.
+  **Fix:** the builder's tag ends with `data-builder="quartz-book"`, which the pattern
+  doesn't match. A test reads the pattern from Quartz's source. `enableSPA` stays off.
+  **quartz-book #11.** **Proved in Chrome** (Playwright driving the installed Chrome, with
+  real hovers) on a local build of `main` `71ee756`:
+  - "Critical Realism" and "Unobservables" in Chapter 3 open a visible popover with the
+    definition, which closes when the mouse leaves.
+  - All 6 concept links on `/` open one.
+  - A citation's popover shows the reference list at that reference.
+  - There are no console errors.
+- **F5. A citation's jump isn't highlighted as on Publish** (by hand, 25 Sep). Both
+  readings were checked in Chrome.
+  - **The citation's look matches Publish.** On desktop, a 390px phone viewport and the
+    drafts preview, all 32 citation links are `rgb(124,108,240)`, weight 600 and
+    underlined, on both sites. Quartz adds its pale link pill. The same 5 citations are
+    plain text on both sites (Cooper, 1998; Petticrew and Roberts, 2006; and three more),
+    because the chapter doesn't link them. That is content, not the build.
+  - **The target isn't highlighted as on Publish.** Publish flashes the reference
+    `rgb(253,242,179)` (`is-flashing`) for about 3.0 s and stops it 60px from the top.
+    Quartz had no flash. The only styling was the paragraph numbers' `:target` wash
+    (`#EEEBFD`), the same pale lavender as the link pill. Quartz also scrolls smoothly, so
+    a flash timed from the click would be over before the reader got there.
+  - **A page opened at `#ref-…` never reached its target** (a cross-page citation, or a ¶
+    link). The smooth scroll stopped when the page grew during load: y=4753, with the
+    reference 22,961px further down. Publish arrives and flashes.
+
+  **Fix:** a `targetFlash` script in `edition-integrations`, always on like the
+  block-reference fix. It flashes the target in `design.yaml`'s `mark` (`#FDF2B3`) for
+  3 s once the target stops moving. It adds `scroll-margin-top: 3.75rem`, re-flashes on a
+  second click, and brings the target into view after load. **quartz-edition-extras #7**,
+  then the bot's pin pull request in `quartz-book`. **Proved in Chrome** on the same local
+  build:
+  - After a citation click, the reference reaches 60px at about 1.5 s, flashes from 1.8 s
+    to about 4.3 s, then clears.
+  - A second click on the same citation flashes again once the reference settles.
+  - `/chapters/chapter-03#ref-sayer-2000` is brought into view (414px, the page's end;
+    Publish gives 471) and flashes.
+  - On a phone viewport, `#p40` is at 66px and flashing.
+
+---
+
 ## Decisions
 
-Recorded on 22 Sep 2026. **D12, D15 and D16 are for the client and are pending.** Nothing in
-§8 waits on D12 or D15 except where a step says so. The cutover (§8 step 16) is gated on
-D16.
+Recorded on 22 Sep 2026. **D12, D15 and D16 were settled on 25 Sep 2026 for phase 1, and are
+to be reviewed when phase 1 finishes.** D19 was added the same day. Nothing now blocks the
+cutover (§8 step 16).
 
 | # | Topic | Status | Decision |
 |---|---|---|---|
@@ -1480,13 +1656,14 @@ D16.
 | D9 | Local folder | **decided** | Keep "Download a copy" |
 | D10 | Probation | **decided** | Four weeks. "Proven" means: a full cycle of the weekly jobs green; one real chapter from Word to readers via "Send to drafts" and "Going live"; link check clean; every redirect tested (§8 step 19) |
 | D11 | Editions and the graph | **decided** | The graph is on in the edition template too, with the same block as the builder (§8 step 22) |
-| D12 | Design | **pending (client)** | The AA-strict accent (`#6A57E0` for link text), and whether dark mode stays off. Until then `design.yaml` carries today's values |
+| D12 | Design | **decided for phase 1** (25 Sep; review when phase 1 finishes) | The link colour stays as it is (`#7C6CF0`). The AA-strict accent (`#6A57E0`) is not adopted. Dark mode wasn't part of this decision and stays as today, off |
 | D13 | Drafts previews | **decided** | Public but `noindex` (§0) |
 | D14 | Redirects | **decided** | Generated by the builder for every book (§3c) |
-| D15 | Hosting policy | **pending (client)** | The policy text, the exit commitment (a 12-month 301?), and who other than the platform owner reviews a removal. Needed before a second maintainer-owned book joins |
-| D16 | Cloudflare | **pending (client)** | Who is the second administrator on `brandonproject2026`, and who pays. Gates the cutover |
+| D15 | Hosting policy | **decided for phase 1** (25 Sep; review when phase 1 finishes) | The policy will be written later: its text, the exit commitment (a 12-month 301?), and who other than the platform owner reviews a removal. It is still needed before a second maintainer-owned book joins, as are the removal automation in §7g (i) and the sections step 24 leaves waiting |
+| D16 | Cloudflare | **decided for phase 1** (25 Sep; review when phase 1 finishes) | The platform owner is the sole administrator on `brandonproject2026` and pays for everything. No second administrator. Step 16 is no longer blocked |
 | D17 | Book two | **decided** | Moves onto the builder, and is kept for demonstration (§8 step 21) |
-| D18 | Publish site options | **decided** | Record them before cancelling (§8 step 15) |
+| D18 | Publish site options | **decided** | Record them before cancelling (§8 step 20; moved from step 15 on 26 Sep) |
+| D19 | Analytics and annotations | **decided for phase 1** (25 Sep; review when phase 1 finishes) | Global across the platform. Plausible moves to one site covering the portal and every book's address, excluding previews, as its own step after step 17 (§8 step 17a). Annotations are the one public Hypothes.is layer for every book |
 
 ---
 
