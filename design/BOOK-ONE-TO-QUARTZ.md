@@ -1375,6 +1375,15 @@ registry PR if it isn't.
 > marker names a digest other than `sha256:f4a18214…`, and `propose-edit` still returns
 > `"branch":"drafts"`. The console then drops the wording about publishing from the folder.
 
+> **Done 26 Sep 2026.** PR #36 merged as `f7a893a`. Checked after the merge:
+>
+> | Check | Result |
+> |---|---|
+> | The function serves the merge commit | yes, `f7a893a` |
+> | `reconcile` rebuilds on the new digest | the live marker names `sha256:d605ffad…` (was `sha256:f4a18214…`), with `main`'s head `ab5e178` and builder `8ab4837` unchanged, so the digest alone caused the rebuild |
+> | `propose-edit` from the live origin | `"branch":"drafts"` |
+> | Console | no longer mentions publishing from the folder |
+
 **17a. One Plausible site for the platform (D19).** Added 25 Sep 2026, numbered 17a so that
 the later steps keep their numbers.
 - **Repos:** `textbook-registry`, `quartz-edition-extras` (`edition-integrations`),
@@ -1524,6 +1533,11 @@ revert step 17 for the record. The reverted host is a Publish host that still na
 builder and its project, so the builder carries on deploying previews to `pages.dev`. **Content drift:** Publish serves what was last uploaded, so
 anything merged to `main` since the cutover is missing until the technical contact
 republishes from an up-to-date vault. That is why the Publish files stay until step 20.
+
+> **Confirmed 26 Sep 2026.** The rollback target is `publish-main.obsidian.md`, read from
+> the live DNS record just before step 16's switch. `publish-01.obsidian.md`, the
+> `publish_host` step 17 removed (and the `host` in Publish's `siteInfo`), is Publish's
+> file host, not the CNAME target. Don't point the record at it.
 
 ---
 
