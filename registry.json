@@ -175,6 +175,50 @@
         "host": null
       },
       "editions": null
+    },
+    {
+      "slug": "from-ontology-to-method-an-ontologic",
+      "status": "live",
+      "title": "From Ontology to Method: An Ontologically Situated Critical Realist Approach to Research Methodology",
+      "summary": "This paper shows how the quantitative-qualitative divide reflects the philosophical problem of the epistemic fallacy, which collapses questions about what exists into questions about how we can know it and proposes, in response, a hybrid integration of three Critical Realist models of social change.",
+      "licence": "CC-BY-SA-4.0",
+      "maintainer": {
+        "name": "Brandon Sommer, Caroline Laschkolnig",
+        "github": "BrandonAndCaroline"
+      },
+      "content": {
+        "repo": "textbookproject2026-alt/from-ontology-to-method-an-ontologic",
+        "live_branch": "main",
+        "drafts_branch": "drafts"
+      },
+      "site": {
+        "domain": "from-ontology-to-method-an-ontologic.confused4now.org",
+        "aliases": [],
+        "host": {
+          "kind": "static",
+          "provider": "cloudflare-pages",
+          "project": "from-ontology-to-method-an-ontologic",
+          "paid_by": "platform",
+          "builder": "quartz-book"
+        },
+        "legacy_origins": [],
+        "dark": null
+      },
+      "analytics": {
+        "plausible": null
+      },
+      "annotations": {
+        "hypothesis_groups": []
+      },
+      "suggest_edit": {
+        "enabled": true,
+        "counted_from": "2026-09-26"
+      },
+      "cms": {
+        "enabled": false,
+        "host": null
+      },
+      "editions": null
     }
 
   ]
