@@ -291,8 +291,9 @@ is in its `docs/how-versioning-works.md`.
   book. Cross-check it against that repo's Forks count.
 - `dashboard` needs `HYPOTHESIS_API_TOKEN` and the built-in token. It counts
   suggested-edit issues from `suggest_edit.counted_from` onwards, and builds the
-  Plausible link from `analytics.plausible.site`. If that field and the name of
-  the Plausible site disagree, the published link is dead
+  Plausible link from `platform.analytics.plausible.site`, filtered to the book's
+  hostname, for a live book. If that field and the name of the Plausible site
+  disagree, the published link is dead
   (INFRASTRUCTURE.md §9). The script throws rather than publish zeros.
 - A page that renders as raw text on the site is a template failure behind a
   green tick. Read the page, not only the tick.

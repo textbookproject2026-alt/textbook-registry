@@ -135,6 +135,7 @@ means the same as its empty value (no aliases, not dark, unknown payer, no porta
 | `console_oauth_client_id` | The author's console's OAuth App client ID. Public by design. |
 | `automation_logins` | Machine accounts left out of contributor and activity counts. |
 | `portal` | **Optional**, until a portal domain exists. `domain`: the portal's own address, never a book's hostname. `host`: where the page is served from — always `static`, with a `provider` and a `project`, and no `paid_by` because the portal is the platform's by definition. `cms_host`: the shared CMS host (the single `ALLOWED_DOMAINS` entry) once books have moved onto it, else `null`. `book_parent`: new books get `<slug>.<book_parent>`, and any hostname the platform serves under it — a book's domain or alias, or `cms_host` — must be exactly one label deep so Universal SSL covers it; `null` for no convention. A legacy origin is exempt: the platform may no longer hold it. |
+| `analytics.plausible` | The platform's one Plausible site (BOOK-ONE-TO-QUARTZ D19, §8 step 17a), or `null` for no analytics anywhere: `script_src`, `site` (the site's name in Plausible; each book's public dashboard link is derived from it, filtered to the book's hostname) and `dashboard_public`. The builder gives the script to **live** books only, and each page counts only on its own address (a book's `site.domain`, the portal's `domain`), never on a preview. A book has no analytics field of its own. |
 
 ### `books[]`
 
@@ -154,7 +155,6 @@ means the same as its empty value (no aliases, not dark, unknown payer, no porta
 | `site.host.paid_by` | **Optional.** `maintainer` or `platform`: whose subscription has to keep being paid for the site to stay up. The account itself is never recorded, because it is identified by an email address. Absent means not yet confirmed. |
 | `site.legacy_origins` | Earlier origins of this book, still accepted for annotations and lookups. |
 | `site.dark` | **Optional.** `null`, or `{ since, reason, notified }`, set by the platform owner by PR once the site has gone away and its hostname has been parked. `reason` is `subscription-lapsed`, `domain-removed`, `maintainer-request` or `unknown`; `notified` is the date the maintainer was told, or `null`. Allowed only on a `live` book. This is a declaration, not observed health: a probe's daily observations will live outside `registry.json`. |
-| `analytics.plausible` | `null`, or `script_src`, `site` (the Plausible site name; the public dashboard URL is derived from it) and `dashboard_public`. |
 | `annotations.hypothesis_groups` | Private Hypothes.is groups that belong to the book, as `{ id, label }`. |
 | `suggest_edit` | `enabled`, and `counted_from`: the first UTC day whose suggestions are reader activity, or `null` to count all. |
 | `cms` | `enabled`, and `host`: the exact hostname the CMS page runs on, or `null`. Never a bare shared suffix. |
@@ -350,6 +350,8 @@ The design's example entry (§1b) was written from the repos. Checking each valu
 against its real source found these differences:
 
 - **`analytics.plausible.site` is the book's own hostname, not `bptext2026.xyz`.**
+  (Superseded 26 Sep 2026: the field is now `platform.analytics.plausible.site`,
+  the platform's one site `confused4now.org`, §8 step 17a.)
   The Plausible site was renamed after the 14 September 2026 domain move
   (`plausible.io/bptext2026.xyz` returns 404) and is renamed again on every move
   after it. The vault was corrected in `cab6b28`, and from step 3b onwards the

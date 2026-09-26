@@ -144,9 +144,10 @@ record.
    their repo. Retiring stops the function *using* the installation, but the
    installation still grants `issues: write`. If the installation is on a
    platform-held account and covers only this book, uninstall it yourself.
-8. **Platform-held accounts for the book:** a Plausible site in the platform's
-   account, or a Pages project that the platform pays for. Close or hand them
-   over.
+8. **Platform-held accounts for the book:** a Pages project that the platform
+   pays for. Close or hand it over. Analytics need nothing: the platform's one
+   Plausible site stops counting the book once it isn't `live` (§8 step 17a of
+   BOOK-ONE-TO-QUARTZ), and its history stays under the book's hostname.
 9. **Tell the maintainer what to expect in their own repo.** Their book's
    workflows fail from the next run: `configure.mjs` and `scripts/lib/registry.mjs`
    throw on a retired book, so the annotation backup, dashboard and weekly

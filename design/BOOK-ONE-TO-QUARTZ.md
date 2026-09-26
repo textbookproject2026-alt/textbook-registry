@@ -1392,6 +1392,35 @@ the later steps keep their numbers.
 - **Must not break:** the six event names from §1a, and the editor's three events.
   Parity's Plausible checks change in the same PR as the registry field.
 
+> **Settled and made, 26 Sep 2026.** **The site is book one's, renamed** from
+> `social-research-methods.confused4now.org` to `confused4now.org`. The script
+> (`pa-eii3VlmU1ClI0VxGOsCTe.js`) and the public dashboard carry over, and so does
+> book one's history. The rename on 22 Sep showed that a rename keeps the script
+> working. The portal and the other books have no history to lose. Book one's past
+> stays readable under its hostname, with the dashboard's hostname filter.
+> **Only live books count.** Book two's `site.domain` is
+> `platform-test-book-2.pages.dev`, so "every registered `site.domain`" would have
+> counted a preview. The builder gives the script only to a `live` book.
+> `extras` needs no change: each page's guard already counts only on its own
+> `siteDomain`. As a second fence, the site's **Shields → Hostnames** allow only
+> `*confused4now.org` (the apex and every subdomain), so Plausible drops a pageview
+> from `*.pages.dev` even if a guard is wrong.
+>
+> | Order | PR | What |
+> |---|---|---|
+> | 1 | quartz-book #13 | the builder and the dashboard read `platform.analytics.plausible` (and the book's own field until it exists), for live books only. The dashboard link is `https://plausible.io/<site>?f=is,hostname,<site.domain>` (checked on book one's public dashboard). No digest moves |
+> | 2 | textbook-portal #1 | the portal loads the same site behind its own hostname guard |
+> | 3 | by hand | rename the Plausible site to `confused4now.org`; Shields → Hostnames `*confused4now.org`; the editor's three goals on this one site |
+> | 4 | this registry PR | `platform.analytics` in (required, `null` allowed); `books[].analytics` out (the schema now refuses it); parity's `reading-site.plausible-script` expects the platform's script for a live book, and its evaluator reads `A ?? B` and `X === "literal"` |
+> | 5 | book-requests | new entries stop writing `analytics`. Merge right after 4, since the schema refuses the key from then |
+>
+> **Proves it** after 4 merges: every book's digest changes once, so `reconcile`
+> rebuilds all four. The two ontology books gain the script. Book one keeps it, and
+> book two stays without it. Then one pageview each from book one's address and the
+> portal arrives in `confused4now.org`, and nothing arrives from a `pages.dev`
+> address. The builder's fallback to a book's own field goes in a follow-up once 4
+> is proven.
+
 **18. Clean up book one, apart from the Publish files.**
 - **Repo:** `textbook`.
 - **Does:** the rest of §5: `templates/`, `configure.mjs`, `apply-config.yml`, the maintainer
