@@ -343,7 +343,7 @@ The six events, which must keep their exact names so Plausible's history continu
 One thing I can't check from the repo: **Publish's site options** (stacked pages, theme
 toggle, which panes are shown) are stored by Publish, not in `.obsidian/publish.json`.
 **Decided (D18):** record them off *Site options* before cancelling the subscription (§8
-step 15), and note anything readers would miss.
+step 20; moved from step 15 on 26 Sep), and note anything readers would miss.
 
 ### 1b. Where each piece should live, so that every Quartz book gets it
 
@@ -1279,6 +1279,13 @@ registry PR if it isn't.
 > **by hand** are still open: the browser checks, the domain rehearsal, the test
 > annotation and D18.
 
+> **Finished, 26 Sep 2026.** The browser checks, print, mobile, the Hypothes.is sidebar and
+> badge, the tag helper and Plausible all match Publish, after F4 and F5 merged. Three items
+> changed. **The domain rehearsal** wasn't run and is dropped, because step 16 measures its
+> own outage. **The test annotation** is dropped: the book has no annotations, so the
+> re-anchoring check has nothing to test. **D18** moves to before Publish is cancelled
+> (step 20). F3 isn't done yet: `2.md` is still served (*Fixes*).
+
 ### Phase 2: the live address
 
 **16. Cutover.** Not a PR: one DNS edit, plus the Pages custom domain.
@@ -1292,10 +1299,10 @@ registry PR if it isn't.
   `reconcile` on its own, since book one has been on the builder in the registry since
   step 7's amendment. A Plausible pageview
   arrives from the live domain. A honeypot POST from the live origin gets the honeypot
-  answer. Every redirect answers 301. The step 15 test annotation re-anchors. The CMS, the
-  console and the portal work as before.
-- **Must not break:** annotations on unchanged URLs, which keep their URI. The outage is the
-  activation time measured in step 15.
+  answer. Every redirect answers 301. The CMS, the console and the portal work as before.
+- **Must not break:** annotations on unchanged URLs, which keep their URI (there are none
+  today). The outage runs from the DNS edit until the live hostname serves the marker, and
+  is measured there.
 - **Rollback:** see below.
 
 > **Added 25 Sep 2026, from the in-site editor workstream (24 Sep).** The editor ("Edit
@@ -1313,6 +1320,10 @@ registry PR if it isn't.
 > returns JSON with `"branch":"drafts"`. Run it again after step 17 merges. **Watch:**
 > Hypothes.is annotations keyed to Publish-style URLs. The builder already emits 301s
 > from them (D14), and the step 15 test annotation is the check that they re-anchor.
+
+> **Changed 26 Sep 2026.** Step 15 ran no domain rehearsal and made no test annotation
+> (see its note). So **Proves it** no longer checks re-anchoring, since the book has no
+> annotations to re-anchor, and the outage is timed at the switch, not taken from step 15.
 
 **17. Record the host.**
 - **Repo:** `textbook-registry`.
@@ -1379,7 +1390,8 @@ the later steps keep their numbers.
 
 **20. Cancel Publish.**
 - **Repos:** Obsidian account (by hand), then `textbook`, then `textbook-registry`.
-- **Does:** cancel the subscription and clear Publish's custom domain. Delete `publish.js`,
+- **Does:** record Publish's Site options (D18, moved here from step 15 on 26 Sep), then
+  cancel the subscription and clear Publish's custom domain. Delete `publish.js`,
   `publish.css`, `.obsidian/` and `tests/test-path-mapping.js`. INFRASTRUCTURE drops Publish,
   and MULTI-BOOK-HOSTING open question 7 closes.
 - **Proves it:** the live marker is unchanged, and parity is green without the `publish.*`
@@ -1546,14 +1558,14 @@ unique, 905 OK, **2 errors**, and both are F1 and F2 again.
 
 | Row | Result |
 |---|---|
-| §1a rows, side by side in a browser | **by hand**. Two failures found on 25 Sep: hover previews (F4) and the citation's jump (F5) |
-| Print | **by hand** |
-| Mobile | **by hand** |
-| Hypothes.is sidebar and badge, tag helper | **by hand** |
-| Plausible records nothing from `pages.dev` | **by hand**. The guard is in every page (above) |
-| Custom-domain rehearsal on `quartz-trial.confused4now.org`: activation time, what Pages does to the DNS record, removed afterwards | **by hand** |
-| Test annotation on Publish, for step 16's re-anchoring check | **by hand** |
-| Publish's Site options (D18) | **by hand** |
+| §1a rows, side by side in a browser | Two failures found on 25 Sep: hover previews (F4) and the citation's jump (F5). Checked again on 26 Sep after their fixes merged: every row matches Publish. **Pass** |
+| Print | Matches Publish (26 Sep). **Pass** |
+| Mobile | Matches Publish (26 Sep). **Pass** |
+| Hypothes.is sidebar and badge, tag helper | Match Publish (26 Sep). **Pass** |
+| Plausible records nothing from `pages.dev` | Nothing recorded (26 Sep). The guard is in every page (above). **Pass** |
+| Custom-domain rehearsal on `quartz-trial.confused4now.org`: activation time, what Pages does to the DNS record, removed afterwards | **Not run, and dropped** (26 Sep). Step 16 measures the outage itself |
+| Test annotation on Publish, for step 16's re-anchoring check | **Dropped** (26 Sep). The book has no annotations (§3d, and 0 again on 26 Sep), so nothing can fail to re-anchor, and step 16 doesn't check it |
+| Publish's Site options (D18) | **Moved** (26 Sep): recorded before Publish is cancelled (step 20), not here |
 
 ### Fixes
 
@@ -1571,7 +1583,11 @@ unique, 905 OK, **2 errors**, and both are F1 and F2 again.
   No builder change is needed.
 - **F3. A stray page on Publish.** `2.md`, a pasted terminal transcript, is published at
   `/2`. It holds no tokens, and it isn't in the repo, so it leaves at the cutover. Fix:
-  unpublish it from Publish now.
+  unpublish it from Publish now. **Still published on 26 Sep, 11:06 UTC**, after it was
+  unpublished: Publish's file index for the site (`/cache/1443b409…`) still lists `2.md`
+  (59 files, as on 25 Sep), and `/access/1443b409…/2.md` answers 200, both uncached
+  (`cf-cache-status: DYNAMIC`) and with a cache-busting query. The unpublish didn't reach
+  the server. It leaves at the cutover whatever happens.
 - **F4. No hover previews on Quartz** (by hand, 25 Sep). Hovering a concept link on
   `pages.dev` showed nothing. The console said: `Access to fetch at
   'https://social-research-methods.confused4now.org/chapters/definitions/critical-realism'
@@ -1646,7 +1662,7 @@ cutover (§8 step 16).
 | D15 | Hosting policy | **decided for phase 1** (25 Sep; review when phase 1 finishes) | The policy will be written later: its text, the exit commitment (a 12-month 301?), and who other than the platform owner reviews a removal. It is still needed before a second maintainer-owned book joins, as are the removal automation in §7g (i) and the sections step 24 leaves waiting |
 | D16 | Cloudflare | **decided for phase 1** (25 Sep; review when phase 1 finishes) | The platform owner is the sole administrator on `brandonproject2026` and pays for everything. No second administrator. Step 16 is no longer blocked |
 | D17 | Book two | **decided** | Moves onto the builder, and is kept for demonstration (§8 step 21) |
-| D18 | Publish site options | **decided** | Record them before cancelling (§8 step 15) |
+| D18 | Publish site options | **decided** | Record them before cancelling (§8 step 20; moved from step 15 on 26 Sep) |
 | D19 | Analytics and annotations | **decided for phase 1** (25 Sep; review when phase 1 finishes) | Global across the platform. Plausible moves to one site covering the portal and every book's address, excluding previews, as its own step after step 17 (§8 step 17a). Annotations are the one public Hypothes.is layer for every book |
 
 ---
