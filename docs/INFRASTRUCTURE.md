@@ -41,13 +41,13 @@ These are the services every book uses. Each one bakes in or reads
 | S4 | **Portal** (`textbook-portal`) | Cloudflare Pages, project `textbook-portal`, on `confused4now.org` | generated at build | The front page is gone. Old book-one links keep redirecting, because the redirect rule is in the zone, not in Pages |
 | S5 | **Authoring Assistant** (author's console) | each author's Mac, a signed app | fetched at launch, cached copy as fallback | Authors can't work through their queues from the app. Books and sites are unaffected |
 | S6 | **Edition extras** (`quartz-edition-extras`) | GitHub, installed by department-edition builds | named in `platform.edition_extras_repo` | Every department edition's next build fails |
-| S7 | **The builder** (`quartz-book`), **started by the `build-nudge` Worker** | GitHub Actions. Its `reconcile` workflow builds each book and uploads it to the book's Pages project in `brandonproject2026` (Direct Upload). The Cloudflare Worker `build-nudge` in the same account starts `reconcile`: on each book's pushes, and every 15 minutes | `quartz-book`: fetched from `main` at every build. `build-nudge`: fetched at most every 5 minutes, only to filter nudges | `quartz-book` gone: no book rebuilds, and each keeps serving its last deployment. `build-nudge` gone: nothing rebuilds **on its own**, but `reconcile` still runs by hand. Nothing a reader sees is served from it until the cutover, BOOK-ONE-TO-QUARTZ §8 step 16 (added 23 Sep 2026, §8 step 8; deploys from 24 Sep, step 9; the Worker from 24 Sep, step 10) |
+| S7 | **The builder** (`quartz-book`), **started by the `build-nudge` Worker** | GitHub Actions. Its `reconcile` workflow builds each book and uploads it to the book's Pages project in `brandonproject2026` (Direct Upload). The Cloudflare Worker `build-nudge` in the same account starts `reconcile`: on each book's pushes, and every 15 minutes | `quartz-book`: fetched from `main` at every build. `build-nudge`: fetched at most every 5 minutes, only to filter nudges | `quartz-book` gone: no book rebuilds, and each keeps serving its last deployment. `build-nudge` gone: nothing rebuilds **on its own**, but `reconcile` still runs by hand. Since the cutover (BOOK-ONE-TO-QUARTZ §8 step 16, 26 Sep 2026) it serves book one's readers (added 23 Sep 2026, §8 step 8; deploys from 24 Sep, step 9; the Worker from 24 Sep, step 10) |
 
 ### The books
 
 | Slug | Status | Content repo (owner) | Site | Host | Paid by |
 |---|---|---|---|---|---|
-| `social-research-methods` | `live` | `textbookproject2026-alt/textbook` | <https://social-research-methods.confused4now.org> | Obsidian Publish, site `1443b409…` | the platform owner (D16, 25 Sep 2026): the Publish subscription until it is cancelled (BOOK-ONE-TO-QUARTZ §8 step 20), and the Pages project from the cutover. The registry records it as `paid_by: platform` at §8 step 17; its `obsidian-publish` host has no `paid_by` until then |
+| `social-research-methods` | `live` | `textbookproject2026-alt/textbook` | <https://social-research-methods.confused4now.org> | Cloudflare Pages, project `social-research-methods`, built by `quartz-book` (since the cutover, BOOK-ONE-TO-QUARTZ §8 step 16, 26 Sep 2026). Obsidian Publish site `1443b409…` stays subscribed for rollback until §8 step 20 | the platform owner (D16, 25 Sep 2026): the Pages project, and the Publish subscription until it is cancelled (§8 step 20). The registry records `paid_by: platform` (§8 step 17) |
 | `platform-test-book` | `preview` | `dept-coordinator-test/platform-test-book` | <https://platform-test-book-2.pages.dev> | Cloudflare Pages `platform-test-book-2` (Direct Upload, built by `quartz-book`; the old Git-integrated `platform-test-book` is retired, §8 step 21) | `platform` |
 
 The registry is the source of truth for everything in this table. If it and this
@@ -415,8 +415,10 @@ book that wants the editor brings its own Pages project and asks for one
   `MULTI-BOOK-HOSTING.md` open question 2.
 - **Records the platform depends on:**
   - the apex: the portal Pages project;
-  - `social-research-methods`: a proxied CNAME to Obsidian Publish
-    (`publish-main.obsidian.md`);
+  - `social-research-methods`: a proxied CNAME to the Pages project
+    (`social-research-methods.pages.dev`) since the cutover on 26 Sep 2026
+    (BOOK-ONE-TO-QUARTZ §8 step 16). Rollback until §8 step 20 points it back at
+    Obsidian Publish (`publish-main.obsidian.md`);
   - the Redirect Rule (§4).
 - **Zone settings:** SSL mode **Full**, since "Flexible" makes Publish loop. Free
   Universal SSL covers one label deep only, which is why
@@ -575,7 +577,7 @@ book that wants the editor brings its own Pages project and asks for one
 |---|---|---|---|---|
 | `textbook-portal` | `brandonproject2026` | `textbook-portal` `main` + deploy hook | `confused4now.org` | platform (S4) |
 | `textbook-admin` | `brandonproject2026` | `textbook` `main`, output `admin/` | `textbook-admin.pages.dev` | book one's CMS host |
-| `social-research-methods` | `brandonproject2026` | **Direct Upload** from `quartz-book`'s `reconcile` (no Git connection). Production branch `main` | `social-research-methods.pages.dev` (book one's `main`), `drafts.social-research-methods.pages.dev` (its `drafts`, `noindex`), `design-<pr>.social-research-methods.pages.dev` (design previews of `main` for `quartz-book` pull requests, `noindex`, §8 step 11). No custom domain until §8 step 16 | book one, paid by the platform (S7; created 24 Sep 2026, §8 step 9) |
+| `social-research-methods` | `brandonproject2026` | **Direct Upload** from `quartz-book`'s `reconcile` (no Git connection). Production branch `main` | `social-research-methods.pages.dev` (book one's `main`), `drafts.social-research-methods.pages.dev` (its `drafts`, `noindex`), `design-<pr>.social-research-methods.pages.dev` (design previews of `main` for `quartz-book` pull requests, `noindex`, §8 step 11). Custom domain `social-research-methods.confused4now.org` since §8 step 16 (26 Sep 2026) | book one, paid by the platform (S7; created 24 Sep 2026, §8 step 9) |
 | `platform-test-book-2` | `brandonproject2026` | uploaded by `quartz-book`'s `reconcile` (Direct Upload) | `platform-test-book-2.pages.dev`, and `drafts.platform-test-book-2.pages.dev` (unregistered origin), and `design-<pr>.platform-test-book-2.pages.dev` (design previews, §8 step 11) | book two, `paid_by: platform` |
 | `platform-test-book` | **confirm** (the second account) | `dept-coordinator-test/platform-test-book` `main`, Git-integrated | `platform-test-book.pages.dev` | **retired**: book two's pre-builder site. Delete once nothing points at it (MULTI-BOOK-HOSTING §2e) |
 | `textbook-edition-template` | **confirm** | `textbook-edition-template` | its `pages.dev` demo | book one's edition template |

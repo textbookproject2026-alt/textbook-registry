@@ -1325,6 +1325,22 @@ registry PR if it isn't.
 > (see its note). So **Proves it** no longer checks re-anchoring, since the book has no
 > annotations to re-anchor, and the outage is timed at the switch, not taken from step 15.
 
+> **Done 26 Sep 2026.** The cutover passed at 11:36:57 UTC, when the live hostname served
+> the marker. The outage from the DNS edit to that moment was about three and a half
+> minutes. Checked by the platform owner:
+>
+> | Check | Result |
+> |---|---|
+> | Marker on `social-research-methods.confused4now.org` | `main`'s head `ab5e178`, builder `8ab4837`, digest `sha256:f4a18214…` (read again after the switch; `/chapters/Definitions/Critical+Realism` answers 301, so Pages is serving) |
+> | Redirects | all 11 answer 301 |
+> | Honeypot POST from the live origin | honeypot answer; nothing filed (the issue count stayed at 30) |
+> | `propose-edit` from the live origin | `"branch":"drafts"` |
+> | Plausible | pageviews from the live domain |
+> | CMS, portal, console | show book one as before |
+>
+> Publish's custom-domain setting wasn't touched, so rollback (below) is still the one
+> CNAME edit.
+
 **17. Record the host.**
 - **Repo:** `textbook-registry`.
 - **Does:** switches book one's host kind. `builder` and `project` are already there
@@ -1348,6 +1364,16 @@ registry PR if it isn't.
 > (`<project>.pages.dev`, `<label>.<project>.pages.dev`), so this change doesn't alter
 > which origins it accepts. After the merge, repeat step 16's `propose-edit` check: it
 > must still return `"branch":"drafts"`.
+
+> **Made 26 Sep 2026.** `registry.json` has book one's host exactly as **Does:** gives it.
+> Before merging: validation passes, the tests pass (the Publish-host rules are now tested
+> on book one in its rolled-back shape, since no committed book has a Publish host), and
+> parity gives 22 ok, 1 known drift, 30 retired, 6 not applicable (the `publish.*` checks,
+> now off because the host is `static`) and 0 failed. The count differs from step 13's
+> estimate because step 14 retired five more checks. **Proof after the merge is pending:**
+> the function serves the merge commit, `reconcile` rebuilds both branches once, the live
+> marker names a digest other than `sha256:f4a18214…`, and `propose-edit` still returns
+> `"branch":"drafts"`. The console then drops the wording about publishing from the folder.
 
 **17a. One Plausible site for the platform (D19).** Added 25 Sep 2026, numbered 17a so that
 the later steps keep their numbers.
