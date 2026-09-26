@@ -53,6 +53,21 @@ const staticBook = (r) => {
   return b;
 };
 
+// Book one as rollback from §8 step 16 leaves it (BOOK-ONE-TO-QUARTZ, "Rollback from step 16
+// until step 20"): step 17 reverted, so a Publish host that still names the builder and its
+// Pages project. Book one was committed in this shape until step 17 (26 Sep 2026), and the
+// Publish-host rules below are tested on it, since no committed book has that host any more.
+const rolledBack = (b) => {
+  b.site.host = {
+    kind: 'obsidian-publish',
+    site_id: '1443b409a84e491249da35fdd4b91de6',
+    publish_host: 'publish-01.obsidian.md',
+    builder: 'quartz-book',
+    project: 'social-research-methods',
+  };
+  return b;
+};
+
 const PORTAL = {
   domain: 'portal.example',
   host: { kind: 'static', provider: 'cloudflare-pages', project: 'portal-fixture' },
@@ -203,10 +218,9 @@ test('a base with no registry yet protects nothing', () => {
 
 // --- multi-book hosting (MULTI-BOOK-HOSTING §4, §6) ----------------------------
 
-test('book one needs none of the new per-book fields: its committed entry has none and is valid', () => {
+test('book one needs neither aliases nor dark: its committed entry has neither and is valid', () => {
   const b = book(real());
   for (const k of ['aliases', 'dark']) assert.ok(!(k in b.site), `site.${k} is already in registry.json`);
-  assert.ok(!('paid_by' in b.site.host), 'site.host.paid_by is already in registry.json');
   assert.deepEqual(validate(REAL), []);
 });
 
@@ -269,18 +283,25 @@ test('a static book built by quartz-book is accepted beside one without the fiel
   assert.ok(!('builder' in other.site.host));
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
-// Book one names the builder while Publish still serves it (the 24 Sep amendment to step
-// 7): the builder previews it on Pages, and nothing about its address changes.
-test('book one is built by quartz-book as a preview, and is still a Publish book at its domain', () => {
+// Book one's domain has pointed at its Pages project since the cutover (§8 step 16, 26 Sep
+// 2026), and step 17 records that: a static host, paid for by the platform, with nothing
+// left of Publish.
+test('book one is a static book on Pages at its own domain, built by quartz-book', () => {
   const b = book(real());
   assert.equal(b.slug, 'social-research-methods');
-  assert.equal(b.site.host.kind, 'obsidian-publish');
-  assert.equal(b.site.host.builder, 'quartz-book');
-  assert.equal(b.site.host.project, 'social-research-methods');
+  assert.deepEqual(b.site.host, {
+    kind: 'static', provider: 'cloudflare-pages', project: 'social-research-methods', paid_by: 'platform', builder: 'quartz-book',
+  });
   assert.equal(b.site.domain, 'social-research-methods.confused4now.org');
+});
+test('book one rolled back to Publish, still built as a preview, is accepted', () => {
+  const r = real();
+  rolledBack(book(r));
+  assert.deepEqual(validate(JSON.stringify(r)), []);
 });
 test('a Publish book without the builder is accepted', () => {
   const r = real();
+  rolledBack(book(r));
   delete book(r).site.host.builder;
   delete book(r).site.host.project;
   assert.deepEqual(validate(JSON.stringify(r)), []);
@@ -288,13 +309,13 @@ test('a Publish book without the builder is accepted', () => {
 test('builder: unknown value', () => expectFail((r) => { staticBook(r).site.host.builder = 'netlify-build'; }, `/books/${STATIC_AT}/site/host`));
 test('builder: null is not a way to say none (leave it out)', () =>
   expectFail((r) => { staticBook(r).site.host.builder = null; }, `/books/${STATIC_AT}/site/host`));
-test('builder on a Publish host with no project', () => expectFail((r) => { delete book(r).site.host.project; }, '/books/0/site/host'));
-test('project on a Publish host with no builder', () => expectFail((r) => { delete book(r).site.host.builder; }, '/books/0/site/host'));
-test('builder on a Publish host: unknown value', () => expectFail((r) => { book(r).site.host.builder = 'netlify-build'; }, '/books/0/site/host'));
+test('builder on a Publish host with no project', () => expectFail((r) => { rolledBack(book(r)); delete book(r).site.host.project; }, '/books/0/site/host'));
+test('project on a Publish host with no builder', () => expectFail((r) => { rolledBack(book(r)); delete book(r).site.host.builder; }, '/books/0/site/host'));
+test('builder on a Publish host: unknown value', () => expectFail((r) => { rolledBack(book(r)); book(r).site.host.builder = 'netlify-build'; }, '/books/0/site/host'));
 test('provider on a Publish host (the builder deploys only to Pages)', () =>
-  expectFail((r) => { book(r).site.host.provider = 'cloudflare-pages'; }, '/books/0/site/host'));
+  expectFail((r) => { const h = rolledBack(book(r)).site.host; h.provider = 'cloudflare-pages'; }, '/books/0/site/host'));
 test('a Publish book\'s preview project that is also a static book\'s project', () =>
-  expectFail((r) => { staticBook(r).site.host.project = book(r).site.host.project; }, 'duplicate site.host.project: social-research-methods on cloudflare-pages'));
+  expectFail((r) => { staticBook(r).site.host.project = rolledBack(book(r)).site.host.project; }, 'duplicate site.host.project: social-research-methods on cloudflare-pages'));
 test('two static books on one project', () =>
   expectFail((r) => {
     const a = staticBook(r);
@@ -331,7 +352,7 @@ test('paid_by platform with no maintainer login is fine', () => {
 test('static book on a shared suffix may not be live', () =>
   expectFail((r) => { staticBook(r).status = 'live'; }, 'only a static-host book with status preview'));
 test('Publish book on a shared suffix', () =>
-  expectFail((r) => { book(r).status = 'preview'; book(r).site.domain = 'book.pages.dev'; }, 'only a static-host book with status preview'));
+  expectFail((r) => { rolledBack(book(r)); book(r).status = 'preview'; book(r).site.domain = 'book.pages.dev'; }, 'only a static-host book with status preview'));
 test('domain that is a bare shared suffix', () =>
   expectFail((r) => { staticBook(r).site.domain = 'pages.dev'; }, 'site.domain pages.dev is a shared platform suffix'));
 test('static book on its own domain may be live', () => {
@@ -406,7 +427,7 @@ test('portal project that is also a book\'s Pages project', () =>
   }, 'one project serves one site'));
 test('portal project that is also a Publish book\'s preview project', () =>
   expectFail((r) => {
-    r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, project: book(r).site.host.project } };
+    r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, project: rolledBack(book(r)).site.host.project } };
   }, "is also social-research-methods's site.host.project"));
 test('the same project name on a different provider is fine', () => {
   const r = real();

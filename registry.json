@@ -43,11 +43,11 @@
       "site": {
         "domain": "social-research-methods.confused4now.org",
         "host": {
-          "kind": "obsidian-publish",
-          "site_id": "1443b409a84e491249da35fdd4b91de6",
-          "publish_host": "publish-01.obsidian.md",
-          "builder": "quartz-book",
-          "project": "social-research-methods"
+          "kind": "static",
+          "provider": "cloudflare-pages",
+          "project": "social-research-methods",
+          "paid_by": "platform",
+          "builder": "quartz-book"
         },
         "legacy_origins": ["https://bptext2026.xyz"]
       },
