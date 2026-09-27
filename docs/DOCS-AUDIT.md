@@ -132,15 +132,14 @@ relevant doc as it is today, not as it ought to be.
    is two edits in two repos. The template has already moved to slug-only.
 9. **The vault's scripts fail a retired book with no way forward.** They don't
    mention `TEXTBOOK_REGISTRY` (§7b gap 2).
-10. **Ownership confirmed 27 Sep 2026; transfer still to arrange.** The platform owner,
+10. **Resolved 27 Sep 2026: every account is the maintainer's, and stays so.** The platform owner,
     Alec (`textbookproject2026-alt` / `brandonproject2026`), confirmed that they own
     every *confirm at handover* account: Vercel, Plausible, Apple Developer, the
     registrar for `confused4now.org`, the second Cloudflare account, the *Textbook CMS*
     OAuth App, the App's `.pem` backups, the private `code_repo`, `aldogobot`, and
-    Hypothes.is (`AlecGordon`). **Transfer to the client is to be arranged at
-    handover.** Two owners aren't covered by that confirmation and are still *confirm at
-    handover*: Obsidian Publish (book one's rollback until §8 step 20) and the
-    *Textbook sign-in* OAuth App (INFRASTRUCTURE §2f).
+    Hypothes.is (`AlecGordon`), and also Obsidian Publish and the *Textbook sign-in*
+    OAuth App. Alec is the maintainer: **there is no transfer to a client**, and every
+    account stays with him.
 11. **The suggest-edit rate limit is per IP and shared by every book.** Testing
     one book spends another book's readers' budget on the same IP.
 12. **Open decisions that documentation mustn't pre-empt:** 3.3 (the CMS "Ready"

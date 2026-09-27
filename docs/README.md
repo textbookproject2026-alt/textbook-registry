@@ -18,7 +18,8 @@ If you're inheriting the platform cold, read these in order:
 
 1. **[INFRASTRUCTURE.md](INFRASTRUCTURE.md)**: every service, account, secret
    and deploy pipeline, and what breaks if each one goes. Resolve its
-   *confirm at handover* rows first.
+   remaining *confirm* rows first. (Every account is Alec's, the maintainer's,
+   since 27 Sep 2026; there is no handover.)
 2. **[DOCS-AUDIT.md](DOCS-AUDIT.md)**, *Wrong in ways documentation can't fix*:
    the known defects, so you don't rediscover them.
 3. **[BOOK-LIFECYCLE.md](BOOK-LIFECYCLE.md)**: the only procedures that change

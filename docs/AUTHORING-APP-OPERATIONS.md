@@ -62,8 +62,8 @@ requirements, the one-time `notarytool` setup, `./packaging/build.sh` and its
 options, and the release checklist. What you need to hold:
 
 - Xcode command-line tools on the build machine;
-- a **Developer ID Application** certificate (Apple account: **confirm at
-  handover**);
+- a **Developer ID Application** certificate: *Developer ID Application: Alec Gordon
+  (S8B4BPJWX4)*, Alec's Apple Developer account (confirmed 27 Sep 2026);
 - an App Store Connect key or app-specific password, stored as a `notarytool`
   keychain profile and read through `NOTARY_PROFILE`.
 
