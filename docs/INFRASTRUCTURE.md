@@ -572,8 +572,12 @@ book that wants the editor brings its own Pages project and asks for one
   *Developer ID Application: Alec Gordon (S8B4BPJWX4)*, in the platform owner's
   keychain (checked 27 Sep 2026). The Apple Developer account is Alec's and stays with him.
 - **DeepSeek (optional):** if the author pastes their own key, the app sends a
-  chapter's text to `api.deepseek.com`. That happens only with a key present and
-  the tick box ticked. Nobody has recorded who approved book text leaving the
+  chapter's text to `api.deepseek.com`, for glossary suggestions or for the AI
+  formatting check. That happens only with a key present and a tick box ticked.
+- **Formatting knowledge base:** `app/formatting_rules.md` in the app repo,
+  versioned, bundled into each build. The AI formatting check's prompt is built
+  from it ([AUTHORING-APP-OPERATIONS.md](AUTHORING-APP-OPERATIONS.md), *The
+  formatting knowledge base*). Nobody has recorded who approved book text leaving the
   institution.
 - **If the app is gone:** authors lose the queue view and the publish button.
   Nothing on the web changes. **If the Developer ID lapses,** existing installs
