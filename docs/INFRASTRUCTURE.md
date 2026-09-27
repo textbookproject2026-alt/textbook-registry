@@ -172,6 +172,30 @@ Settings → Secrets and variables → Actions:
 > - The books App's key was never reached, so it is untested.
 > - To retry: set both keys again from the full `.pem` files (or generate new keys), then
 >   remove and re-add `approved` on issue #1.
+>
+> **Proved 27 Sep 2026, 11:40–11:46 UTC: the Apps provision and remove.** The platform
+> owner set both keys again at 11:38. Then:
+>
+> - **`provision`, run 36316496051: green, and the issue is labelled `provisioned`.** The
+>   status comment lists every step.
+>   - `confused4now-platform` both opened and merged registry #50.
+>   - `https://sandbox-test-book.confused4now.org/.well-known/textbook.json` served the book
+>     with builder `803e96b`.
+>   - The repo had auto-merge on, and `chapters/chapter-01.md` with `chapter-sources.json`
+>     (the naming rule).
+>   - After #50, `validate`, `parity`, `deploy` and `portal` were green.
+> - **`textbook-suggest-edit` on the new repo:**
+>   - A honeypot POST from the book's origin resolved to its repo.
+>   - A real suggestion was filed as issue #1 by `textbook-suggest-edit[bot]`.
+> - **`remove`, run 36316709313: green.** `confused4now-platform` opened and merged registry
+>   #51.
+>   - The repo is deleted (API 404).
+>   - The DNS record is gone (no answer from 1.1.1.1), the hostname returns 530, and
+>     `sandbox-test-book.pages.dev` doesn't answer.
+>   - The portal serves the post-#51 registry without the book.
+>   - After #51, `validate`, `parity`, `deploy` and `portal` were green.
+> - **The Apps are now `book-requests`' only credential.** Still not checkable from the API:
+>   whether the classic token behind the old `PLATFORM_TOKEN` was revoked (24.md B5.1).
 | `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` | optional | the welcome email. **Not set on 25 Sep**, so the maintainer sends the prepared email by hand | — |
 | `APP_DOWNLOAD_URL`, `PANDOC_VERSION` | variables, used by the delivered follow-up | the welcome email's download link (meant to be `…/authoring-assistant-releases/releases/latest/download/Authoring-Assistant.dmg`), and the pandoc version, pinned to the app build's own. **Neither is set on 25 Sep** | — |
 | `APPROVERS` | variable, optional | a JSON list of logins, besides the repo owner, whose `approved` and `remove` labels count. Not set | only the owner's labels count |

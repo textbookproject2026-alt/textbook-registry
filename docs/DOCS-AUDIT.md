@@ -178,9 +178,10 @@ relevant doc as it is today, not as it ought to be.
     both variables are set, an approved request produces a book whose author can't
     follow the emailed instructions. The app's Word import to `drafts` still needs a
     local vault ("Download a copy" first).
-16. **Fix merged 27 Sep 2026 (book-requests #7). The Apps' settings are in, and
-    `PLATFORM_TOKEN` and `APP_INSTALLATION_ID` are deleted, but the sandbox proof
-    (issue #1) hasn't run yet** (INFRASTRUCTURE §1, `book-requests`). The deciding fact: the platform account is a
+16. **Fixed and proved 27 Sep 2026 (book-requests #7).** The two Apps provisioned and
+    removed the sandbox book: registry #50 and #51 were opened and merged by
+    `confused4now-platform`. `PLATFORM_TOKEN` and `APP_INSTALLATION_ID` are deleted
+    (INFRASTRUCTURE §1, `book-requests`). The deciding fact: the platform account is a
     **user**, so no App can create a repo there or add one to an installation. Both
     are done by hand at approval. A platform App with no Administration handles the
     registry and the builder. A books App holds only book repos (a real book's only
