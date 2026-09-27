@@ -1284,7 +1284,7 @@ registry PR if it isn't.
 > changed. **The domain rehearsal** wasn't run and is dropped, because step 16 measures its
 > own outage. **The test annotation** is dropped: the book has no annotations, so the
 > re-anchoring check has nothing to test. **D18** moves to before Publish is cancelled
-> (step 20). F3 isn't done yet: `2.md` is still served (*Fixes*).
+> (step 20). F3 was finished on 27 Sep: `2.md` is off Publish (*Fixes*).
 
 ### Phase 2: the live address
 
@@ -1706,6 +1706,11 @@ unique, 905 OK, **2 errors**, and both are F1 and F2 again.
   `publish-01.obsidian.md/access/1443b409…/2.md` answers 200, and the site's file index
   still lists `2.md` among 59 files. It goes when the page is unpublished from the Publish
   dialog, or with the site at step 20.
+  **Done, 27 Sep 2026, 05:37 UTC.** Unpublished from the Publish dialog again, and this
+  time it reached the server. The site's file index lists 58 files, without `2.md`.
+  `/access/1443b409…/2.md` answers *File 2.md does not exist* (with a cache-busting query,
+  `cf-cache-status: MISS`), the same answer as any missing file. `/2` on the live domain
+  still answers 404.
 - **F4. No hover previews on Quartz** (by hand, 25 Sep). Hovering a concept link on
   `pages.dev` showed nothing. The console said: `Access to fetch at
   'https://social-research-methods.confused4now.org/chapters/definitions/critical-realism'
