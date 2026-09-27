@@ -232,7 +232,8 @@ the way GitHub's `schedule:` runs are.
 These are book one's own jobs. They're listed here because the platform owner
 currently looks after them, and because the author's console shows four of them
 (Part 4). Book one's maintainer has a pointer to this file from
-`textbook/docs/troubleshooting.md`.
+the README's **This book** section (before §8 step 18, from
+`textbook/docs/troubleshooting.md`).
 
 **Since BOOK-ONE-TO-QUARTZ §8 step 14, the jobs themselves are the platform's.**
 Book one's `backup-annotations`, `weekly-snapshot`, `contributors`, `derivatives`,

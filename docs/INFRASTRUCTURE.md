@@ -127,6 +127,20 @@ Settings → Secrets and variables → Actions:
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` | secrets | `brandonproject2026`'s account ID, and the `confused4now.org` zone ID | as above |
 | `PORTAL_DEPLOY_HOOK` | secret | the portal's deploy hook, the same URL as the registry's (§4) | the portal doesn't list a new book until its next build |
 | `APP_INSTALLATION_ID` | variable | `161872702`, the suggest-edit App's installation on `textbookproject2026-alt` (§2c) | new repos aren't added to the App |
+
+> **Replaced by two GitHub Apps once book-requests #7 merges (27 Sep 2026, DOCS-AUDIT
+> 16).** `PLATFORM_TOKEN` and `APP_INSTALLATION_ID` are then no longer read.
+>
+> | Name | Kind | What |
+> |---|---|---|
+> | `PLATFORM_APP_CLIENT_ID`, `PLATFORM_APP_PRIVATE_KEY` | variable, secret | the **platform App**, installed on `textbook-registry` and `quartz-book` only. Contents, Pull requests and Actions write, Checks read. It opens and merges registry PRs and starts `reconcile`. No Administration, so it can delete neither repo |
+> | `BOOKS_APP_CLIENT_ID`, `BOOKS_APP_PRIVATE_KEY` | variable, secret | the **books App**, installed on **only select repositories**: a book's repo from its approval until it's provisioned, and sandbox books until they're removed. Contents, Workflows and Administration write. Each run's token is minted for the one book's repo |
+>
+> A GitHub App can't create a repo in a user account, or add one to an installation. So at
+> approval the platform owner creates the empty public repo, and adds it to the books App
+> and to `textbook-suggest-edit` (book-requests README, *Approving a request*). Once the
+> first sandbox request has run with the Apps, **revoke `PLATFORM_TOKEN`** and delete the
+> secret. Until then it's still the credential above.
 | `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` | optional | the welcome email. **Not set on 25 Sep**, so the maintainer sends the prepared email by hand | — |
 | `APP_DOWNLOAD_URL`, `PANDOC_VERSION` | variables, used by the delivered follow-up | the welcome email's download link (meant to be `…/authoring-assistant-releases/releases/latest/download/Authoring-Assistant.dmg`), and the pandoc version, pinned to the app build's own. **Neither is set on 25 Sep** | — |
 | `APPROVERS` | variable, optional | a JSON list of logins, besides the repo owner, whose `approved` and `remove` labels count. Not set | only the owner's labels count |
@@ -158,22 +172,26 @@ fresh machine needs both aliases in `~/.ssh/config` before any push works.
 `authoring-assistant`, `textbook-template` and `textbook-portal` are cloned over
 HTTPS and authenticate through `gh`.
 
-### Branch protection (verified)
+### Branch protection (verified 27 Sep 2026)
+
+The platform's rule, decided 27 Sep 2026: **a pull request and green checks, no
+review, administrators included.** A review is added when a second maintainer exists
+(the registry's README, "Who approves changes").
 
 | Repo | `main` |
 |---|---|
 | `textbook` | Pull request required, **0 approvals**, admins not enforced. A direct admin push succeeds and is logged as a bypass |
-| `textbook-registry` | **Not protected.** See the warning below |
+| `textbook-registry` | Pull request required, 0 approvals, checks `registry` and `github-facts`, admins included (since 27 Sep 2026) |
+| `quartz-book` | Pull request required, 0 approvals, check `build`, admins included (since 24 Sep 2026) |
+| `quartz-edition-extras` | Pull request required, 0 approvals, check `ci`, admins included (since 27 Sep 2026; `ci` arrives with extras #8) |
+| `textbook-portal` | Pull request required, 0 approvals, check `test`, admins included (since 27 Sep 2026; `test` arrives with portal #3. `deployed.yml`'s `portal` job runs only after a push, so it can't be required) |
 | every other platform repo | Not protected |
 
-> **The registry's review gate isn't switched on.** `.github/CODEOWNERS` names
-> the platform owner, and `README.md` says every change needs an approving
-> review that administrators can't bypass. That is true only once branch
-> protection is enabled, and today it isn't. Right now anyone with write access
-> can push `registry.json` straight to `main`, and `deploy.yml` then ships it to
-> the function. The design treats registry review as one of the two gates on
-> credentials (`DESIGN.md` §4e). Enable protection. Before you do, decide how a
-> sole owner gets approval (README, "Who approves changes").
+> **The registry's review gate is checks, not people.** `.github/CODEOWNERS` names
+> the platform owner, but no review is required, so a change with green checks
+> merges on its author's say-so. That is the decision above, not an oversight.
+> The design treats registry review as one of the two gates on credentials
+> (`DESIGN.md` §4e); with one platform owner it is one gate either way.
 
 ---
 
@@ -272,7 +290,9 @@ unverified:** whether `GITHUB_APP_INSTALLATION_ID` is set.
 - **Installations:** always **only selected repositories**. On
   `textbookproject2026-alt`: installation `161872702`, covering `textbook` and
   `book-requests`. `provision` adds each request-made book to it with
-  `PLATFORM_TOKEN`, and `remove` takes a sandbox book off it. On
+  `PLATFORM_TOKEN`, and `remove` takes a sandbox book off it. (From book-requests
+  #7, the platform owner adds the repo by hand at approval, and deleting a sandbox
+  repo removes it.) On
   `dept-coordinator-test`: `platform-test-book`. The repo lists come from the
   records. The installation couldn't be read with the `gh` token on 25 Sep.
 - The function looks up the installation for each repository, and refuses a
@@ -615,9 +635,9 @@ handover.
 
 | Service | For | Held today | The book's own doc |
 |---|---|---|---|
-| Obsidian Publish site `1443b409…` | book one's reading site | **confirm** | `textbook/docs/what-this-book-runs-on.md` |
-| Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | a person | `textbook/docs/annotation-restore.md` |
-| `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook/docs/the-browser-editor.md` |
+| Obsidian Publish site `1443b409…` | book one's rollback until §8 step 20 | **confirm** | `textbook/README.md`, *This book* |
+| Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | a person | `textbook-template/docs/annotation-restore.md` |
+| `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook-template/docs/the-browser-editor.md` |
 
 Book one's Plausible site is no longer the book's. Since §8 step 17a it is the
 platform's one site, `confused4now.org` (renamed from
@@ -701,7 +721,7 @@ deployed service. `textbook-template` and `code_repo` deploy nothing.
 Tracked here so nobody rediscovers them the hard way. See
 [DOCS-AUDIT.md](DOCS-AUDIT.md) for the full list, with reasons.
 
-- `textbook-registry` `main` isn't branch-protected (§1).
+- `textbook-registry` `main` is protected, but no review is required until a second maintainer exists (§1).
 - `ALLOWED_DOMAINS` isn't generated or checked (§3).
 - DNS isn't generated or checked (§5).
 - `BOT_TOKEN` was revoked on 17 Sep and is unset in Vercel, but its code path is
