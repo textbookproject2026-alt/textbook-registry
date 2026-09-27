@@ -394,9 +394,9 @@ export const checks = [
   // D11: the edition template's graph is the builder's graph. The expected value is
   // read from the builder's config, not from the registry.
   { id: 'graph.edition-template-matches-builder', source: 'edition-template', path: 'quartz.config.yaml', design: 'BOOK-ONE-TO-QUARTZ §4a, D11',
-    extract: graphBlock, expectFrom: { source: 'builder', path: 'quartz.config.yaml', extract: graphBlock },
-    drift: { value: ['- source: github:quartz-community/graph', '  enabled: false', '  layout:', '    position: right', '    priority: 10'],
-      note: 'The edition template still ships upstream\'s graph, switched off. §8 step 22 gives it the builder\'s block; then remove this drift entry.' } },
+    // The drift entry (upstream's graph, switched off) went at §8 step 22, when the
+    // template took the builder's block (edition template #10).
+    extract: graphBlock, expectFrom: { source: 'builder', path: 'quartz.config.yaml', extract: graphBlock } },
 
   // ---- textbook (the content repo, read at live_branch) ---------------------
   // Publish's copy of the reading site's values. Checked only while Publish serves
