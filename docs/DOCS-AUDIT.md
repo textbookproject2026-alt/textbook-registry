@@ -171,7 +171,13 @@ relevant doc as it is today, not as it ought to be.
     both variables are set, an approved request produces a book whose author can't
     follow the emailed instructions. The app's Word import to `drafts` still needs a
     local vault ("Download a copy" first).
-16. **`PLATFORM_TOKEN` can delete repositories.** It's a classic personal access
+16. **Fix made 27 Sep 2026 (book-requests #7); live once the two Apps exist and
+    `PLATFORM_TOKEN` is revoked.** The deciding fact: the platform account is a
+    **user**, so no App can create a repo there or add one to an installation. Both
+    are done by hand at approval. A platform App with no Administration handles the
+    registry and the builder. A books App holds only book repos (a real book's only
+    until it's provisioned), and its token is minted per repo.
+    **`PLATFORM_TOKEN` can delete repositories.** It's a classic personal access
     token of `textbookproject2026-alt`, with the scopes `repo`, `workflow` and
     `delete_repo` (INFRASTRUCTURE §1). A classic token can't be narrowed to certain
     repositories, so it reaches every repository the platform account owns: the
