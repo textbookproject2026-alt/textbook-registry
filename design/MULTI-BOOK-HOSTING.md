@@ -15,6 +15,12 @@ suggest-edit function, CMS relay, author's console) serve every book.
 
 `portal.org` is a placeholder throughout. No portal domain has been chosen yet.
 
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** **The model under review is superseded** by
+> platform-hosted Quartz on Pages (`BOOK-ONE-TO-QUARTZ.md`): every book is built by the
+> platform's builder and served from the platform's Cloudflare account, and Publish books
+> are legacy. The sections this changes carry dated notes. Summary items 2, 5 and 7 are
+> amended below; the rest of the summary stands as the record of 18 Sep.
+
 ---
 
 ## Summary of the answers
@@ -65,6 +71,14 @@ suggest-edit function, CMS relay, author's console) serve every book.
    days by default, and a public, neutral registry PR (§7).
 
 ---
+
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** **Summary items 2, 5 and 7, as they
+> stand now.** **2. DNS:** each book needs one proxied `CNAME <slug> → <project>.pages.dev`
+> plus the custom domain on its Pages project, both made by the platform (§2b, §2e).
+> **5. Dark books:** the probe reads the builder's marker, not `window.siteInfo`, and a
+> platform-paid book can't lapse (§5b, §5d). **7. Removing a book:** the platform can
+> un-serve any book, since it serves them all, and can't touch content; the process and
+> the policy are §7 (amended), with the automation and the policy waiting for D15.
 
 ## 1. The domain scheme
 
@@ -213,6 +227,11 @@ account security of that one domain.
 
 ### 2a. Per book (Publish)
 
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** **Legacy.** No book is served by Publish:
+> book one moved to the platform's Pages at §8 step 16 (26 Sep), and Publish stays only as
+> its rollback until step 20. A new book is never a Publish book (`new-book.mjs` and
+> book-requests write only `static` / `cloudflare-pages` / `builder: quartz-book`).
+
 | Step | Who | What |
 |---|---|---|
 | 1 | Platform owner | Registry PR adding the book as `preview`, with `site.domain: "<slug>.portal.org"` and `site.host.site_id` (from the maintainer's `.obsidian/publish.json`) |
@@ -233,6 +252,16 @@ account security of that one domain.
   one registry entry.
 
 ### 2b. Per book (static host, for example Quartz on Pages)
+
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** **This is now the procedure for every book.**
+> The platform creates a Direct Upload Pages project, `<project>`, in its own Cloudflare
+> account and binds `<slug>.confused4now.org` to it: book-requests does both when a
+> request is approved, and `textbook-template/SETUP.md` step 6 when a book is set up by
+> hand. **There is no maintainer binding step, and no grant to Cloudflare.** The builder,
+> `quartz-book`, uploads each build with Direct Upload (D2). The book repo carries one
+> `nudge.yml` with no secrets (§0a), plus the thin callers of the platform's weekly
+> workflows. The registry records `site.host` as `{"kind": "static", "provider":
+> "cloudflare-pages", "project", "paid_by": "platform", "builder": "quartz-book"}`.
 
 This is either `CNAME <slug> → <project>.pages.dev` together with the Pages project's
 own custom-domain setting, or no portal DNS at all if the book stays on `*.pages.dev`
@@ -268,6 +297,14 @@ the registry doesn't know about. The token needs *Zone.DNS: Edit* on the portal 
 only.
 
 ### 2e. Subdomain takeover: the risk this model introduces
+
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** Publish's dangling-CNAME risk below is gone
+> for Pages books. The new equivalent: **never delete a book's Pages project while any DNS
+> record points at its `<project>.pages.dev` name.** A deleted project name can be claimed
+> by anyone. Park the hostname first (remove the custom domain, point the record at the
+> portal, or delete it), then delete the project. book-requests' `remove` removes the
+> custom domain and deletes the record before it deletes a sandbox book's project. The retired `platform-test-book` project in the second Cloudflare account
+> waits on exactly this (INFRASTRUCTURE §8).
 
 When a maintainer stops paying or removes the custom domain, `<slug>.portal.org` still
 points at `publish-main.obsidian.md`, and Publish answers 404, as `bptext2026.xyz`
@@ -502,6 +539,14 @@ notes. `INFRASTRUCTURE.md` already has a "confirm at handover" list for accounts
 
 ### 5a. What "can't publish" actually costs
 
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** **The premise has reversed.** The platform
+> builds and serves every book, so a platform change reaches every book at its next build.
+> A registry change reaches them at the next 15-minute `reconcile` tick, and a builder
+> change when `stable` moves. A stale render is no longer possible: `reconcile` compares
+> each served marker with what it would build now. "Platform endpoints are permanent"
+> still holds, for installed copies of the Authoring Assistant and for department
+> editions, which build themselves.
+
 Content reaches a Publish site only through that site's Publish dialog
 (`INFRASTRUCTURE.md` §2). Each maintainer publishes from their own vault. So:
 
@@ -531,6 +576,15 @@ maintainer actually publishes. Offer it to maintainers as an opt-in, record it a
 `site.host.platform_collaborator: true`, and use it only for `publish.js`.
 
 ### 5b. Detection: the probe
+
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** The `window.siteInfo` checks below were for Publish.
+> The probe, when it's built, reads the builder's marker instead:
+> `/.well-known/textbook.json` gives `slug`, `branch`, `book_commit`, `registry_digest` and
+> `builder_commit`. The states become `serving`, `stale-build` (the marker names an older
+> commit, digest or builder than `reconcile` would build), `unbound`, `foreign` (the host
+> answers with another book's marker, or none) and `unreachable`. `inactive` is gone:
+> nothing lapses per book. Until the probe exists, `reconcile` already acts on
+> `stale-build` every 15 minutes, and `builder-alive` notices if it stops.
 
 This is a scheduled workflow in `textbook-registry`, daily, next to `parity`. It uses no
 credentials. For each `preview` or `live` book with a domain:
@@ -574,6 +628,12 @@ credential should change behaviour because a probe had a bad night. The portal b
 reads both files. The function and the console read only `registry.json`.
 
 ### 5d. Presentation, and what "declared dark" does
+
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** `subscription-lapsed` no longer applies to
+> platform-paid books: the platform pays for all of them. `site.dark` is kept for an
+> own-domain book whose DNS the maintainer holds. A failed build keeps the last deployment
+> live, so a build never makes a book dark: it makes the book stale, and `reconcile` goes
+> red. (Nothing reads `site.dark` yet: DOCS-AUDIT item 5.)
 
 **Automatic (from the health file, no human involved):**
 
@@ -621,6 +681,13 @@ slug and hostname stay reserved. The parked page stays up, saying *retired* inst
 *unavailable*.
 
 ### 5e. Who notices, and who is responsible
+
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** **The maintainer no longer pays or binds
+> anything. The platform owner answers for every book's uptime.** One Cloudflare account,
+> `brandonproject2026`, serves every book and the portal. The platform owner is its sole
+> administrator and pays (D16, decided for phase 1, 25 Sep; to be reviewed when phase 1
+> finishes). That account is a single point of failure for every book at once
+> (BOOK-ONE-TO-QUARTZ, *Is this the wrong move?*, 1).
 
 | Role | Responsibility |
 |---|---|
@@ -736,6 +803,15 @@ After that:
 
 ## 7. Governance: removing a book
 
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** **The requirement, restated:** the author
+> controls the content and the repository; the platform controls serving. Hosting every book
+> on the platform's Pages inverts §7c below: **the platform can take any book offline at
+> every address it serves. It still cannot take down the repository, the author's copy or
+> a department edition.** The subsections are amended where they say otherwise. The
+> hosting policy's text, the exit commitment and who else reviews a removal wait for the
+> client (D15, *decided for phase 1: written later*), and so does the removal automation
+> in §7g (i). All three are needed before a second maintainer-owned book joins.
+
 **Read against** newer commits than the rest of this document: `textbook-registry` at
 `d74eeae` (which has the schema from §4, including `site.dark`) and
 `suggest-edit-function` at `9b7922f` (which has the per-repository installation lookup
@@ -763,6 +839,12 @@ tombstone (§7f).
 unknown status for the **whole registry**, so it would stop every book.
 
 ### 7b. What the platform can do by itself: stop serving and stop listing
+
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** A row this table lacks,
+> **Pages project**: retiring a book makes the builder refuse to build it, but **the last
+> deployment keeps serving** at the book's address and its `pages.dev` names. Retiring
+> alone therefore takes nothing offline. Removal needs an explicit un-serve step: remove
+> the custom domain from the project, then deploy a tombstone to it (§7f).
 
 Here is what retiring does in each shared service, checked against the code. The
 question for each: does it behave sensibly when a book disappears mid-flight, without
@@ -803,6 +885,13 @@ Two things the platform should also withdraw, beyond the registry:
 
 ### 7c. What the platform can't do: take the content down
 
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** Rewritten in one line: **the platform can
+> un-serve any book, and can't touch its content.** The book's repository, the author's
+> copy and every edition are outside its reach. The **exit path** is that the builder,
+> `quartz-book`, is public: an author who leaves can build the same site anywhere from the
+> same repository. The exit **commitment** (a 12-month 301 from the old address to the
+> author's new home) is part of the hosting policy, and waits for D15.
+
 State this plainly, to maintainers and to anyone who complains about a book:
 
 - **The Publish site belongs to the author.** Only the site owner can unpublish pages,
@@ -819,6 +908,11 @@ address.** Complaints about the content itself go to the author, to Obsidian (wh
 terms govern Publish sites), or to GitHub.
 
 ### 7d. The subdomain is the real lever, and own-domain books don't have one
+
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** **The asymmetry below disappears for
+> Pages books.** An own domain bound to a platform Pages project can be un-served by
+> removing the custom domain from the project, whoever holds its DNS. The lever is the
+> Pages project plus DNS, not DNS alone.
 
 **On `<slug>.portal.org`**, the platform holds the DNS record (§2), so it can take the
 book off the portal's address without touching the content. **Park it; don't delete
@@ -922,6 +1016,19 @@ comes back: issues, backups and annotations. The validator doesn't block
 
 ### 7g. Process
 
+> **Amended 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7, §8 step 24).** The power is broader, so the checks get stronger.
+> (i) **Removal only through the registry pull request, carried out by automation:**
+> registry CI removes the custom domain and deploys the tombstone, and nobody un-serves
+> by hand. **Not built:** it waits for D15, and must exist before a second
+> maintainer-owned book joins. Until then, BOOK-LIFECYCLE.md's manual stand-in applies.
+> (ii) The exit commitment and (iii) what the platform owes (best-effort uptime, notice
+> before platform-wide changes, shared design values, accepted at onboarding) are the
+> hosting policy's, and wait for D15. (iv) **Already in place:** quartz-book's design
+> preview (§4b in BOOK-ONE-TO-QUARTZ, §8 step 11) builds every book with a builder or
+> extras change before it merges. It is a governance control too, since one merge
+> restyles every book. Since 27 Sep, extras' pins are what gets installed
+> (quartz-book #18), which it depended on.
+
 Keep it to what a small platform can actually do:
 
 - **The grounds are written down first.** Publish a short hosting policy of a page or
@@ -1004,9 +1111,15 @@ Keep it to what a small platform can actually do:
 6. **Who besides the platform owner receives `site-health` alerts?** (§5e.)
 7. **Is book one's Publish subscription the maintainer's or the platform's?**
    (`INFRASTRUCTURE.md` §2: "confirm at handover".) It sets book one's `paid_by`.
+   *Amended 27 Sep 2026:* closes when Publish is cancelled (BOOK-ONE-TO-QUARTZ §8 step 20).
 8. **What does the hosting policy say, and who other than the platform owner can review
    a removal or an appeal?** (§7g.) Until both are answered, the removal power has no
    defined scope.
+
+**Added 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §7):**
+
+9. **A second administrator for the Cloudflare account.** Decided for phase 1 (D16, 25 Sep): none; the platform owner is the sole administrator and pays. Review when phase 1 finishes.
+10. **The Pages build budget.** Each book's `reconcile` deploys main and drafts, and each design preview deploys every book once. The free plan's monthly build count (Direct Upload deployments) isn't tracked anywhere yet.
 
 ## Facts found while reading that differ from earlier records
 

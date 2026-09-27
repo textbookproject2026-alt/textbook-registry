@@ -28,13 +28,13 @@ start tens of minutes late under load.
 | every 6 h at :41 | `textbook-registry` | `deploy` | nothing. It polls the function and redeploys if it's behind |
 | daily 06:17 | `textbook-registry` | `parity` | nothing. It compares the registry with the constants left in other repos |
 | daily 07:29 | `textbook-registry` | `builder-alive` | nothing. It checks that a `cron` run of `reconcile` started in the last hour |
-| Sun 03:00 | `textbook` | `backup-annotations` | the `backups` branch |
+| Sun 03:00 | `textbook`, and every book made from the template since 27 Sep (textbook-template #7) | `backup-annotations` | the `backups` branch. A book without the `HYPOTHESIS_API_TOKEN` secret skips it, green (quartz-book #19) |
 | Sun 03:00 | `textbook`, `textbook-template` | `weekly-snapshot` | a `snapshot-YYYY-MM-DD` tag on `main`, if `main` changed since the last one. Skipped in the template repo itself |
-| Sun 07:00 | `textbook` | `contributors` | `community/contributors.md`, by auto-merged PR |
-| Sun 11:00 | `textbook` | `derivatives` | `community/derivatives.md`, by auto-merged PR |
-| Sun 15:00 | `textbook` | `dashboard` | `community/dashboard.md`, by auto-merged PR |
+| Sun 07:00 | `textbook`, and every book made from the template | `contributors` | `community/contributors.md`, by auto-merged PR |
+| Sun 11:00 | `textbook`, and every book made from the template | `derivatives` | `community/derivatives.md`, by auto-merged PR |
+| Sun 15:00 | `textbook`, and every book made from the template | `dashboard` | `community/dashboard.md`, by auto-merged PR |
 | Mon 06:00 | `textbook`, `textbook-template` | `link-check` | nothing |
-| Mon 07:00 | `textbook`, `textbook-template` | `apply-config` | a `chore/apply-config` PR, if the rendered files have fallen behind the registry |
+| Mon 07:00 | `textbook` (until textbook #52, §8 step 18, removes it), `textbook-template` and books made from it | `apply-config` | a `chore/apply-config` PR, if the rendered files have fallen behind the registry |
 
 On every push or PR, they also run: `validate` and `parity` in the registry;
 `deploy` and `portal` after a successful `validate` on `main`; `lint` and

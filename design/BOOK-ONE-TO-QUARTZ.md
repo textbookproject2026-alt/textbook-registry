@@ -1662,6 +1662,23 @@ the later steps keep their numbers.
 - **Must not break:** the design history: dated notes, not rewrites. The removal automation in
   §7g (i) is built once D15 is settled, and **before** a second maintainer-owned book joins.
 
+> **Made 27 Sep 2026, not yet merged: textbook-registry #45.**
+> `MULTI-BOOK-HOSTING.md` gets §7's amendments as dated notes: the header (the model is
+> superseded), Summary 2, 5 and 7, §2a (legacy), §2b (the procedure), §2e (never delete a
+> Pages project a record points at), §5a, §5b (the marker's states), §5d, §5e (D16), the
+> §7 requirement, §7b (the Pages project row), §7c (the exit path; the commitment waits),
+> §7d, §7g (i)–(iv), and the open questions (7 closes at step 20; the Cloudflare
+> administrator and the build budget added). **Left for D15**, and said so in place: the
+> policy text, the exit commitment, the removal reviewers and the §7g (i) automation.
+> `SCHEDULED-JOBS.md` already had the Worker's Cron Trigger, `reconcile` (and running it
+> by hand), `builder-alive` and the token renewals, from steps 9–10 and #39. It gains the
+> new books' Sunday jobs and `apply-config`'s end in book one. `BOOK-LIFECYCLE.md`'s
+> *Adding a book* is rewritten for the builder, with new onboarding terms: the platform
+> hosts and pays, the design is shared, and term 4 still waits for the policy.
+> INFRASTRUCTURE's remaining gaps are the handover rows, which are item 10 and are the
+> platform owner's to answer. Nothing in this step depends on step 20 except closing open
+> question 7 and dropping Publish from INFRASTRUCTURE.
+
 ### Rollback from step 16 until step 20
 
 **The one setting:** point the CNAME back at `publish-main.obsidian.md`, proxied. It takes
