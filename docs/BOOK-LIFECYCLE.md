@@ -205,10 +205,12 @@ Retired at the platform owner's request (registry #54). What was done, in order:
      canonical textbook (edition-template #12).
 6. **Left for the platform owner** (the `textbook` repo and Obsidian Publish stay as
    they are, by decision):
-   - Step 6: change the relay's `ALLOWED_DOMAINS` secret to a hostname nobody can
-     serve. Don't make it empty: the relay then allows every domain. No other book
-     uses the relay.
-   - Delete the `textbook-admin` Pages project, but only after that.
+   - ~~Step 6~~ **done 27 Sep:** the platform owner set `ALLOWED_DOMAINS` to
+     `retired.invalid`, and the check URL
+     (`…/auth?provider=github&site_id=textbook-admin.pages.dev`) answers
+     `UNSUPPORTED_DOMAIN`. Then `textbook-admin` was deleted. The dashboard refused
+     with `8000076` (too many deployments), so its 138 deployments went through the
+     API first.
    - Step 7: take `textbook` out of the `textbook-suggest-edit` installation (the
      API refuses an OAuth token).
 
