@@ -301,6 +301,15 @@ test('book one is a static book on Pages at its own domain, built by quartz-book
   });
   assert.equal(b.site.domain, 'social-research-methods.confused4now.org');
 });
+// Book one was retired on 27 Sep 2026 (BOOK-LIFECYCLE, "Retiring a book"). Its entry
+// stays as the tombstone: the slug, the hostname, the Pages project and the repo stay
+// reserved, and nothing else about it changes.
+test('book one is retired, and its entry stays whole as the tombstone', () => {
+  const b = book(real());
+  assert.equal(b.status, 'retired');
+  assert.equal(b.content.repo, 'textbookproject2026-alt/textbook');
+  assert.ok(!b.site.dark);
+});
 test('book one rolled back to Publish, still built as a preview, is accepted', () => {
   const r = real();
   rolledBack(book(r));
@@ -372,6 +381,7 @@ test('static book on its own domain may be live', () => {
 
 test('dark on a live book is accepted', () => {
   const r = real();
+  book(r).status = 'live';
   book(r).site.dark = { since: '2026-10-02', reason: 'subscription-lapsed', notified: '2026-09-20' };
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
