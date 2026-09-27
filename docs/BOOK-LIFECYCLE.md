@@ -195,13 +195,22 @@ Retired at the platform owner's request (registry #54). What was done, in order:
    they're deleted.
 4. **Weekly jobs:** the book's seven workflows other than `lint` are disabled
    (SCHEDULED-JOBS, Part 2).
-5. **Left for the platform owner:**
-   - Step 6: remove `textbook-admin.pages.dev` from the relay's `ALLOWED_DOMAINS`, a
-     Worker secret.
-   - Step 7: take `textbook` out of the `textbook-suggest-edit` installation.
-   - §8 step 20 of BOOK-ONE-TO-QUARTZ: cancel Obsidian Publish.
-   - Whether to delete the Pages projects `social-research-methods` and
-     `textbook-admin`, the old deployments, or the repo.
+5. **The same day, afterwards:**
+   - With the platform owner's authorisation, 97 of the project's 99 deployments were
+     deleted, keeping only the two notices.
+   - An hour later, 100 of the 116 old per-deployment and `design-N` addresses
+     answered 404. Sixteen were still served from Cloudflare's edge, although the API
+     no longer lists them.
+   - The edition template now names the first live request-made book as its
+     canonical textbook (edition-template #12).
+6. **Left for the platform owner** (the `textbook` repo and Obsidian Publish stay as
+   they are, by decision):
+   - Step 6: change the relay's `ALLOWED_DOMAINS` secret to a hostname nobody can
+     serve. Don't make it empty: the relay then allows every domain. No other book
+     uses the relay.
+   - Delete the `textbook-admin` Pages project, but only after that.
+   - Step 7: take `textbook` out of the `textbook-suggest-edit` installation (the
+     API refuses an OAuth token).
 
 **Reinstating** is registry `status: live` plus a `reconcile` of the book. The notice
 is replaced at the first build, and the workflows are re-enabled.
