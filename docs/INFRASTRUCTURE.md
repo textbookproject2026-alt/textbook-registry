@@ -594,6 +594,18 @@ book that wants the editor brings its own Pages project and asks for one
   Quartz plugins every department edition installs **at build time**, pinned by
   commit in each edition's `quartz.lock.json`. **Delete, rename or privatise it,
   and every edition's next build fails**, with nothing pointing at the cause.
+  **Phone layout (27 Sep 2026, extras #13; live on every book through quartz-book
+  #26, builder `702df34`):** at `design.yaml` `layout.narrowWidth` (800px, Quartz's
+  phone layout) and below:
+  - the header is one row, with the title on one line;
+  - the front page shows the title once;
+  - the page actions are equal chips;
+  - **the Hypothes.is client isn't loaded until the reader taps *Annotate this page***.
+
+  Wider screens load it at once, as before. Checked in Chrome at 360, 390, 412, 768
+  and 1280 px on a front page, a long chapter, a concept page and the portal: nothing
+  past the screen edge and no text under anything. Desktop and the portal are
+  unchanged. The same applies to an edition once its pin moves past `cdc0e88`.
 - **`textbook-edition-template`** is book one's `editions.template_repo`. Its
   demo site, `https://textbook-edition-template.pages.dev`, is recorded as
   `editions.template_preview`. **Which Cloudflare account holds that Pages
