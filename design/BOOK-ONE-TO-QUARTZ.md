@@ -688,6 +688,21 @@ registry PR if it isn't.
   step 16**, and Publish uploads from that folder, so the old route stays alongside the new
   one until then. "Going live" is unchanged.
 
+> **Amended 27 Sep 2026: one chapter-naming rule.** `chapter-NN` above is now the rule
+> for every book, not a convention that the guide asked authors to follow (DOCS-AUDIT
+> item 14, decided by the platform owner). A chapter is `chapters/chapter-NN.md`, with
+> its pictures in `assets/chapter-NN/`. Live books keep the names they have, because
+> their URLs are live: book one's `chapter-01`/`chapter-03`, *ontology-for*'s
+> `introduction.md`, *from-ontology*'s `chapter-01`. Nothing is renamed. A new book's
+> manuscript files become `chapter-01`, `chapter-02` and so on in the order they were
+> sent (book-requests #6). A Word import suggests the next free number, or the chapter
+> that Word file became before, and refuses any other name for a new chapter in
+> `chapters/` (authoring-assistant #9). Which Word file became which chapter is recorded
+> in the book's `chapter-sources.json`, which the builder doesn't publish. So bringing
+> the same Word file in again replaces the same chapter, and "Send to drafts" carries the
+> record in the same commit. The template's guides say so (textbook-template #9). The
+> CMS's `chapters` collection gets the same rule for a new entry's slug.
+
 **2. The rest of the author's path on `drafts`.**
 - **Repo:** `authoring-assistant`.
 - **Does:** tidying citations, concept links and the glossary reads the chapter from `drafts`
