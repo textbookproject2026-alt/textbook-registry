@@ -14,8 +14,11 @@ repository's workflows, its Hypothes.is token) are the book maintainer's, and ar
 described in the book's own `docs/`. They appear here only where the platform
 depends on them, or where the platform currently holds them on a book's behalf.
 
-Where an owner couldn't be established from a repository or a live check, this
-file says **confirm at handover** instead of guessing. Resolve those rows first.
+**Owners, 27 Sep 2026:** every account this file once marked *confirm at handover* is
+confirmed as the platform owner Alec's (`textbookproject2026-alt` /
+`brandonproject2026`). Alec is also the maintainer, so every account stays with him: there
+is no handover to a client. Where a fact still couldn't be established from a repository
+or a live check, this file says **confirm** instead of guessing.
 
 **Last checked live: 22 September 2026.** Facts marked *(verified)* were checked
 against the running service that day. Everything else comes from the repositories.
@@ -77,15 +80,15 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 |---|---|---|---|
 | `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), the fine-grained token `build-nudge dispatch` (§7), the classic token that was `PLATFORM_TOKEN` (§1, `book-requests`; the secret was deleted on 27 Sep 2026), and every book made from a request | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
-| `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
+| `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
 | `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep), the sole administrator, who also pays for it (D16, 25 Sep 2026) |
-| a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
-| Vercel | Vercel | the suggest-edit function (S2) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
-| Plausible | Plausible | the platform's one site, `confused4now.org`, for the portal and every live book (`platform.analytics.plausible`, BOOK-ONE-TO-QUARTZ D19, §8 step 17a), plus any site an edition has of its own | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
-| `AlecGordon` | Hypothes.is | book one's API token. No groups are in use | a person's account, not the platform's: the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover (§9) |
-| Obsidian | Obsidian Publish | book one's Publish site | **confirm at handover** |
-| Apple Developer | Apple | the Developer ID that signs the Authoring Assistant | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
-| DNS registrar for `confused4now.org` | registrar | the portal domain and every `<slug>.confused4now.org` book | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover (§5) |
+| a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
+| Vercel | Vercel | the suggest-edit function (S2) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
+| Plausible | Plausible | the platform's one site, `confused4now.org`, for the portal and every live book (`platform.analytics.plausible`, BOOK-ONE-TO-QUARTZ D19, §8 step 17a), plus any site an edition has of its own | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
+| `AlecGordon` | Hypothes.is | book one's API token. No groups are in use | a person's account, not the platform's: the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client (§9) |
+| Obsidian | Obsidian Publish | book one's Publish site | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
+| Apple Developer | Apple | the Developer ID that signs the Authoring Assistant | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
+| DNS registrar for `confused4now.org` | registrar | the portal domain and every `<slug>.confused4now.org` book | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client (§5) |
 
 ---
 
@@ -109,7 +112,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `<slug>`, one per book made from a request | public | a request-made book's content repo, created by `provision` with `PLATFORM_TOKEN`. None exists on 25 Sep: the only one, the sandbox test, was removed (registry #27, #28) | the book (held by the platform, `paid_by: platform`) |
 | `textbook` | public | **book one's** content repo, its weekly workflows and its maintainer docs | book one |
 | `textbook-edition-template` | public | **book one's** department-edition template (`editions.template_repo`) | book one |
-| `code_repo` | private | not mentioned in any repository or doc | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover. What it holds is still not recorded |
+| `code_repo` | private | not mentioned in any repository or doc | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client. What it holds is still not recorded |
 
 ### `book-requests`: the request workflow's credentials
 
@@ -157,6 +160,18 @@ Settings → Secrets and variables → Actions:
 >   their own keys. The proof run is what shows them.
 > - Whether the classic token itself was revoked (not just the secret deleted) can't be
 >   checked from the API.
+>
+> **27 Sep 11:19 UTC, the sandbox proof's first run failed before doing anything.**
+>
+> - Issue #1 was reopened and labelled `approved`. `provision` (run 36315357079) stopped
+>   at *The platform App's token*: `create-github-app-token` couldn't parse
+>   `PLATFORM_APP_PRIVATE_KEY` (`ERR_OSSL_ASN1_NOT_ENOUGH_DATA`, "not enough data"), so the
+>   secret holds an incomplete key.
+> - Nothing was created: `sandbox-test-book` is still empty, no comment was posted, and the
+>   registry is unchanged.
+> - The books App's key was never reached, so it is untested.
+> - To retry: set both keys again from the full `.pem` files (or generate new keys), then
+>   remove and re-add `approved` on issue #1.
 | `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` | optional | the welcome email. **Not set on 25 Sep**, so the maintainer sends the prepared email by hand | — |
 | `APP_DOWNLOAD_URL`, `PANDOC_VERSION` | variables, used by the delivered follow-up | the welcome email's download link (meant to be `…/authoring-assistant-releases/releases/latest/download/Authoring-Assistant.dmg`), and the pandoc version, pinned to the app build's own. **Neither is set on 25 Sep** | — |
 | `APPROVERS` | variable, optional | a JSON list of logins, besides the repo owner, whose `approved` and `remove` labels count. Not set | only the owner's labels count |
@@ -237,7 +252,7 @@ It stops and asks the platform owner first for:
   (`platform.suggest_edit_endpoint`). This endpoint is **permanent**: every
   book's rendered front end has it baked in, and not every book will republish
   (`MULTI-BOOK-HOSTING.md` §5a). Add a new version beside it rather than moving it.
-- **Account owner:** the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover.
+- **Account owner:** the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client.
 - **What it does:** it resolves the request's `Origin` header to exactly one
   registered book (`https://` + `site.domain`, for `preview` and `live` books), then
   files the suggestion as an issue on that book's `content.repo`, labelled
@@ -296,7 +311,7 @@ Vercel's instant rollback rolls back code and registry together.
 | `SUGGEST_EDIT_DEPLOY_HOOK` | `textbook-registry` repo secret | the Vercel deploy hook's URL, a credential | `deploy.yml` fails and says so |
 
 The App's `.pem` file itself is kept outside any repository. Its backups are held by
-the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover. If it's lost, generate a
+the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client. If it's lost, generate a
 new key in the App's settings. No code changes.
 
 **`BOT_TOKEN` is not set (25 Sep 2026, checked in Vercel by the platform
@@ -372,7 +387,7 @@ Added 24 Sep 2026 for the in-site editor.
 - **The OAuth App *Textbook sign-in*.** It asks for **no scopes**, so all it proves
   is who the reader is. `/api/github-auth` swaps the code for a GitHub token, reads
   the login, and **revokes the GitHub token at once**. Its client ID and secret are
-  in Vercel (§2b). **Which account owns it: unconfirmed**, so confirm at handover.
+  in Vercel (§2b). It is owned by the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client.
   It's separate from the *Textbook CMS* OAuth App (§3), the *Textbook Author
   Console* OAuth App (§6) and the GitHub App (§2c).
 - **`IDENTITY_SECRET`** signs the identity token the function gives back instead: it
@@ -423,7 +438,7 @@ Added 24 Sep 2026 for the in-site editor.
   Sveltia's, and `workers.dev` puts no edge layer between a successful deploy and
   what is served.
 - **The OAuth App *Textbook CMS*** is registered under an individual account,
-  not the platform's. It is held by the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover. Its callback URL is the Worker URL
+  not the platform's. It is held by the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client. Its callback URL is the Worker URL
   plus `/callback`.
 - **If it's gone:** every contributor on every book stays signed out. Tokens
   already issued keep working, because they go straight to GitHub.
@@ -529,8 +544,9 @@ book that wants the editor brings its own Pages project and asks for one
   `APP_DOWNLOAD_URL`. On 25 Sep the repo has no releases and the variable isn't
   set.
 - **Signing:** a Developer ID Application certificate on the build machine, and
-  a `notarytool` keychain profile read through `NOTARY_PROFILE`. **Confirm at
-  handover** which Apple account holds them.
+  a `notarytool` keychain profile read through `NOTARY_PROFILE`. The certificate is
+  *Developer ID Application: Alec Gordon (S8B4BPJWX4)*, in the platform owner's
+  keychain (checked 27 Sep 2026). The Apple Developer account is Alec's and stays with him.
 - **DeepSeek (optional):** if the author pastes their own key, the app sends a
   chapter's text to `api.deepseek.com`. That happens only with a key present and
   the tick box ticked. Nobody has recorded who approved book text leaving the
@@ -551,7 +567,7 @@ book that wants the editor brings its own Pages project and asks for one
 - **`textbook-edition-template`** is book one's `editions.template_repo`. Its
   demo site, `https://textbook-edition-template.pages.dev`, is recorded as
   `editions.template_preview`. **Which Cloudflare account holds that Pages
-  project: confirm at handover.**
+  project: confirm.** (Both Cloudflare accounts are Alec's, confirmed 27 Sep 2026.)
 - The template-repository flag on `textbook-edition-template` is **off**
   (verified), so GitHub no longer offers "Use this template". Editions must be
   forks, because `gen-derivatives.mjs` finds them through the forks API.
@@ -666,12 +682,13 @@ book that wants the editor brings its own Pages project and asks for one
 
 These aren't platform services. They're listed because a book depends on them,
 and because the person holding them today is the platform owner or a platform
-person, not the book's maintainer. Each should move to the book's maintainer at
-handover.
+person, not the book's maintainer. For book one they are the same person: Alec is
+both the platform owner and book one's maintainer (confirmed 27 Sep 2026), so nothing
+moves.
 
 | Service | For | Held today | The book's own doc |
 |---|---|---|---|
-| Obsidian Publish site `1443b409…` | book one's rollback until §8 step 20 | **confirm** | `textbook/README.md`, *This book* |
+| Obsidian Publish site `1443b409…` | book one's rollback until §8 step 20 | the platform owner, Alec (confirmed 27 Sep 2026) | `textbook/README.md`, *This book* |
 | Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | the platform owner, Alec (confirmed 27 Sep 2026) | `textbook-template/docs/annotation-restore.md` |
 | `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook-template/docs/the-browser-editor.md` |
 
@@ -744,7 +761,7 @@ deployed service. `textbook-template` and `code_repo` deploy nothing.
 |---|---|---|
 | SSH keys `id_ed25519_textbook`, `id_ed25519_coord` | the platform owner's `~/.ssh/` | platform owner |
 | `gh` logins | the platform owner's keyring | platform owner |
-| GitHub App private key (`.pem`), backups | held by the platform owner, Alec (confirmed 27 Sep 2026); where isn't written here | platform owner; transfer at handover to be arranged |
+| GitHub App private key (`.pem`), backups | held by the platform owner, Alec (confirmed 27 Sep 2026); where isn't written here | platform owner (stays with Alec) |
 | `quartz-book-bot`'s private key, `quartz-book-bot.2026-09-24.private-key.pem` (§7) | the platform owner's `~/Downloads/`. Its only other copy is the `quartz-book` secret `BOT_APP_PRIVATE_KEY`, which can't be read back | platform owner |
 | Developer ID certificate, `notarytool` profile | the build Mac's keychain | platform owner |
 | An author's console token, DeepSeek key | the author's login Keychain, service `Authoring Assistant` | each author |
@@ -767,8 +784,8 @@ Tracked here so nobody rediscovers them the hard way. See
 - Owners **confirmed 27 Sep 2026** as the platform owner, Alec (`textbookproject2026-alt`
   / `brandonproject2026`): Vercel, Plausible, Apple Developer, the registrar, the second
   Cloudflare account, the *Textbook CMS* OAuth App, the App's `.pem` backups, `code_repo`,
-  `aldogobot` and Hypothes.is (`AlecGordon`). **Transfer to the client is still to be
-  arranged at handover.** Still **confirm at handover**: Obsidian Publish and the
-  *Textbook sign-in* OAuth App.
+  `aldogobot` and Hypothes.is (`AlecGordon`). Also Obsidian Publish and the *Textbook sign-in*
+  OAuth App. **Every account stays with Alec, the maintainer: there is no handover to a
+  client.**
 - There's no site-health probe (`MULTI-BOOK-HOSTING.md` §5b). A Publish book that
   lapses, or a `<slug>` record taken over, goes unnoticed until someone looks.
