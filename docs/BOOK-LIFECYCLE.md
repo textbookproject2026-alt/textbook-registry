@@ -37,6 +37,11 @@ This file covers only the steps a maintainer can't do.
 
 ## Adding a book
 
+> **Rewritten 27 Sep 2026 for the builder (BOOK-ONE-TO-QUARTZ §8 step 24).** Every book
+> is built by `quartz-book` and served from a Direct Upload Pages project in the
+> platform's Cloudflare account. The maintainer no longer pays, binds a domain or
+> installs the App. The Publish-era table is in this file's history.
+
 The maintainer does template steps 0–3 and sends you `registry-entry.json` and
 `REGISTRY-REQUEST.md`. From there:
 
@@ -44,28 +49,31 @@ The maintainer does template steps 0–3 and sends you `registry-entry.json` and
 |---|---|---|
 | 1 | Read `REGISTRY-REQUEST.md`. It lists what in the entry is a guess | you |
 | 2 | Confirm the repo is **public** and has **both branches**. `github-facts` fails otherwise | CI |
-| 3 | Decide the hostname. The default is `<slug>.confused4now.org`. An own domain is an exception you agree to in this PR, and the maintainer must understand that an own-domain book can only ever be de-listed (§7d). `*.pages.dev` is allowed only while the book is `preview` | CI enforces the depth rule and the shared-suffix rule |
-| 4 | Record `paid_by` truthfully, or leave it absent. `maintainer` requires `maintainer.github` | CI |
+| 3 | Decide the hostname. The default is `<slug>.confused4now.org`. An own domain is an exception you agree to in this PR. `*.pages.dev` is allowed only while the book is `preview` | CI enforces the depth rule and the shared-suffix rule |
+| 4 | Create the **Direct Upload** Pages project named in `site.host.project`, in `brandonproject2026`, and check Cloudflare gave it exactly `<project>.pages.dev`: the builder derives that name | you (template SETUP step 6) |
 | 5 | Tell the maintainer the onboarding terms (below) and get their agreement in the PR thread | nobody. This is the gap |
-| 6 | Open the PR with `status: preview`, get it reviewed, merge | CODEOWNERS, once branch protection is on (INFRASTRUCTURE.md §1) |
-| 7 | Watch `deploy` and `portal` go green on the merge commit | SCHEDULED-JOBS.md |
-| 8 | **Portal subdomain only:** create the DNS record, and **do it just before the maintainer binds it**. A CNAME waiting unbound is the takeover window (§2e). Publish: `CNAME <slug> → publish-main.obsidian.md`, proxied. Pages: `CNAME <slug> → <project>.pages.dev`, proxied, plus the custom domain on the Pages project | nobody. DNS isn't generated |
-| 9 | **Publish only:** once the site answers, check `window.siteInfo`: `uid` = `site_id`, `status` = `active`, `customurl` = the hostname. Fill in `site_id` with a follow-up PR if it went in as a placeholder | you, by `curl` (template SETUP A6.3) |
+| 6 | Open the PR with `status: preview`. It merges once `registry` and `github-facts` are green. No review is required until a second maintainer exists | branch protection (INFRASTRUCTURE.md §1) |
+| 7 | Watch `deploy` and `portal` go green on the merge commit. At the next `*/15` tick, `reconcile` builds the book's `main` and `drafts`: `https://<project>.pages.dev/.well-known/textbook.json` then names `main`'s head | SCHEDULED-JOBS.md |
+| 8 | **Portal subdomain:** add the hostname as a custom domain on the Pages project, then **straight after** create `CNAME <slug> → <project>.pages.dev`, proxied. A record waiting unbound is the takeover window (MULTI-BOOK-HOSTING §2e) | nobody. DNS isn't generated |
+| 9 | On the book repo: protect `main` (a pull request); turn on **Allow auto-merge** and **Allow GitHub Actions to create and approve pull requests**, for the Sunday community pages | you (template SETUP step 2) |
 | 10 | **If the book wants the browser editor:** add its `cms.host` to the relay's `ALLOWED_DOMAINS` by hand, then record `cms.enabled: true` and the host in the registry | nobody (CMS-RELAY.md) |
-| 11 | The maintainer installs the App (**only select repositories**). Then confirm a honeypot POST resolves to *their* repo, and that a real suggestion is filed by `textbook-suggest-edit[bot]`, **not** `aldogobot` | you. `BOT_TOKEN` can mask a missing installation (INFRASTRUCTURE.md §2b) |
-| 12 | When the site works and a real suggestion has been filed: a PR moving `status` to `live`, with `suggest_edit.counted_from` set to that day | CI |
+| 11 | Add the repo to the suggest-edit App's installation: <https://github.com/settings/installations> → **Configure** beside *textbook-suggest-edit* → **Only select repositories** → add it → **Save**. Then confirm a honeypot POST from the book's origin resolves to *its* repo | you |
+| 12 | When the site answers on its hostname and a real suggestion has been filed: a PR moving `status` to `live`, with `suggest_edit.counted_from` set to that day. Only a `live` book is counted in Plausible (D19) | CI |
 
-**Onboarding terms** (`MULTI-BOOK-HOSTING.md` §5e, §7g). There's no published
-page for these yet, so send them in the PR thread:
+**Onboarding terms** (`MULTI-BOOK-HOSTING.md` §5e and §7, amended 27 Sep). There's
+no published page for these yet, so send them in the PR thread:
 
-1. You pay for your own site. The platform holds the hostname.
-2. If your site stops answering, you're told privately. After 14 days, your book
-   is marked unavailable and your hostname is parked and kept for you.
-3. Tell the platform before you change your custom domain. Your annotations
-   survive only while the hostname stays the same.
+1. The platform hosts your book and pays for it, at the hostname above. It builds
+   the site from your repository's `main` (and previews `drafts`) with the platform's
+   builder. You need no hosting account.
+2. The design is shared by every book on the platform, and you can't restyle yours.
+   Platform changes reach your book at its next build, after a preview of every book.
+3. Tell the platform before you want a different address. Reader annotations stay on
+   the address they were made on, so a move starts the margin again.
 4. The platform may retire your book under the hosting policy, after 14 days'
    notice, except where the law or direct harm to readers requires immediate
-   action. It never touches your content, repository or site.
+   action. It never touches your content or repository. Your builder is public, so
+   you can build the same site anywhere.
 
 > **Term 4 refers to a hosting policy that doesn't exist yet.** §7g makes
 > removal available *only* for a breach of a numbered clause in a published
