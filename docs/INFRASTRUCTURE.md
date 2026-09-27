@@ -594,18 +594,34 @@ book that wants the editor brings its own Pages project and asks for one
   Quartz plugins every department edition installs **at build time**, pinned by
   commit in each edition's `quartz.lock.json`. **Delete, rename or privatise it,
   and every edition's next build fails**, with nothing pointing at the cause.
-  **Phone layout (27 Sep 2026, extras #13; live on every book through quartz-book
-  #26, builder `702df34`):** at `design.yaml` `layout.narrowWidth` (800px, Quartz's
-  phone layout) and below:
-  - the header is one row, with the title on one line;
-  - the front page shows the title once;
-  - the page actions are equal chips;
-  - **the Hypothes.is client isn't loaded until the reader taps *Annotate this page***.
+  **Phone layout (27 Sep 2026; extras #13 then #14, live on every book through
+  quartz-book #26 and #28, builder `9d7fad4`):** at `design.yaml`
+  `layout.narrowWidth` (800px, Quartz's phone layout) and below:
+  - the header is one row: logo, menu button, the title on one line, search and
+    reader mode. The logo stays above Quartz's open menu panel (`z-index` 101);
+  - the Hypothes.is client loads on page load at every width. On phones the header
+    and the text keep a right gutter (`--tb-annotation-gutter`) for its tab, eye
+    and note buttons;
+  - the page actions are equal chips, and the space above the heading is compact;
+  - the open menu panel is pinned to the screen, keeping the page margin and the
+    gutter, and the menu always starts closed (`phoneMenuStartsClosed`, a guard
+    against a WebKit load-time race in Quartz's explorer).
 
-  Wider screens load it at once, as before. Checked in Chrome at 360, 390, 412, 768
-  and 1280 px on a front page, a long chapter, a concept page and the portal: nothing
-  past the screen edge and no text under anything. Desktop and the portal are
-  unchanged. The same applies to an edition once its pin moves past `cdc0e88`.
+  **The test:** `quartz-book/test/phone-layout.mjs` runs in `ci` on every change.
+  It uses Playwright's Pixel 7 (Chromium) and iPhone 13 (WebKit) device profiles,
+  against the built live book, on the front page and a chapter. The states are:
+  loaded, menu open, menu closed, after navigating through the menu, and the
+  annotation sidebar opened and closed. It asserts, in every state:
+  - the logo and the menu button on one row;
+  - search and reader mode on that row;
+  - the Hypothes.is element visible, with its buttons at the right edge, covering
+    no header icon, text or menu item;
+  - the logo on top;
+  - nothing past the viewport width.
+
+  It was 656/656 in CI and against the live book on 27 Sep. Screenshots are kept
+  as the `phone-layout` artifact. Editions get the layout once their pin moves past
+  `6c48161`.
 - **`textbook-edition-template`** is book one's `editions.template_repo`. Its
   demo site, `https://textbook-edition-template.pages.dev`, is recorded as
   `editions.template_preview`. **Which Cloudflare account holds that Pages
