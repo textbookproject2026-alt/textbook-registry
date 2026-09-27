@@ -64,7 +64,7 @@ same dates as reminders. Add a row whenever a step creates an expiring credentia
 | Cloudflare API token `quartz-book reconcile` (§7) | **25 Sep 2027**, as the Cloudflare dashboard shows it in CEST (a day after the date recorded before) | `quartz-book` secret `CLOUDFLARE_API_TOKEN` | `reconcile` builds but can't deploy: every run goes red, and every book keeps serving its last deployment |
 | GitHub fine-grained token `build-nudge dispatch` (§7) | **23 Sep 2027**, 22:00 UTC (the date GitHub set, a day before the one entered) | `build-nudge` Worker secret `DISPATCH_TOKEN` | the Worker can't start `reconcile`: nothing rebuilds on its own (no nudges, no 15-minute tick). `builder-alive` goes red within a day. `reconcile` still works by hand |
 | `PARITY_READ_TOKEN` (fine-grained, SCHEDULED-JOBS Part 1) | **not recorded — confirm** | registry secret | parity goes red every day |
-| `PLATFORM_TOKEN` (§1, `book-requests`) | **unconfirmed** | `book-requests` secret | `provision` and `remove` fail: no approved request becomes a book, and no sandbox book can be removed. Nothing live breaks |
+| ~~`PLATFORM_TOKEN`~~ (§1, `book-requests`) | n/a: **the secret was deleted 27 Sep 2026** | — | `provision` and `remove` fail: no approved request becomes a book, and no sandbox book can be removed. Nothing live breaks |
 | `GITHUB_OAUTH_CLIENT_SECRET`, the *Textbook sign-in* OAuth App's secret (§2f) | **unconfirmed** | Vercel env | "Sign in with GitHub" in the editor fails. Anonymous proposals still work |
 | `HYPOTHESIS_API_TOKEN` (§9) | **not recorded — confirm** whether it expires | `textbook` secret | book one's Sunday annotation backup and dashboard fail |
 
@@ -75,17 +75,17 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 
 | Account | Kind | Holds | Who holds the login |
 |---|---|---|---|
-| `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), the fine-grained token `build-nudge dispatch` (§7), the classic token `PLATFORM_TOKEN` (§1, `book-requests`), and every book made from a request | the platform owner |
+| `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), the fine-grained token `build-nudge dispatch` (§7), the classic token that was `PLATFORM_TOKEN` (§1, `book-requests`; the secret was deleted on 27 Sep 2026), and every book made from a request | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
-| `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | **confirm at handover** |
+| `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
 | `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep), the sole administrator, who also pays for it (D16, 25 Sep 2026) |
-| a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | **confirm at handover** |
-| Vercel | Vercel | the suggest-edit function (S2) | **confirm at handover** |
-| Plausible | Plausible | the platform's one site, `confused4now.org`, for the portal and every live book (`platform.analytics.plausible`, BOOK-ONE-TO-QUARTZ D19, §8 step 17a), plus any site an edition has of its own | **confirm at handover** |
-| `AlecGordon` | Hypothes.is | book one's API token. No groups are in use | a person, not the platform. Transfer at handover (§9) |
+| a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
+| Vercel | Vercel | the suggest-edit function (S2) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
+| Plausible | Plausible | the platform's one site, `confused4now.org`, for the portal and every live book (`platform.analytics.plausible`, BOOK-ONE-TO-QUARTZ D19, §8 step 17a), plus any site an edition has of its own | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
+| `AlecGordon` | Hypothes.is | book one's API token. No groups are in use | a person's account, not the platform's: the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover (§9) |
 | Obsidian | Obsidian Publish | book one's Publish site | **confirm at handover** |
-| Apple Developer | Apple | the Developer ID that signs the Authoring Assistant | **confirm at handover** |
-| DNS registrar for `confused4now.org` | registrar | the portal domain and every `<slug>.confused4now.org` book | **confirm at handover** (§5) |
+| Apple Developer | Apple | the Developer ID that signs the Authoring Assistant | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover |
+| DNS registrar for `confused4now.org` | registrar | the portal domain and every `<slug>.confused4now.org` book | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover (§5) |
 
 ---
 
@@ -109,7 +109,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `<slug>`, one per book made from a request | public | a request-made book's content repo, created by `provision` with `PLATFORM_TOKEN`. None exists on 25 Sep: the only one, the sandbox test, was removed (registry #27, #28) | the book (held by the platform, `paid_by: platform`) |
 | `textbook` | public | **book one's** content repo, its weekly workflows and its maintainer docs | book one |
 | `textbook-edition-template` | public | **book one's** department-edition template (`editions.template_repo`) | book one |
-| `code_repo` | private | not mentioned in any repository or doc | **unaccounted for — confirm at handover** |
+| `code_repo` | private | not mentioned in any repository or doc | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover. What it holds is still not recorded |
 
 ### `book-requests`: the request workflow's credentials
 
@@ -122,11 +122,11 @@ Settings → Secrets and variables → Actions:
 
 | Name | Kind | What | If it's missing or wrong |
 |---|---|---|---|
-| `PLATFORM_TOKEN` | secret, set 24 Sep 18:20 UTC | Classic personal access token of `textbookproject2026-alt`. **Scopes, per `book-requests/README.md`:** `repo`, `workflow`, `delete_repo` (not confirmed against the token's own settings page). **Expiry: unconfirmed.** It creates and deletes book repos, pushes their workflows, adds each new repo to the App's installation (an endpoint that takes only a user token), opens and merges registry PRs, and starts `reconcile`. `provision` refuses a token that belongs to anyone else. The delivered follow-up `2ff0f51`, which isn't on `main` on 25 Sep, also uses it to check out the private `authoring-assistant` for the app's converter | `provision` and `remove` fail |
+| ~~`PLATFORM_TOKEN`~~ | **deleted 27 Sep 2026** (was a secret, set 24 Sep 18:20 UTC) | Classic personal access token of `textbookproject2026-alt`. **Scopes, per `book-requests/README.md`:** `repo`, `workflow`, `delete_repo` (not confirmed against the token's own settings page). **Expiry: unconfirmed.** It creates and deletes book repos, pushes their workflows, adds each new repo to the App's installation (an endpoint that takes only a user token), opens and merges registry PRs, and starts `reconcile`. `provision` refuses a token that belongs to anyone else. The delivered follow-up `2ff0f51`, which isn't on `main` on 25 Sep, also uses it to check out the private `authoring-assistant` for the app's converter | `provision` and `remove` fail |
 | `CLOUDFLARE_API_TOKEN` | secret | *Account → Cloudflare Pages → Edit*, and *Zone → DNS → Edit* for `confused4now.org` only. It's a different token from `quartz-book reconcile` (§7). **Expiry: unconfirmed** | new books get no Pages project, custom domain or DNS record |
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` | secrets | `brandonproject2026`'s account ID, and the `confused4now.org` zone ID | as above |
 | `PORTAL_DEPLOY_HOOK` | secret | the portal's deploy hook, the same URL as the registry's (§4) | the portal doesn't list a new book until its next build |
-| `APP_INSTALLATION_ID` | variable | `161872702`, the suggest-edit App's installation on `textbookproject2026-alt` (§2c) | new repos aren't added to the App |
+| ~~`APP_INSTALLATION_ID`~~ | **deleted 27 Sep 2026** (was a variable) | `161872702`, the suggest-edit App's installation on `textbookproject2026-alt` (§2c) | new repos aren't added to the App |
 
 > **Replaced by two GitHub Apps once book-requests #7 merges (27 Sep 2026, DOCS-AUDIT
 > 16).** `PLATFORM_TOKEN` and `APP_INSTALLATION_ID` are then no longer read.
@@ -141,6 +141,22 @@ Settings → Secrets and variables → Actions:
 > and to `textbook-suggest-edit` (book-requests README, *Approving a request*). Once the
 > first sandbox request has run with the Apps, **revoke `PLATFORM_TOKEN`** and delete the
 > secret. Until then it's still the credential above.
+>
+> **27 Sep 2026, checked with `gh secret list` and `gh variable list`:**
+>
+> - The four settings are set: `PLATFORM_APP_CLIENT_ID` (`Iv23lih8lopCn91G3XPK`) and
+>   `BOOKS_APP_CLIENT_ID` (`Iv23lil2151loUoiF0MX`) at 10:47–10:48 UTC, and both
+>   `*_APP_PRIVATE_KEY` secrets at 10:48.
+> - `PLATFORM_TOKEN` and `APP_INSTALLATION_ID` are gone, so the Apps are now the only
+>   credential.
+> - **The Apps aren't proven yet.** The sandbox proof (book-requests README, issue #1)
+>   hasn't run: issue #1 is still closed with the `removed` label from 24 Sep, and no
+>   `provision` or `remove` run has happened since 26 Sep.
+> - The empty repo `sandbox-test-book` has been created for the proof.
+> - Both Apps are private, so their permissions and installations can't be read without
+>   their own keys. The proof run is what shows them.
+> - Whether the classic token itself was revoked (not just the secret deleted) can't be
+>   checked from the API.
 | `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` | optional | the welcome email. **Not set on 25 Sep**, so the maintainer sends the prepared email by hand | — |
 | `APP_DOWNLOAD_URL`, `PANDOC_VERSION` | variables, used by the delivered follow-up | the welcome email's download link (meant to be `…/authoring-assistant-releases/releases/latest/download/Authoring-Assistant.dmg`), and the pandoc version, pinned to the app build's own. **Neither is set on 25 Sep** | — |
 | `APPROVERS` | variable, optional | a JSON list of logins, besides the repo owner, whose `approved` and `remove` labels count. Not set | only the owner's labels count |
@@ -221,7 +237,7 @@ It stops and asks the platform owner first for:
   (`platform.suggest_edit_endpoint`). This endpoint is **permanent**: every
   book's rendered front end has it baked in, and not every book will republish
   (`MULTI-BOOK-HOSTING.md` §5a). Add a new version beside it rather than moving it.
-- **Account owner:** **confirm at handover.**
+- **Account owner:** the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover.
 - **What it does:** it resolves the request's `Origin` header to exactly one
   registered book (`https://` + `site.domain`, for `preview` and `live` books), then
   files the suggestion as an issue on that book's `content.repo`, labelled
@@ -279,8 +295,8 @@ Vercel's instant rollback rolls back code and registry together.
 | `REGISTRY_REF` | Vercel build env, optional | pins the registry to a SHA or branch | while set, `deploy.yml` stays red by design |
 | `SUGGEST_EDIT_DEPLOY_HOOK` | `textbook-registry` repo secret | the Vercel deploy hook's URL, a credential | `deploy.yml` fails and says so |
 
-The App's `.pem` file itself is kept outside any repository. **Where the only
-copy is kept is not recorded. Confirm at handover.** If it's lost, generate a
+The App's `.pem` file itself is kept outside any repository. Its backups are held by
+the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover. If it's lost, generate a
 new key in the App's settings. No code changes.
 
 **`BOT_TOKEN` is not set (25 Sep 2026, checked in Vercel by the platform
@@ -296,7 +312,7 @@ unverified:** whether `GITHUB_APP_INSTALLATION_ID` is set.
 ### 2c. The GitHub App `textbook-suggest-edit`
 
 - **App ID** 4951384. **Public**, so accounts other than the owner can install it.
-  Owned by `textbookproject2026-alt`. Confirm at handover.
+  Owned by `textbookproject2026-alt`, the platform owner Alec's account (confirmed 27 Sep 2026).
 - **Permissions (widened 24 Sep 2026 for the in-site editor):** Issues, Contents
   and Pull requests read and write, and Metadata read. No webhook. Until 24 Sep it
   had Issues and Metadata only. Each installation made before then had to accept
@@ -407,7 +423,7 @@ Added 24 Sep 2026 for the in-site editor.
   Sveltia's, and `workers.dev` puts no edge layer between a successful deploy and
   what is served.
 - **The OAuth App *Textbook CMS*** is registered under an individual account,
-  not the platform's. **Confirm which one.** Its callback URL is the Worker URL
+  not the platform's. It is held by the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. Transfer to the client: to be arranged at handover. Its callback URL is the Worker URL
   plus `/callback`.
 - **If it's gone:** every contributor on every book stays signed out. Tokens
   already issued keep working, because they go straight to GitHub.
@@ -656,7 +672,7 @@ handover.
 | Service | For | Held today | The book's own doc |
 |---|---|---|---|
 | Obsidian Publish site `1443b409…` | book one's rollback until §8 step 20 | **confirm** | `textbook/README.md`, *This book* |
-| Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | a person | `textbook-template/docs/annotation-restore.md` |
+| Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | the platform owner, Alec (confirmed 27 Sep 2026) | `textbook-template/docs/annotation-restore.md` |
 | `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook-template/docs/the-browser-editor.md` |
 
 Book one's Plausible site is no longer the book's. Since §8 step 17a it is the
@@ -728,7 +744,7 @@ deployed service. `textbook-template` and `code_repo` deploy nothing.
 |---|---|---|
 | SSH keys `id_ed25519_textbook`, `id_ed25519_coord` | the platform owner's `~/.ssh/` | platform owner |
 | `gh` logins | the platform owner's keyring | platform owner |
-| GitHub App private key (`.pem`) | **not recorded** | platform owner |
+| GitHub App private key (`.pem`), backups | held by the platform owner, Alec (confirmed 27 Sep 2026); where isn't written here | platform owner; transfer at handover to be arranged |
 | `quartz-book-bot`'s private key, `quartz-book-bot.2026-09-24.private-key.pem` (§7) | the platform owner's `~/Downloads/`. Its only other copy is the `quartz-book` secret `BOT_APP_PRIVATE_KEY`, which can't be read back | platform owner |
 | Developer ID certificate, `notarytool` profile | the build Mac's keychain | platform owner |
 | An author's console token, DeepSeek key | the author's login Keychain, service `Authoring Assistant` | each author |
@@ -748,8 +764,11 @@ Tracked here so nobody rediscovers them the hard way. See
   still in the function (§2d).
 - Expiry **unconfirmed** for `PLATFORM_TOKEN`, `book-requests`' Cloudflare token and
   the *Textbook sign-in* client secret (§1, §2b).
-- Owners marked **confirm at handover**: Vercel, Plausible, Obsidian Publish,
-  Apple, the second Cloudflare account, the registrar, the *Textbook CMS* OAuth
-  App, the *Textbook sign-in* OAuth App, the App's key file, `code_repo`.
+- Owners **confirmed 27 Sep 2026** as the platform owner, Alec (`textbookproject2026-alt`
+  / `brandonproject2026`): Vercel, Plausible, Apple Developer, the registrar, the second
+  Cloudflare account, the *Textbook CMS* OAuth App, the App's `.pem` backups, `code_repo`,
+  `aldogobot` and Hypothes.is (`AlecGordon`). **Transfer to the client is still to be
+  arranged at handover.** Still **confirm at handover**: Obsidian Publish and the
+  *Textbook sign-in* OAuth App.
 - There's no site-health probe (`MULTI-BOOK-HOSTING.md` §5b). A Publish book that
   lapses, or a `<slug>` record taken over, goes unnoticed until someone looks.
