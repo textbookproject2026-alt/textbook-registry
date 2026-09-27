@@ -144,7 +144,10 @@ relevant doc as it is today, not as it ought to be.
 
 **Added 25 Sep 2026**, from the book-requests workstream of 24 Sep:
 
-14. **Books use two chapter-naming conventions.** Book one, the template's guides
+14. **Decided 27 Sep 2026: one rule, `chapters/chapter-NN.md`, for every book.** Live
+    books keep their names. New books and re-imports map a Word file to its chapter-NN,
+    recorded in `chapter-sources.json` (BOOK-ONE-TO-QUARTZ §8 step 1, amended).
+    **Books use two chapter-naming conventions.** Book one, the template's guides
     (`docs/word-to-markdown.md`, `docs/editing-the-textbook.md`) and
     BOOK-ONE-TO-QUARTZ §8 step 1 name a chapter `chapters/chapter-NN.md`, with its
     pictures in `assets/chapter-NN/`. Nothing enforces this: the app suggests the Word
