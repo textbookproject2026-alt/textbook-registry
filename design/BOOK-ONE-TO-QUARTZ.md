@@ -1493,7 +1493,7 @@ the later steps keep their numbers.
 > |---|---|---|
 > | 1 | quartz-book #17 | `check-book-one` no longer asserts that `Frankenstein/` is in book one (its CI checks out book one's `main`) |
 > | 2 | textbook #52 | the clean-up. `docs/` goes whole: the guides are `textbook-template/docs/`; `annotation-restore.md` joins them (step 23's weekly-jobs PR) and `updating-department-editions.md` joins the edition template (step 22's PR); `DOCS-REMEDIATION.md` comes here as `docs/history/` |
-> | 3 | this registry PR, **straight after 2** | parity: `cms.*` and `config.*` retire at step 18 (`admin/config.yml`'s new header, and the builder's registry reads), `landing.summary` reads `index.md`, and `docsMovedToRegistry` reads book one's README. Parity is red on `main` between 2 and 3 |
+> | 3 | registry #41, **straight after 2** | parity: `cms.*` and `config.*` retire at step 18 (`admin/config.yml`'s new header, and the builder's registry reads), `landing.summary` reads `index.md`, and `docsMovedToRegistry` reads book one's README. Parity is red on `main` between 2 and 3 |
 >
 > **Proved before merging.** Built with builder `281867f` (#15's home link is already
 > live, so it's the baseline): `main` (`ab5e178`) and the branch differ only in the
