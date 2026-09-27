@@ -121,7 +121,8 @@ record.
    the slug, hostname and repo stay reserved. Title: `Retire <slug>`.
 2. **If this is the last `preview`/`live` book, stop.** The function's build
    requires at least one routable book, so the deploy would fail and production
-   would keep serving the book. This doesn't apply while book one is live.
+   would keep serving the book. Two books are live (the request-made ones), so it
+   doesn't apply today.
 3. **Watch `deploy` go green.** The function now answers the book's origin with
    403 and no CORS headers. The book's form shows its generic failure copy and
    points readers at *Edit on GitHub*, which still works. Check it:
@@ -170,6 +171,40 @@ record.
 **Reinstating** is the reverse PR (`status` back to `live`, with the record, DNS
 and `ALLOWED_DOMAINS` entry restored). The validator allows `retired → live`.
 Nothing was reused, so issues, backups and annotations all come back.
+
+### Book one, retired 27 Sep 2026
+
+Retired at the platform owner's request (registry #54). What was done, in order:
+
+1. **Before the registry PR:** quartz-book #23 moved the builder's CI off book one,
+   because the builder refuses a retired book. CI builds the first `live` book instead.
+2. **Registry #54:** `status: retired`, and nothing else.
+   - Its `deploy` first failed: the function's Vercel build runs its tests, and two
+     assumed book one was routable. suggest-edit-function #3 fixed them.
+   - The function then answered book one's origin with 403 (registry `65cb4e9`).
+   - `portal` dropped the listing.
+3. **The hostname (step 5), done differently from the procedure.** Only DNS *read*
+   was available, and parking at the portal had never been tried. So:
+   - the custom domain and the CNAME stay on the book's own Pages project;
+   - a one-page **retirement notice** (`noindex`, every path rewritten to it) was
+     uploaded with wrangler to `main`, `drafts` and `design-16`…`design-23`.
+
+   The hostname stays held, and nothing serves the book. `reconcile` and the design
+   previews skip retired books, so nothing overwrites the notice. Older deployments
+   keep their own hash URLs (`<hash>.social-research-methods.pages.dev`) until
+   they're deleted.
+4. **Weekly jobs:** the book's seven workflows other than `lint` are disabled
+   (SCHEDULED-JOBS, Part 2).
+5. **Left for the platform owner:**
+   - Step 6: remove `textbook-admin.pages.dev` from the relay's `ALLOWED_DOMAINS`, a
+     Worker secret.
+   - Step 7: take `textbook` out of the `textbook-suggest-edit` installation.
+   - §8 step 20 of BOOK-ONE-TO-QUARTZ: cancel Obsidian Publish.
+   - Whether to delete the Pages projects `social-research-methods` and
+     `textbook-admin`, the old deployments, or the repo.
+
+**Reinstating** is registry `status: live` plus a `reconcile` of the book. The notice
+is replaced at the first build, and the workflows are re-enabled.
 
 ### Book two, specifically
 

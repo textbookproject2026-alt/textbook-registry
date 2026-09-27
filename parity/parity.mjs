@@ -31,6 +31,10 @@ import { getRepo, resolveSha, getFile, hasToken } from '../scripts/github.mjs';
 
 // The constants in the five repos are this one book's. Parity is retired before a
 // second book is added (DESIGN §5 step 8), so there is exactly one book to compare.
+// Book one was retired on 27 Sep 2026 (registry #54). Its entry stays as the
+// tombstone and its repo stays, so these checks still compare real values; the
+// retired-by-migration checks on the services are the ones still guarding anything.
+// If book one's repo is ever deleted, parity must change first.
 const SLUG = 'social-research-methods';
 
 const args = process.argv.slice(2);

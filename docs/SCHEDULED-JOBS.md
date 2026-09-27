@@ -229,6 +229,13 @@ the way GitHub's `schedule:` runs are.
 
 ## Part 2 — book one (`textbookproject2026-alt/textbook`)
 
+> **Book one was retired on 27 Sep 2026 (registry #54).** Its seven scheduled and
+> push workflows are **disabled** (Actions → the workflow → **Enable workflow**
+> undoes it): `backup-annotations`, `contributors`, `dashboard`, `derivatives`,
+> `link-check`, `weekly-snapshot` and `nudge`. `lint` stays on. The last runs were
+> today's: the snapshot `snapshot-2026-09-27` and the annotation backup at 09:00,
+> and contributors at 12:40. The rest of this part describes the jobs as they ran.
+
 These are book one's own jobs. They're listed here because the platform owner
 currently looks after them, and because the author's console shows four of them
 (Part 4). Book one's maintainer has a pointer to this file from

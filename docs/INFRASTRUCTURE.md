@@ -50,7 +50,7 @@ These are the services every book uses. Each one bakes in or reads
 
 | Slug | Status | Content repo (owner) | Site | Host | Paid by |
 |---|---|---|---|---|---|
-| `social-research-methods` | `live` | `textbookproject2026-alt/textbook` | <https://social-research-methods.confused4now.org> | Cloudflare Pages, project `social-research-methods`, built by `quartz-book` (since the cutover, BOOK-ONE-TO-QUARTZ §8 step 16, 26 Sep 2026). Obsidian Publish site `1443b409…` stays subscribed for rollback until §8 step 20 | the platform owner (D16, 25 Sep 2026): the Pages project, and the Publish subscription until it is cancelled (§8 step 20). The registry records `paid_by: platform` (§8 step 17) |
+| `social-research-methods` | **`retired`** (27 Sep 2026, registry #54) | `textbookproject2026-alt/textbook` | <https://social-research-methods.confused4now.org>, now serving only a retirement notice | Cloudflare Pages, project `social-research-methods`. `reconcile` no longer builds it; every branch alias serves the retirement notice (BOOK-LIFECYCLE, *Book one, retired*). Obsidian Publish site `1443b409…` is still subscribed (§8 step 20 was never run) | the platform owner (D16, 25 Sep 2026): the Pages project, and the Publish subscription until it is cancelled (§8 step 20). The registry records `paid_by: platform` (§8 step 17) |
 | `platform-test-book` | `preview` | `dept-coordinator-test/platform-test-book` | <https://platform-test-book-2.pages.dev> | Cloudflare Pages `platform-test-book-2` (Direct Upload, built by `quartz-book`; the old Git-integrated `platform-test-book` is retired, §8 step 21) | `platform` |
 
 The registry is the source of truth for everything in this table. If it and this
@@ -110,8 +110,8 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `book-requests` | **private** | the "Publish your textbook" requests: one issue per request, the uploaded manuscripts under `requests/`, and the `provision` and `remove` workflows. Private so that requesters' emails and unpublished manuscripts never reach a public repo. Added 24 Sep 2026 (see below) | platform |
 | `authoring-assistant-releases` | public | meant to host the Authoring Assistant's `.dmg` for authors, as a release asset named `Authoring-Assistant.dmg`. Created 24 Sep 2026, 19:10 UTC. **It had no releases on 25 Sep** (§6) | platform |
 | `<slug>`, one per book made from a request | public | a request-made book's content repo, created by `provision` with `PLATFORM_TOKEN`. None exists on 25 Sep: the only one, the sandbox test, was removed (registry #27, #28) | the book (held by the platform, `paid_by: platform`) |
-| `textbook` | public | **book one's** content repo, its weekly workflows and its maintainer docs | book one |
-| `textbook-edition-template` | public | **book one's** department-edition template (`editions.template_repo`) | book one |
+| `textbook` | public | **book one's** content repo. Book one is retired (27 Sep 2026): its weekly workflows and `nudge` are disabled, `lint` stays. Kept, not deleted | book one |
+| `textbook-edition-template` | public | **book one's** department-edition template (`editions.template_repo`). Its upstream is retired, so it gets no new releases; its preview still shows book one's text | book one |
 | `code_repo` | private | not mentioned in any repository or doc | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client. What it holds is still not recorded |
 
 ### `book-requests`: the request workflow's credentials
@@ -528,8 +528,9 @@ book that wants the editor brings its own Pages project and asks for one
   - the apex: the portal Pages project;
   - `social-research-methods`: a proxied CNAME to the Pages project
     (`social-research-methods.pages.dev`) since the cutover on 26 Sep 2026
-    (BOOK-ONE-TO-QUARTZ §8 step 16). Rollback until §8 step 20 points it back at
-    Obsidian Publish (`publish-main.obsidian.md`);
+    (BOOK-ONE-TO-QUARTZ §8 step 16). **Book one is retired (27 Sep 2026):** the record
+    and the custom domain stay, so the hostname stays held, and it serves the
+    retirement notice. Keep the record: the hostname is never reused (BOOK-LIFECYCLE);
   - the Redirect Rule (§4).
 - **Zone settings:** SSL mode **Full**, since "Flexible" makes Publish loop. Free
   Universal SSL covers one label deep only, which is why
@@ -697,8 +698,8 @@ book that wants the editor brings its own Pages project and asks for one
 | Project | Account | Built from | Serves | Whose |
 |---|---|---|---|---|
 | `textbook-portal` | `brandonproject2026` | `textbook-portal` `main` + deploy hook | `confused4now.org` | platform (S4) |
-| `textbook-admin` | `brandonproject2026` | `textbook` `main`, output `admin/` | `textbook-admin.pages.dev` | book one's CMS host |
-| `social-research-methods` | `brandonproject2026` | **Direct Upload** from `quartz-book`'s `reconcile` (no Git connection). Production branch `main` | `social-research-methods.pages.dev` (book one's `main`), `drafts.social-research-methods.pages.dev` (its `drafts`, `noindex`), `design-<pr>.social-research-methods.pages.dev` (design previews of `main` for `quartz-book` pull requests, `noindex`, §8 step 11). Custom domain `social-research-methods.confused4now.org` since §8 step 16 (26 Sep 2026) | book one, paid by the platform (S7; created 24 Sep 2026, §8 step 9) |
+| `textbook-admin` | `brandonproject2026` | `textbook` `main`, output `admin/` | `textbook-admin.pages.dev` | book one's CMS host. Book one is retired; the project still serves the editor, and the relay still lets it sign in until `textbook-admin.pages.dev` leaves `ALLOWED_DOMAINS` (by hand) |
+| `social-research-methods` | `brandonproject2026` | **Direct Upload** from `quartz-book`'s `reconcile` (no Git connection) until book one was retired on 27 Sep 2026; since then `main`, `drafts` and `design-16`…`design-23` serve a retirement notice (uploaded with wrangler). Production branch `main` | `social-research-methods.pages.dev` (book one's `main`), `drafts.social-research-methods.pages.dev` (its `drafts`, `noindex`), `design-<pr>.social-research-methods.pages.dev` (design previews of `main` for `quartz-book` pull requests, `noindex`, §8 step 11). Custom domain `social-research-methods.confused4now.org` since §8 step 16 (26 Sep 2026) | book one, paid by the platform (S7; created 24 Sep 2026, §8 step 9) |
 | `platform-test-book-2` | `brandonproject2026` | uploaded by `quartz-book`'s `reconcile` (Direct Upload) | `platform-test-book-2.pages.dev`, and `drafts.platform-test-book-2.pages.dev` (unregistered origin), and `design-<pr>.platform-test-book-2.pages.dev` (design previews, §8 step 11) | book two, `paid_by: platform` |
 | `platform-test-book` | **confirm** (the second account) | `dept-coordinator-test/platform-test-book` `main`, Git-integrated | `platform-test-book.pages.dev` | **retired**: book two's pre-builder site. Delete once nothing points at it (MULTI-BOOK-HOSTING §2e) |
 | `textbook-edition-template` | **confirm** | `textbook-edition-template` | its `pages.dev` demo | book one's edition template |
