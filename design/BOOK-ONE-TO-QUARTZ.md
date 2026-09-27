@@ -1549,7 +1549,7 @@ the later steps keep their numbers.
 > |---|---|---|
 > | 1 | quartz-book #18 | the installer patch (below). Independent of the rest; no page changes |
 > | 2 | textbook-edition-template #10 | extras `edition-integrations` and `edit-on-github` from `8f4e323` to `265bb8d`, `textbook-graph` added at the same commit in place of upstream's `graph`, the builder's graph block, the newer `edition-integrations` options listed, the theme block's `design.yaml` note, the installer patch, and `updating-department-editions.md` (from book one's `docs/`, step 18). Design preview: `step-22-extras-and-graph.textbook-edition-template.pages.dev` |
-> | 3 | this registry PR | parity's graph drift entry removed |
+> | 3 | textbook-registry #43 | parity's graph drift entry removed |
 > | 4 | quartz-edition-extras #9 (after #8) | the README's stale pin note |
 >
 > **Found: the pins were never installed.** Upstream Quartz's `plugin install`
