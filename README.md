@@ -162,11 +162,23 @@ means the same as its empty value (no aliases, not dark, unknown payer, no porta
 
 ## Who approves changes
 
-Every change goes through a pull request to `main`. It needs an approving review from
-a platform owner (`.github/CODEOWNERS`), and administrators can't bypass that.
-Branch protection has to be switched on in GitHub settings after the repo is created.
-This file can't do it. **It is not switched on** (checked 22 Sep 2026: `main` reports
-"Branch not protected"), so today none of this section is enforced.
+**Decided 27 Sep 2026: a pull request and green checks, no review, administrators
+included.** Every change goes through a pull request to `main`, and it merges only
+when `validate`'s two jobs, `registry` and `github-facts`, are green. No approving
+review is required. Administrators can't push to `main` or merge past a red required
+check either (`enforce_admins`). Force pushes and deleting `main` are off. `parity`
+isn't required: it reads other repos, and can be red for reasons outside the PR.
+Branch protection is a GitHub setting, and this file can't enforce it; it was switched
+on 27 Sep 2026 and read back the same day.
+
+**Why no review yet.** There is one platform owner, and GitHub doesn't let anyone
+approve their own pull request. `book-requests` also merges its registry pull requests
+with that owner's token, once the same two checks are green. A required review would
+block both, unless administrators were exempt, and that exemption is the bypass the
+design says to disable. **A required CODEOWNERS review is added when a second
+maintainer exists** to give it (BOOK-ONE-TO-QUARTZ D15/D16, reviewed when phase 1
+finishes). Then `book-requests` needs a way through: an approval from the second
+maintainer, or its GitHub App as the ruleset's only bypass actor.
 
 **A known single point of trust.** Today the platform owner who approves registry
 changes is `textbookproject2026-alt`. That is **the same person** who, from step 2c on,
@@ -176,11 +188,8 @@ repo where someone else has also installed the App. While one person holds both,
 are effectively one gate. This is accepted for now and recorded so it isn't
 forgotten. It should end when an institution holds one of the two roles.
 
-A practical consequence: GitHub doesn't let you approve your own pull request. With one
-platform owner, a required CODEOWNERS review can only be satisfied by adding a second
-reviewer, or by that owner merging with an admin override. The override is exactly
-the bypass the design says to disable. Decide which one you'll accept before turning
-on protection, and write the decision down here.
+The protection above doesn't change this. It stops a direct push and a merge past a
+red check, but nobody but the same person reviews the change.
 
 ## Checks
 
