@@ -81,7 +81,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), the fine-grained token `build-nudge dispatch` (§7), the classic token that was `PLATFORM_TOKEN` (§1, `book-requests`; the secret was deleted on 27 Sep 2026), and every book made from a request | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
 | `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
-| `brandonproject2026` | Cloudflare | the relay Worker (S3), `textbook-admin` Pages (book one's CMS host), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep), the sole administrator, who also pays for it (D16, 25 Sep 2026) |
+| `brandonproject2026` | Cloudflare | the relay Worker (S3), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep), the sole administrator, who also pays for it (D16, 25 Sep 2026) |
 | a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
 | Vercel | Vercel | the suggest-edit function (S2) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
 | Plausible | Plausible | the platform's one site, `confused4now.org`, for the portal and every live book (`platform.analytics.plausible`, BOOK-ONE-TO-QUARTZ D19, §8 step 17a), plus any site an edition has of its own | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
@@ -445,7 +445,7 @@ Added 24 Sep 2026 for the in-site editor.
 |---|---|---|
 | `GITHUB_CLIENT_ID` | the *Textbook CMS* OAuth App's client ID | sign-in fails for every book |
 | `GITHUB_CLIENT_SECRET` | **encrypted**. The same app's secret | sign-in fails for every book |
-| `ALLOWED_DOMAINS` | the exact hostnames the CMS page may run on. Today: `textbook-admin.pages.dev` | a host missing from it: sign-in pops up and closes with no error. A wildcard: anyone's page can borrow the OAuth app |
+| `ALLOWED_DOMAINS` | the exact hostnames the CMS page may run on. Today: `retired.invalid` since 27 Sep 2026: no book has an editor, so the relay refuses every site (never leave it empty: an empty list skips the check) | a host missing from it: sign-in pops up and closes with no error. A wildcard: anyone's page can borrow the OAuth app |
 
 - **`ALLOWED_DOMAINS` is maintained by hand, and checked by nothing.** The
   registry README's delivery table says CI generates it. No workflow does
@@ -468,9 +468,10 @@ Added 24 Sep 2026 for the in-site editor.
   already issued keep working, because they go straight to GitHub.
 - **Guide:** [CMS-RELAY.md](CMS-RELAY.md).
 
-**Per-book CMS hosts aren't the platform's.** `textbook-admin.pages.dev` is book
-one's editor page: a Pages project in `brandonproject2026` that builds
-`admin/` from `textbook` `main`. There is no shared CMS host yet
+**Per-book CMS hosts aren't the platform's.** `textbook-admin.pages.dev` was book
+one's editor page: a Pages project in `brandonproject2026` that built `admin/`
+from `textbook` `main`. **It was deleted on 27 Sep 2026** after book one's
+retirement, and no book has an editor host now. There is no shared CMS host yet
 (`platform.portal.cms_host: null`, `DESIGN.md` step 5b). Until there is, each
 book that wants the editor brings its own Pages project and asks for one
 `ALLOWED_DOMAINS` entry.
@@ -698,7 +699,7 @@ book that wants the editor brings its own Pages project and asks for one
 | Project | Account | Built from | Serves | Whose |
 |---|---|---|---|---|
 | `textbook-portal` | `brandonproject2026` | `textbook-portal` `main` + deploy hook | `confused4now.org` | platform (S4) |
-| `textbook-admin` | `brandonproject2026` | `textbook` `main`, output `admin/` | `textbook-admin.pages.dev` | book one's CMS host, and the **only** CMS host: no live book has `cms.enabled`, and the builder never publishes a book's `admin/`. Book one is retired; the project still serves the editor, and the relay still lets it sign in until `ALLOWED_DOMAINS` is changed (by hand; not to an empty value, which the relay treats as "allow every domain") |
+| ~~`textbook-admin`~~ | `brandonproject2026` | was `textbook` `main`, output `admin/` | ~~`textbook-admin.pages.dev`~~ (no longer resolves) | **Deleted 27 Sep 2026.** It was book one's CMS host, and the only one. The dashboard refused the delete with the API's error `8000076`, *"Your project has too many deployments to be deleted"*. So all 138 deployments were deleted through the API (137 with `force=true`, then the production one went with the project). The relay's `ALLOWED_DOMAINS` had been set to `retired.invalid` first |
 | `social-research-methods` | `brandonproject2026` | **Direct Upload** from `quartz-book`'s `reconcile` (no Git connection) until book one was retired on 27 Sep 2026; since then `main` and `drafts` serve a retirement notice (uploaded with wrangler). On 27 Sep every other deployment was deleted (97 of 99), leaving only those two. Production branch `main` | `social-research-methods.pages.dev` (book one's `main`), `drafts.social-research-methods.pages.dev` (its `drafts`, `noindex`), `design-<pr>.social-research-methods.pages.dev` (design previews of `main` for `quartz-book` pull requests, `noindex`, §8 step 11). Custom domain `social-research-methods.confused4now.org` since §8 step 16 (26 Sep 2026) | book one, paid by the platform (S7; created 24 Sep 2026, §8 step 9) |
 | `platform-test-book-2` | `brandonproject2026` | uploaded by `quartz-book`'s `reconcile` (Direct Upload) | `platform-test-book-2.pages.dev`, and `drafts.platform-test-book-2.pages.dev` (unregistered origin), and `design-<pr>.platform-test-book-2.pages.dev` (design previews, §8 step 11) | book two, `paid_by: platform` |
 | `platform-test-book` | `brandonproject2026` (Pages API, 27 Sep 2026) | `dept-coordinator-test/platform-test-book` `main`, Git-integrated | `platform-test-book.pages.dev` | **retired**: book two's pre-builder site. Delete once nothing points at it (MULTI-BOOK-HOSTING §2e) |
@@ -719,7 +720,7 @@ moves.
 |---|---|---|---|
 | Obsidian Publish site `1443b409…` | book one's rollback until §8 step 20 | the platform owner, Alec (confirmed 27 Sep 2026) | `textbook/README.md`, *This book* |
 | Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | the platform owner, Alec (confirmed 27 Sep 2026) | `textbook-template/docs/annotation-restore.md` |
-| `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook-template/docs/the-browser-editor.md` |
+| ~~`textbook-admin` Pages project~~ | book one's CMS host, **deleted 27 Sep 2026** | — | `textbook-template/docs/the-browser-editor.md` |
 
 Book one's Plausible site is no longer the book's. Since §8 step 17a it is the
 platform's one site, `confused4now.org` (renamed from

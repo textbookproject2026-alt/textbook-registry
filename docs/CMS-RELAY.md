@@ -64,7 +64,7 @@ Cloudflare dashboard → **Workers & Pages** → `sveltia-cms-auth` → **Settin
 |---|---|---|
 | `GITHUB_CLIENT_ID` | the *Textbook CMS* client ID | plain text |
 | `GITHUB_CLIENT_SECRET` | the *Textbook CMS* client secret | **Encrypt** before saving |
-| `ALLOWED_DOMAINS` | a comma-separated list of the exact hostnames editor pages run on. Today: `textbook-admin.pages.dev` | **Enforced** (verified 18 Sep: `site_id=evil.example` gets `UNSUPPORTED_DOMAIN`) |
+| `ALLOWED_DOMAINS` | a comma-separated list of the exact hostnames editor pages run on. Today: `retired.invalid` since 27 Sep 2026: no book has an editor, so the relay refuses every site (never leave it empty: an empty list skips the check) | **Enforced** (verified 18 Sep: `site_id=evil.example` gets `UNSUPPORTED_DOMAIN`) |
 
 ### `ALLOWED_DOMAINS` is the per-book part, and it's manual
 
