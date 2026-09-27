@@ -3,10 +3,10 @@
 This folder is for **the platform owner**: whoever holds the registry, the
 accounts, the GitHub App, the portal, the deploy hooks, and the power to retire a
 book. If you look after one book, you're in the wrong place. Your guides are in
-your book's own `docs/` (book one:
-[`textbook/docs/`](https://github.com/textbookproject2026-alt/textbook/tree/main/docs)),
-and a new book gets them from
-[`textbook-template/docs/`](https://github.com/textbookproject2026-alt/textbook-template/tree/main/docs).
+[`textbook-template/docs/`](https://github.com/textbookproject2026-alt/textbook-template/tree/main/docs),
+which a new book copies. Book one keeps no `docs/` of its own since
+BOOK-ONE-TO-QUARTZ §8 step 18: its README's **This book** section holds its own
+facts, and the template's set is its guides.
 
 `../design/` next door is the architectural record: *why* each rule exists.
 This folder is *what is deployed, and what to do*. Where the two disagree, this
@@ -34,6 +34,7 @@ If you're inheriting the platform cold, read these in order:
 | [CMS-RELAY.md](CMS-RELAY.md) | editor sign-in fails, a book wants the browser editor, or the relay's secret leaks |
 | [AUTHORING-APP-OPERATIONS.md](AUTHORING-APP-OPERATIONS.md) | building, signing and shipping the author's app, and its sign-in |
 | [DOCS-AUDIT.md](DOCS-AUDIT.md) | the 22 Sep 2026 audit: which doc lives where, and what documentation can't fix |
+| [history/DOCS-REMEDIATION.md](history/DOCS-REMEDIATION.md) | book one's documentation worklist from before the audit, moved here at BOOK-ONE-TO-QUARTZ §8 step 18. A record: its links into `textbook/docs/` are dead |
 
 ## Elsewhere, for the platform owner
 
