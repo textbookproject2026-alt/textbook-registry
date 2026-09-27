@@ -96,7 +96,9 @@ both should be deleted.
 These need a code, configuration or ownership change. Each is written into the
 relevant doc as it is today, not as it ought to be.
 
-1. **`textbook-registry` `main` has no branch protection.** CODEOWNERS and the
+1. **Fixed 27 Sep 2026, as decided: a PR and green checks, no review.** A review is
+   added when a second maintainer exists (README, "Who approves changes").
+   **`textbook-registry` `main` has no branch protection.** CODEOWNERS and the
    README's review rule aren't enforced. Anyone with write access can push
    `registry.json` to `main`, and `deploy.yml` ships it to the function. The
    design counts registry review as one of the two credential gates.
@@ -124,7 +126,8 @@ relevant doc as it is today, not as it ought to be.
    code remains (INFRASTRUCTURE §2d). **`BOT_TOKEN` may still be set on Vercel.** It couldn't be checked (no CLI
    access). If it is set, a book whose repo lacks the App still gets suggestions,
    filed by `aldogobot`, and the missing installation stays hidden.
-8. **Book one duplicates registry facts in `textbook.config.json`** (title,
+8. **Fixed 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §8 step 18; parity retires `config.*`).**
+   **Book one duplicates registry facts in `textbook.config.json`** (title,
    maintainer, `site_url`, licence). Parity catches drift, but a settings change
    is two edits in two repos. The template has already moved to slug-only.
 9. **The vault's scripts fail a retired book with no way forward.** They don't

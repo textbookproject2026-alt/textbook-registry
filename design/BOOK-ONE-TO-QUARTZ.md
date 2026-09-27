@@ -1487,6 +1487,23 @@ the later steps keep their numbers.
   `assets/` and `glossary.md`. `publish.js`, `publish.css` and `.obsidian/`, which rollback
   still needs.
 
+> **Made 27 Sep 2026, not yet merged.** Three PRs, merged in this order:
+>
+> | Order | PR | What |
+> |---|---|---|
+> | 1 | quartz-book #17 | `check-book-one` no longer asserts that `Frankenstein/` is in book one (its CI checks out book one's `main`) |
+> | 2 | textbook #52 | the clean-up. `docs/` goes whole: the guides are `textbook-template/docs/`; `annotation-restore.md` joins them (step 23's weekly-jobs PR) and `updating-department-editions.md` joins the edition template (step 22's PR); `DOCS-REMEDIATION.md` comes here as `docs/history/` |
+> | 3 | registry #41, **straight after 2** | parity: `cms.*` and `config.*` retire at step 18 (`admin/config.yml`'s new header, and the builder's registry reads), `landing.summary` reads `index.md`, and `docsMovedToRegistry` reads book one's README. Parity is red on `main` between 2 and 3 |
+>
+> **Proved before merging.** Built with builder `281867f` (#15's home link is already
+> live, so it's the baseline): `main` (`ab5e178`) and the branch differ only in the
+> marker's `book_commit` and the build-time `lastmod`. Every page is byte-identical, so
+> there are no links to diff: F1 (textbook #51) had already moved `index.md`'s two links.
+> `check-book-one` 10/10 on both trees with #17. Parity `--local` on the branch: 18 ok,
+> 1 drift, 34 retired, 6 n/a, 0 failed. The link check is clean apart from one error
+> that `main` already has: `community/dashboard.md` links the Plausible site by its name
+> before the 17a rename, and the weekly dashboard run regenerates it.
+
 **19. End of probation.**
 - **Repo:** `textbook-registry` (this document records the evidence).
 - **Does:** after **at least four weeks** (D10), record that each condition for "proven" holds:
@@ -1541,6 +1558,38 @@ the later steps keep their numbers.
   is green.
 - **Must not break:** the test edition's `sync-upstream.sh`. This step can happen at any
   time after step 6, and doing it early fixes the editions sooner.
+
+> **Made 27 Sep 2026, not yet merged.** `for-course-coordinators.md` was already done
+> (F2, #9). The rest, merged in this order:
+>
+> | Order | PR | What |
+> |---|---|---|
+> | 1 | quartz-book #18 | the installer patch (below). Independent of the rest; no page changes |
+> | 2 | textbook-edition-template #10 | extras `edition-integrations` and `edit-on-github` from `8f4e323` to `265bb8d`, `textbook-graph` added at the same commit in place of upstream's `graph`, the builder's graph block, the newer `edition-integrations` options listed, the theme block's `design.yaml` note, the installer patch, and `updating-department-editions.md` (from book one's `docs/`, step 18). Design preview: `step-22-extras-and-graph.textbook-edition-template.pages.dev` |
+> | 3 | textbook-registry #43 | parity's graph drift entry removed |
+> | 4 | quartz-edition-extras #9 (after #8) | the README's stale pin note |
+>
+> **Found: the pins were never installed.** Upstream Quartz's `plugin install`
+> restores a `subdir` plugin by cloning the repo's **default branch** and copying the
+> subdir. It ignores the lock's commit while printing it. A clean install of the
+> template's `main` (pin `8f4e323`) gave `edition-integrations/dist/index.js`
+> byte-identical to extras `265bb8d`. So the editions' "dead citations" (§2 #1c)
+> weren't reproducible: they had extras' `main` as of their last fresh install. And
+> quartz-book's §4b gate held only while the plugin cache hit, since on a cache miss
+> `reconcile` built with extras' `main` at that moment. The patch, in both repos'
+> `quartz/cli/plugin-git-handlers.js`, fetches the pinned SHA, fails on a mismatch,
+> records it in `.quartz-locked-commit`, and re-clones a copy from another commit.
+> quartz-book's `ci` checks every subdir plugin against the lock.
+>
+> **Proved before merging.** The preview has the graph (visible in Chrome; production's
+> isn't). In a local build with book one's Chapter 3, clicking a citation brings the
+> reference into view and flashes it (`rgb(253, 242, 179)`), and all 13 targets exist.
+> The graph block equals the builder's. `sync-upstream.sh`, run for real against the
+> branch in a simulated fork current with `main` and carrying a coordinator's usual
+> edits, merges cleanly and keeps them. `dept-coordinator-test`'s real fork conflicts
+> in `quartz.config.yaml` and `quartz.lock.json`, because it never took `main`'s
+> changes since 4 Sep and pinned its own plugin. That's `resolving-sync-conflicts.md`'s
+> case, not a break.
 
 **23. The new-book template.**
 - **Repo:** `textbook-template`.
@@ -1803,6 +1852,9 @@ cutover (§8 step 16).
   `index.md` and `glossary.md` for a book laid out like book one.
 - **`edit-on-github` uses `filePath`**, which is correct only when Quartz runs from the repo
   root.
+- **Upstream Quartz ignores the lock for `subdir` plugins** (found 27 Sep 2026, §8 step
+  22). Every extras pin in quartz-book and the edition template was nominal until
+  the platform patch.
 - **The extras README's "Known discrepancy"** names pin `eece8e6`. The template now pins
   `edition-integrations` at `8f4e323`, which is one commit behind `main` (`36297df`). The
   note is stale.
