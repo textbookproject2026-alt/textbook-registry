@@ -1552,6 +1552,12 @@ the later steps keep their numbers.
 > - The CMS slug rule holds in the real editor: textbook #54, from Sveltia, added
 >   `chapters/chapter-99.md` to `drafts` and was closed unmerged, with its branch deleted.
 
+> **Closed 27 Sep 2026: book one was retired** at the platform owner's request
+> (registry #54; BOOK-LIFECYCLE, *Book one, retired*). Probation ends here without
+> the four conditions being met, and step 19 no longer applies. Rollback to Publish
+> is no longer wanted. Step 20's cancellation of the Obsidian Publish subscription
+> is still a by-hand step for the platform owner.
+
 **20. Cancel Publish.**
 - **Repos:** Obsidian account (by hand), then `textbook`, then `textbook-registry`.
 - **Does:** record Publish's Site options (D18, moved here from step 15 on 26 Sep), then
