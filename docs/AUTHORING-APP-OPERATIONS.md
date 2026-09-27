@@ -2,7 +2,8 @@
 
 **Audience: the platform owner.** This is what you have to build, create and hold
 for the author's app to work for **every** book: building and signing it, the
-console's OAuth App, how it learns about books, and the DeepSeek egress path.
+console's OAuth App, how it learns about books, the DeepSeek egress path, and
+the formatting knowledge base.
 
 The author's own guide is in each book's `docs/the-authoring-app.md`. The full
 build procedure is `authoring-assistant/BUILD.md`, which is the reference; this
@@ -143,11 +144,56 @@ up to 25 glossary terms. The author approves each term individually.
   `deepseek-key`).
 - Every failure path falls back to the deterministic checks.
 
+The **AI formatting check** (authoring-assistant #10, 27 Sep 2026) is a second use
+of the same key and the same path. `app/formatting.py` posts the chapter,
+numbered line by line and cut at the same 90,000 characters, with the formatting
+rules as the system prompt. It gets back proposed one-line fixes. The same
+conditions apply: the author's own key, and a tick box per chapter.
+
 **Nobody has recorded who approved book text going to a third-party LLM, or who
 pays for the key.** Now that the app serves any book, that is the platform's
 question, not one maintainer's. A book may hold material that can't leave its
 institution. Decide whether the option should exist at all, per book or
 platform-wide, and write the decision down here.
+
+---
+
+## The formatting knowledge base
+
+**`authoring-assistant/app/formatting_rules.md`** is the platform's formatting
+knowledge base (the client's "AI formatting knowledge base"). It is the one
+statement of the markdown conventions every book's chapters follow:
+
+- headings, emphasis and Word/pandoc leftovers;
+- lists and tables;
+- footnotes, citations and reference entries;
+- callouts;
+- concept and chapter links, and pictures;
+- the whole-file rules: one paragraph per line, blank lines, frontmatter, and
+  `chapter-NN` naming.
+
+Each rule has a stable ID and names its source: `app/convert.py`, and each book's
+`docs/word-to-markdown.md` and `docs/editing-the-textbook.md` (from
+`textbook-template`).
+
+- **What reads it:** the app's optional AI formatting check. The prompt is the
+  file word for word, after a fixed reply format, so **changing a rule is an edit
+  to this file and nothing else**. The checks that make the pass safe are in code
+  and don't depend on the rules:
+  - one line in, one line out;
+  - the words unchanged, markup aside;
+  - web addresses, footnotes, `^ref` markers and concept links unchanged;
+  - frontmatter and code never touched.
+- **Versioning:** the file's `Version:` and `Updated:` lines. Raise both with any
+  rule change. The app shows the version on the options screen and in every
+  finding. Rule IDs are never reused.
+- **Reaching authors:** the file is bundled into the app (`build.sh` copies
+  `app/`), so a rule change reaches authors only in a new build, like any other
+  change to the app.
+- **Keeping it true:** when `convert.py`, `word-to-markdown.md` or
+  `editing-the-textbook.md` changes a convention, change the matching rule in the
+  same round of PRs.
+- **Version 1:** 27 Sep 2026 (authoring-assistant #10).
 
 ---
 
