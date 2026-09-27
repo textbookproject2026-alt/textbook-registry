@@ -619,9 +619,9 @@ handover.
 
 | Service | For | Held today | The book's own doc |
 |---|---|---|---|
-| Obsidian Publish site `1443b409…` | book one's reading site | **confirm** | `textbook/docs/what-this-book-runs-on.md` |
-| Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | a person | `textbook/docs/annotation-restore.md` |
-| `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook/docs/the-browser-editor.md` |
+| Obsidian Publish site `1443b409…` | book one's rollback until §8 step 20 | **confirm** | `textbook/README.md`, *This book* |
+| Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | a person | `textbook-template/docs/annotation-restore.md` |
+| `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook-template/docs/the-browser-editor.md` |
 
 Book one's Plausible site is no longer the book's. Since §8 step 17a it is the
 platform's one site, `confused4now.org` (renamed from

@@ -1487,6 +1487,23 @@ the later steps keep their numbers.
   `assets/` and `glossary.md`. `publish.js`, `publish.css` and `.obsidian/`, which rollback
   still needs.
 
+> **Made 27 Sep 2026, not yet merged.** Three PRs, merged in this order:
+>
+> | Order | PR | What |
+> |---|---|---|
+> | 1 | quartz-book #17 | `check-book-one` no longer asserts that `Frankenstein/` is in book one (its CI checks out book one's `main`) |
+> | 2 | textbook #52 | the clean-up. `docs/` goes whole: the guides are `textbook-template/docs/`; `annotation-restore.md` joins them (step 23's weekly-jobs PR) and `updating-department-editions.md` joins the edition template (step 22's PR); `DOCS-REMEDIATION.md` comes here as `docs/history/` |
+> | 3 | registry #41, **straight after 2** | parity: `cms.*` and `config.*` retire at step 18 (`admin/config.yml`'s new header, and the builder's registry reads), `landing.summary` reads `index.md`, and `docsMovedToRegistry` reads book one's README. Parity is red on `main` between 2 and 3 |
+>
+> **Proved before merging.** Built with builder `281867f` (#15's home link is already
+> live, so it's the baseline): `main` (`ab5e178`) and the branch differ only in the
+> marker's `book_commit` and the build-time `lastmod`. Every page is byte-identical, so
+> there are no links to diff: F1 (textbook #51) had already moved `index.md`'s two links.
+> `check-book-one` 10/10 on both trees with #17. Parity `--local` on the branch: 18 ok,
+> 1 drift, 34 retired, 6 n/a, 0 failed. The link check is clean apart from one error
+> that `main` already has: `community/dashboard.md` links the Plausible site by its name
+> before the 17a rename, and the weekly dashboard run regenerates it.
+
 **19. End of probation.**
 - **Repo:** `textbook-registry` (this document records the evidence).
 - **Does:** after **at least four weeks** (D10), record that each condition for "proven" holds:

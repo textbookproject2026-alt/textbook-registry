@@ -126,7 +126,8 @@ relevant doc as it is today, not as it ought to be.
    code remains (INFRASTRUCTURE §2d). **`BOT_TOKEN` may still be set on Vercel.** It couldn't be checked (no CLI
    access). If it is set, a book whose repo lacks the App still gets suggestions,
    filed by `aldogobot`, and the missing installation stays hidden.
-8. **Book one duplicates registry facts in `textbook.config.json`** (title,
+8. **Fixed 27 Sep 2026 (BOOK-ONE-TO-QUARTZ §8 step 18; parity retires `config.*`).**
+   **Book one duplicates registry facts in `textbook.config.json`** (title,
    maintainer, `site_url`, licence). Parity catches drift, but a settings change
    is two edits in two repos. The template has already moved to slug-only.
 9. **The vault's scripts fail a retired book with no way forward.** They don't
