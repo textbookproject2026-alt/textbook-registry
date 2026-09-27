@@ -241,6 +241,20 @@ function automationStep14(name, reason, path, pattern) {
   };
 }
 
+// §8 step 18 trimmed book one's textbook.config.json to its slug. Each retired key
+// requires the line in a platform script that now takes the value from the registry.
+function configStep18(name, reason, source, path, pattern) {
+  return {
+    [name]: {
+      step: '18',
+      source: 'content',
+      commit: '3b1f003',
+      reason,
+      consumes: { source, path, pattern },
+    },
+  };
+}
+
 function cmsStep4(name, key, token, field) {
   return {
     [name]: {
@@ -319,6 +333,20 @@ export const RETIREMENTS = {
   ...cmsStep4('cmsRepoStep4', 'repo', '__CONTENT_REPO__', 'content.repo'),
   ...cmsStep4('cmsDraftsBranchStep4', 'branch', '__DRAFTS_BRANCH__', 'content.drafts_branch'),
   ...cmsStep4('cmsAuthRelayStep4', 'base_url', '__CMS_AUTH_RELAY__', 'platform.cms_auth_relay'),
+  // §8 step 18 deleted templates/ and configure.mjs, so the step-4 retirements have
+  // no template left to read. admin/config.yml is kept by hand (D7), and the
+  // cms.config.* checks compare it with the registry directly; its header says so.
+  cmsHandKeptStep18: {
+    step: '18',
+    source: 'content',
+    commit: '3b1f003',
+    reason: 'templates/ and configure.mjs are gone (since step 4 they filled these from the registry); admin/config.yml is kept by hand and cms.config.* compare it with the registry (D7)',
+    consumes: { path: 'admin/config.yml', pattern: /^# Kept by hand \(BOOK-ONE-TO-QUARTZ D7\)\./m },
+  },
+  ...configStep18('configTitleStep18', 'the builder takes the title from the registry', 'builder', 'builder/lib.mjs', /^\s+title: book\.title,$/m),
+  ...configStep18('configMaintainerStep18', 'the contributors page takes the maintainer from the registry', 'builder', `${AUTOMATION}/gen-contributors.mjs`, /maintainer: field\(book, 'maintainer\.name', isString,/),
+  ...configStep18('configSiteUrlStep18', 'the builder takes the domain from the registry', 'builder', 'builder/lib.mjs', /^\s+domain: book\.site\.domain,$/m),
+  ...configStep18('configLicenceStep18', 'the builder takes the licence from the registry', 'builder', 'builder/lib.mjs', /^\s+licence: book\.licence,$/m),
   // The platform's operator docs moved out of the vault into this repo's docs/ on
   // 22 Sep 2026. The four checks below read values that those docs used to carry
   // as a stand-in for settings no repo holds (the relay allowlist, the relay URL,
@@ -329,8 +357,8 @@ export const RETIREMENTS = {
     step: 'docs',
     source: 'content',
     commit: '01b83a4',
-    reason: 'the platform docs (INFRASTRUCTURE.md, OAUTH-SETUP.md) moved to textbook-registry/docs/, and the vault now points there',
-    consumes: { path: 'docs/README.md', pattern: /textbook-registry\/docs\/INFRASTRUCTURE\.md/ },
+    reason: 'the platform docs (INFRASTRUCTURE.md, OAUTH-SETUP.md) moved to textbook-registry/docs/, and the book points there (docs/README.md until §8 step 18 deleted docs/; README.md since)',
+    consumes: { path: 'README.md', pattern: /https:\/\/github\.com\/textbookproject2026-alt\/textbook-registry\/tree\/main\/docs/ },
   },
   ...consoleStep5('consoleRepoStep5', 'app/github.py',
     'the console fetches the registry at launch (app/registry.py), resolves the book from the chosen book or the open vault, and builds every repository URL from that book\'s content.repo',
@@ -396,22 +424,26 @@ export const checks = [
     extract: once(/^# Sveltia CMS configuration — (.+) textbook$/m), expect: (r, b) => b.title },
   { id: 'cms.repo', source: 'content', path: 'templates/admin/config.yml', design: 'admin/config.yml:12',
     extract: once(/^ {2}repo: (?!__[A-Z0-9_]+__$)(\S+)$/m), expect: (r, b) => b.content.repo,
-    retired: RETIREMENTS.cmsRepoStep4 },
+    retired: RETIREMENTS.cmsHandKeptStep18 },
   { id: 'cms.drafts-branch', source: 'content', path: 'templates/admin/config.yml', design: 'admin/config.yml:31 (load-bearing line)',
     extract: once(/^ {2}branch: (?!__[A-Z0-9_]+__$)(\S+)$/m), expect: (r, b) => b.content.drafts_branch,
-    retired: RETIREMENTS.cmsDraftsBranchStep4 },
+    retired: RETIREMENTS.cmsHandKeptStep18 },
   { id: 'cms.auth-relay', source: 'content', path: 'templates/admin/config.yml', design: 'admin/config.yml:40',
     extract: once(/^ {2}base_url: (?!__[A-Z0-9_]+__$)(\S+)$/m), expect: (r) => r.platform.cms_auth_relay,
-    retired: RETIREMENTS.cmsAuthRelayStep4 },
+    retired: RETIREMENTS.cmsHandKeptStep18 },
 
   { id: 'config.title', source: 'content', path: 'textbook.config.json', design: 'textbook.config.json:2',
-    extract: jsonKey('title'), expect: (r, b) => b.title },
+    extract: jsonKey('title'), expect: (r, b) => b.title,
+    retired: RETIREMENTS.configTitleStep18 },
   { id: 'config.maintainer', source: 'content', path: 'textbook.config.json', design: 'textbook.config.json:3',
-    extract: jsonKey('maintainer'), expect: (r, b) => b.maintainer.name },
+    extract: jsonKey('maintainer'), expect: (r, b) => b.maintainer.name,
+    retired: RETIREMENTS.configMaintainerStep18 },
   { id: 'config.site-url', source: 'content', path: 'textbook.config.json', design: 'textbook.config.json:4',
-    extract: jsonKey('site_url'), expect: (r, b) => origin(b) },
+    extract: jsonKey('site_url'), expect: (r, b) => origin(b),
+    retired: RETIREMENTS.configSiteUrlStep18 },
   { id: 'config.licence', source: 'content', path: 'textbook.config.json', design: 'textbook.config.json:5',
-    extract: jsonKey('licence'), expect: (r, b) => b.licence },
+    extract: jsonKey('licence'), expect: (r, b) => b.licence,
+    retired: RETIREMENTS.configLicenceStep18 },
   { id: 'config.plausible-public-url', source: 'content', path: 'textbook.config.json', design: 'textbook.config.json:6',
     extract: jsonKey('plausible_public_url'), expect: (r) => `https://plausible.io/${r.platform.analytics.plausible?.site}`,
     retired: RETIREMENTS.dashboardStep3b },
@@ -474,9 +506,10 @@ export const checks = [
     extract: (text) => ({ value: text.split('\n')[0].trim(), line: 1 }),
     expect: (r, b) => LICENCE_HEADINGS[b.licence] ?? `(no heading known for ${b.licence}; add it to LICENCE_HEADINGS)` },
 
-  { id: 'landing.title', source: 'content', path: 'index.md', design: 'index.md:1 (rendered from templates/)',
+  { id: 'landing.title', source: 'content', path: 'index.md', design: 'index.md:1 (the author\'s since §8 step 18)',
     extract: once(/^# (.+)$/m), expect: (r, b) => b.title },
-  { id: 'landing.summary', source: 'content', path: 'templates/index.md', design: 'templates/index.md:3',
+  // templates/index.md until §8 step 18; index.md itself since, which already had the line.
+  { id: 'landing.summary', source: 'content', path: 'index.md', design: 'index.md:3',
     extract: once(/^Welcome\. This is (.+?) — /m), expect: (r, b) => lcfirst(b.summary).replace(/\.$/, '') },
 
   { id: 'docs.cms-allowed-domains', source: 'content', path: 'OAUTH-SETUP.md', design: 'OAUTH-SETUP.md:107 (stands in for the Worker variable, which no repo holds)',

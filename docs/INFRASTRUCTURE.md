@@ -158,22 +158,26 @@ fresh machine needs both aliases in `~/.ssh/config` before any push works.
 `authoring-assistant`, `textbook-template` and `textbook-portal` are cloned over
 HTTPS and authenticate through `gh`.
 
-### Branch protection (verified)
+### Branch protection (verified 27 Sep 2026)
+
+The platform's rule, decided 27 Sep 2026: **a pull request and green checks, no
+review, administrators included.** A review is added when a second maintainer exists
+(the registry's README, "Who approves changes").
 
 | Repo | `main` |
 |---|---|
 | `textbook` | Pull request required, **0 approvals**, admins not enforced. A direct admin push succeeds and is logged as a bypass |
-| `textbook-registry` | **Not protected.** See the warning below |
+| `textbook-registry` | Pull request required, 0 approvals, checks `registry` and `github-facts`, admins included (since 27 Sep 2026) |
+| `quartz-book` | Pull request required, 0 approvals, check `build`, admins included (since 24 Sep 2026) |
+| `quartz-edition-extras` | Pull request required, 0 approvals, check `ci`, admins included (since 27 Sep 2026; `ci` arrives with extras #8) |
+| `textbook-portal` | Pull request required, 0 approvals, check `test`, admins included (since 27 Sep 2026; `test` arrives with portal #3. `deployed.yml`'s `portal` job runs only after a push, so it can't be required) |
 | every other platform repo | Not protected |
 
-> **The registry's review gate isn't switched on.** `.github/CODEOWNERS` names
-> the platform owner, and `README.md` says every change needs an approving
-> review that administrators can't bypass. That is true only once branch
-> protection is enabled, and today it isn't. Right now anyone with write access
-> can push `registry.json` straight to `main`, and `deploy.yml` then ships it to
-> the function. The design treats registry review as one of the two gates on
-> credentials (`DESIGN.md` §4e). Enable protection. Before you do, decide how a
-> sole owner gets approval (README, "Who approves changes").
+> **The registry's review gate is checks, not people.** `.github/CODEOWNERS` names
+> the platform owner, but no review is required, so a change with green checks
+> merges on its author's say-so. That is the decision above, not an oversight.
+> The design treats registry review as one of the two gates on credentials
+> (`DESIGN.md` §4e); with one platform owner it is one gate either way.
 
 ---
 
@@ -615,9 +619,9 @@ handover.
 
 | Service | For | Held today | The book's own doc |
 |---|---|---|---|
-| Obsidian Publish site `1443b409…` | book one's reading site | **confirm** | `textbook/docs/what-this-book-runs-on.md` |
-| Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | a person | `textbook/docs/annotation-restore.md` |
-| `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook/docs/the-browser-editor.md` |
+| Obsidian Publish site `1443b409…` | book one's rollback until §8 step 20 | **confirm** | `textbook/README.md`, *This book* |
+| Hypothes.is account `AlecGordon` + `HYPOTHESIS_API_TOKEN` (repo secret on `textbook`) | book one's weekly backup and dashboard | a person | `textbook-template/docs/annotation-restore.md` |
+| `textbook-admin` Pages project | book one's CMS host | `brandonproject2026` | `textbook-template/docs/the-browser-editor.md` |
 
 Book one's Plausible site is no longer the book's. Since §8 step 17a it is the
 platform's one site, `confused4now.org` (renamed from
@@ -701,7 +705,7 @@ deployed service. `textbook-template` and `code_repo` deploy nothing.
 Tracked here so nobody rediscovers them the hard way. See
 [DOCS-AUDIT.md](DOCS-AUDIT.md) for the full list, with reasons.
 
-- `textbook-registry` `main` isn't branch-protected (§1).
+- `textbook-registry` `main` is protected, but no review is required until a second maintainer exists (§1).
 - `ALLOWED_DOMAINS` isn't generated or checked (§3).
 - DNS isn't generated or checked (§5).
 - `BOT_TOKEN` was revoked on 17 Sep and is unset in Vercel, but its code path is
