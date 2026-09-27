@@ -132,10 +132,15 @@ relevant doc as it is today, not as it ought to be.
    is two edits in two repos. The template has already moved to slug-only.
 9. **The vault's scripts fail a retired book with no way forward.** They don't
    mention `TEXTBOOK_REGISTRY` (§7b gap 2).
-10. **Unrecorded ownership:** Vercel, Plausible, Obsidian Publish (book one's
-    `paid_by`), Apple Developer, the registrar for `confused4now.org`, the second
-    Cloudflare account, the *Textbook CMS* OAuth App's account, the App's `.pem`,
-    and the private `code_repo`.
+10. **Ownership confirmed 27 Sep 2026; transfer still to arrange.** The platform owner,
+    Alec (`textbookproject2026-alt` / `brandonproject2026`), confirmed that they own
+    every *confirm at handover* account: Vercel, Plausible, Apple Developer, the
+    registrar for `confused4now.org`, the second Cloudflare account, the *Textbook CMS*
+    OAuth App, the App's `.pem` backups, the private `code_repo`, `aldogobot`, and
+    Hypothes.is (`AlecGordon`). **Transfer to the client is to be arranged at
+    handover.** Two owners aren't covered by that confirmation and are still *confirm at
+    handover*: Obsidian Publish (book one's rollback until §8 step 20) and the
+    *Textbook sign-in* OAuth App (INFRASTRUCTURE §2f).
 11. **The suggest-edit rate limit is per IP and shared by every book.** Testing
     one book spends another book's readers' budget on the same IP.
 12. **Open decisions that documentation mustn't pre-empt:** 3.3 (the CMS "Ready"
@@ -174,8 +179,9 @@ relevant doc as it is today, not as it ought to be.
     both variables are set, an approved request produces a book whose author can't
     follow the emailed instructions. The app's Word import to `drafts` still needs a
     local vault ("Download a copy" first).
-16. **Fix made 27 Sep 2026 (book-requests #7); live once the two Apps exist and
-    `PLATFORM_TOKEN` is revoked.** The deciding fact: the platform account is a
+16. **Fix merged 27 Sep 2026 (book-requests #7). The Apps' settings are in, and
+    `PLATFORM_TOKEN` and `APP_INSTALLATION_ID` are deleted, but the sandbox proof
+    (issue #1) hasn't run yet** (INFRASTRUCTURE §1, `book-requests`). The deciding fact: the platform account is a
     **user**, so no App can create a repo there or add one to an installation. Both
     are done by hand at approval. A platform App with no Administration handles the
     registry and the builder. A books App holds only book repos (a real book's only

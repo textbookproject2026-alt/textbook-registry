@@ -1518,6 +1518,13 @@ the later steps keep their numbers.
 > 1 drift, 34 retired, 6 n/a, 0 failed. The link check is clean apart from one error
 > that `main` already has: `community/dashboard.md` links the Plausible site by its name
 > before the 17a rename, and the weekly dashboard run regenerates it.
+>
+> **Merged 27 Sep 2026**, in order: quartz-book #17, textbook #52 (08:09 UTC, `59f68b1`),
+> registry #41 (09:50; parity green on `main`). **One link the proof missed:**
+> `community/contributors.md` still links `docs/for-trusted-contributors.md`, which #52
+> deleted, so book one's link check has a second 404. The page is generated:
+> `gen-contributors.mjs` links the guide only while the file exists, so the next
+> contributors run drops the link. No fix needed.
 
 **19. End of probation.**
 - **Repo:** `textbook-registry` (this document records the evidence).
@@ -1527,6 +1534,23 @@ the later steps keep their numbers.
   tested on the live hostname. Until then, don't upload to Publish.
 - **Proves it:** each condition cites a run, a commit or a URL.
 - **Must not break:** rollback stays available throughout.
+
+> **Evidence so far, 27 Sep 2026, 11:05 UTC.** Four weeks from the cutover (step 16,
+> 26 Sep 11:36 UTC) is **24 Oct 2026**, the earliest date step 19 can close. Book one is
+> on builder `803e96b`, book commit `27ea192`.
+>
+> | Condition (D10) | State | Evidence |
+> |---|---|---|
+> | A full cycle of the weekly jobs green | **Not yet.** The first Sunday on the step-14 callers is under way | Green so far: weekly snapshot (run 36307721801, 08:55, tag `snapshot-2026-09-27` → `59f68b1`) and backup annotations (run 36307993905, 09:00). Still to run: contributors (07:00 cron), derivatives (11:00) and dashboard (15:00). Book one's scheduled runs start about 5 h late. Monday 28 Sep's link check (06:00) closes the cycle |
+> | One real chapter from Word to readers | **Not yet** | No chapter reached `drafts` or `main` after 26 Sep, and no book has `chapter-sources.json`. It waits for a signed Authoring Assistant build with authoring-assistant #9: none exists (`build/` holds the 25 Sep app, and `authoring-assistant-releases` has no release) |
+> | Link check clean on the live site | **Not yet: 2 errors of 943** | lychee over the 18 pages in the live sitemap, 27 Sep 11:04. The two 404s are both on generated pages that today's runs regenerate: the dashboard's pre-17a Plausible link and the contributors page's `docs/for-trusted-contributors.md` (step 18). textbook #52's `lychee` last ran at 07:03 and is red for the same two |
+> | Every redirect tested on the live hostname | **Pass** | All 11 lines of the built `_redirects` (quartz-book `ci` artifact from `803e96b`) answer 301 with the right `Location` on `social-research-methods.confused4now.org`, and all 9 distinct targets answer 200 (27 Sep 11:04) |
+>
+> **Other proofs recorded the same day:**
+>
+> - Step 23's dry-run book passes (the dry-run `.well-known/textbook.json` is served).
+> - The CMS slug rule holds in the real editor: textbook #54, from Sveltia, added
+>   `chapters/chapter-99.md` to `drafts` and was closed unmerged, with its branch deleted.
 
 **20. Cancel Publish.**
 - **Repos:** Obsidian account (by hand), then `textbook`, then `textbook-registry`.
@@ -1649,6 +1673,18 @@ the later steps keep their numbers.
 >   *Contents* and *Pull requests* write on every book repo, not just *Issues*
 >   (INFRASTRUCTURE §2c). Its proposals go to `drafts`, and a ruleset makes sure nothing
 >   else can.
+>
+> **Proved 27 Sep 2026 (textbook-template #7, #8).**
+>
+> - The thin callers went in with #7.
+> - `dry-run.yml` (#8) builds a new book with `new-book.mjs` and the builder, deploys it to
+>   the spare Direct Upload project `dry-run-book-tpl`, and reads back its marker.
+> - The platform owner set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` on the
+>   template at 09:42 UTC. #8 then trims them, because both were pasted with a trailing
+>   newline.
+> - The run started by hand on `main`, run 36311574897, was green:
+>   `https://dry-run-book-tpl.pages.dev/.well-known/textbook.json` served the dry-run
+>   book. The run repeats on every push to `main`, and link check is green.
 
 **24. The platform's records.**
 - **Repo:** `textbook-registry`.
