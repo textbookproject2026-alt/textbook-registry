@@ -96,7 +96,9 @@ both should be deleted.
 These need a code, configuration or ownership change. Each is written into the
 relevant doc as it is today, not as it ought to be.
 
-1. **`textbook-registry` `main` has no branch protection.** CODEOWNERS and the
+1. **Fixed 27 Sep 2026, as decided: a PR and green checks, no review.** A review is
+   added when a second maintainer exists (README, "Who approves changes").
+   **`textbook-registry` `main` has no branch protection.** CODEOWNERS and the
    README's review rule aren't enforced. Anyone with write access can push
    `registry.json` to `main`, and `deploy.yml` ships it to the function. The
    design counts registry review as one of the two credential gates.

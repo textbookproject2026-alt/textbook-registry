@@ -47,7 +47,7 @@ The maintainer does template steps 0–3 and sends you `registry-entry.json` and
 | 3 | Decide the hostname. The default is `<slug>.confused4now.org`. An own domain is an exception you agree to in this PR, and the maintainer must understand that an own-domain book can only ever be de-listed (§7d). `*.pages.dev` is allowed only while the book is `preview` | CI enforces the depth rule and the shared-suffix rule |
 | 4 | Record `paid_by` truthfully, or leave it absent. `maintainer` requires `maintainer.github` | CI |
 | 5 | Tell the maintainer the onboarding terms (below) and get their agreement in the PR thread | nobody. This is the gap |
-| 6 | Open the PR with `status: preview`, get it reviewed, merge | CODEOWNERS, once branch protection is on (INFRASTRUCTURE.md §1) |
+| 6 | Open the PR with `status: preview`, merge once `registry` and `github-facts` are green | branch protection (INFRASTRUCTURE.md §1). No review until a second maintainer exists |
 | 7 | Watch `deploy` and `portal` go green on the merge commit | SCHEDULED-JOBS.md |
 | 8 | **Portal subdomain only:** create the DNS record, and **do it just before the maintainer binds it**. A CNAME waiting unbound is the takeover window (§2e). Publish: `CNAME <slug> → publish-main.obsidian.md`, proxied. Pages: `CNAME <slug> → <project>.pages.dev`, proxied, plus the custom domain on the Pages project | nobody. DNS isn't generated |
 | 9 | **Publish only:** once the site answers, check `window.siteInfo`: `uid` = `site_id`, `status` = `active`, `customurl` = the hostname. Fill in `site_id` with a follow-up PR if it went in as a placeholder | you, by `curl` (template SETUP A6.3) |
