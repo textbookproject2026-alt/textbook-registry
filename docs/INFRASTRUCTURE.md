@@ -193,6 +193,26 @@ review, administrators included.** A review is added when a second maintainer ex
 > The design treats registry review as one of the two gates on credentials
 > (`DESIGN.md` §4e); with one platform owner it is one gate either way.
 
+### Who merges (since 27 Sep 2026)
+
+The platform owner's standing rule: **the assistant (Claude) merges its own pull
+requests**, on every platform repo, as follows.
+
+- `gh pr merge --merge`. Never squash, never `--admin`.
+- In dependency order, and only once the required checks are green. A branch that
+  is behind `main` is brought up to date first, and its checks re-run.
+- After each merge, the post-merge runs (§10a) are watched to green before the next
+  merge: `validate`, `parity`, `deploy` and `portal` for the registry; `ci` →
+  `stable` → `reconcile: stable` for quartz-book; `deployed` for the portal and the
+  function; `nudge` and the new marker for a content repo.
+
+It stops and asks the platform owner first for:
+
+1. a change readers see, with its preview URL;
+2. anything that deletes a repo, a branch with unmerged work, or data;
+3. creating, rotating or deleting a secret or token;
+4. a step that needs the platform owner by hand.
+
 ---
 
 ## 2. S2 — the suggest-edit function (Vercel)
