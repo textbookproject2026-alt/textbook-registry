@@ -22,7 +22,7 @@ start tens of minutes late under load.
 
 | When (UTC) | Repo | Workflow | Writes |
 |---|---|---|---|
-| every 15 min | Cloudflare Worker `build-nudge` (a Cron Trigger) | dispatches `reconcile` in `quartz-book`, named `cron` | each builder book's Pages deployments, when a book or branch is behind. When `quartz-edition-extras`' `main` is ahead of the pin, it also starts `bump-extras`, which opens a pull request (once per extras commit) |
+| every 15 min | Cloudflare Worker `build-nudge` (a Cron Trigger) | dispatches `reconcile` in `quartz-book`, named `cron` | each builder book's Pages deployments, when a book or branch is behind. **This tick is how a registry change reaches the books**: a registry merge starts no build of its own, so books change at the next `*/15` tick, not at the merge. When `quartz-edition-extras`' `main` is ahead of the pin, it also starts `bump-extras`, which opens a pull request (once per extras commit) |
 | on every push to a branch | `textbook` | `nudge` | nothing. It asks `build-nudge` to dispatch `reconcile` for the book, named `nudge` |
 | every 6 h at :17 | `textbook-registry` | `portal` | nothing. It polls the portal and redeploys if it's behind |
 | every 6 h at :41 | `textbook-registry` | `deploy` | nothing. It polls the function and redeploys if it's behind |
@@ -54,6 +54,13 @@ new book made from `textbook-template` starts with that template's four.
   count.
 - **`deploy`/`portal` saying "Already current; nothing to deploy."** That is the
   normal result of every scheduled run.
+- **A registry merge, then up to 15 minutes with no book rebuilt.** The registry
+  reaches the books only through `reconcile`, and the next `*/15` tick is the one
+  that finds the new digest. On 26 Sep, #38 merged at 12:32 and the 12:45 tick
+  rebuilt every book. Start `reconcile` by hand only if it is urgent.
+- **`/version.txt` unchanged after a `textbook-portal` merge.** It is the
+  *registry's* commit, not the portal's. The portal's own commit is the page's
+  `<meta name="portal-version">`, checked by `textbook-portal`'s `deployed`.
 - **A `reconcile` run every 15 minutes that builds nothing.** Only its `plan` job
   runs, for a few seconds. That is the tick finding every book current.
 - **After a merge in `quartz-book`, a `stable` run, then `reconcile: stable, every
@@ -131,9 +138,30 @@ The same shape, for the portal: it POSTs the Pages hook and polls
 | red, still behind after 10 minutes | the portal build refused the registry (an unknown `schema_version`, or no book it could list). The previous page is still up. Read the Pages build log |
 | `/version.txt` returns HTML | the apex redirect rule is catching it, and needs an exemption for `/version.txt` |
 
+`/version.txt` is the **registry** commit the portal was built from, so this job
+proves only that a registry change is served. A merge to `textbook-portal` itself
+leaves `/version.txt` unchanged. Running this job then prints "Already current;
+nothing to deploy." and fires nothing, whether or not the portal change is live.
+That change is checked in the portal's own repo (below).
+
 `PORTAL_VERSION_URL` (a repo variable) redirects the poll during setup. It is
 unset now and should stay that way: polling the apex is what proves readers see
 the change.
+
+### Deploy checks in the service repos (every merge to their `main`)
+
+Not scheduled, but they belong beside `deploy` and `portal`: each proves a merge to a
+service's own repo is served, and is red on the merge commit if it isn't
+(INFRASTRUCTURE §10a).
+
+| Repo | Workflow | Polls | Red means |
+|---|---|---|---|
+| `textbook-portal` | `deployed` | the apex's `<meta name="portal-version">` | the Pages build failed (previous page still live), or the apex redirect rule is catching `/` |
+| `suggest-edit-function` | `deployed` | `X-Function-Version` | the Vercel build or its tests failed (previous deployment still live) |
+| `build-nudge` | `deploy` | `GET /` → `commit`, `token` | a secret is missing (it names it), the deploy failed, or the new version's token doesn't work |
+
+A "fired the deploy hook once" warning in `deployed` means the push didn't start a
+build by itself. Find out why in the Pages or Vercel project's Git settings.
 
 ### `parity` (push, PR, daily 06:17, and on `repository_dispatch: parity`)
 
