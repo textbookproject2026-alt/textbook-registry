@@ -1598,7 +1598,7 @@ the later steps keep their numbers.
 - **Must not break:** the design history: dated notes, not rewrites. The removal automation in
   §7g (i) is built once D15 is settled, and **before** a second maintainer-owned book joins.
 
-> **Made 27 Sep 2026, not yet merged: this registry PR (`docs/step-24-records`).**
+> **Made 27 Sep 2026, not yet merged: textbook-registry #45.**
 > `MULTI-BOOK-HOSTING.md` gets §7's amendments as dated notes: the header (the model is
 > superseded), Summary 2, 5 and 7, §2a (legacy), §2b (the procedure), §2e (never delete a
 > Pages project a record points at), §5a, §5b (the marker's states), §5d, §5e (D16), the
