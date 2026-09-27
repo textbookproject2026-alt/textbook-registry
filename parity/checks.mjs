@@ -205,6 +205,13 @@ export const graphBlock = (text) => {
 
 const onPublish = (r, b) => (b.site.host.kind === 'obsidian-publish' ? null
   : `host is ${b.site.host.kind}, not obsidian-publish; Publish's files are kept only for rollback until §8 step 20`);
+// Book one was retired on 27 Sep 2026 (registry #54). Since edition-template #12 the
+// template and the extras README name the first live request-made book as the
+// canonical textbook. The registry records no link from that book to the template,
+// so there is no registry value left for these two constants to agree with.
+const whileCanonical = (r, b) => (b.status === 'retired'
+  ? `${b.slug} is retired; the edition template names another canonical textbook (edition-template #12), which the registry doesn't record`
+  : null);
 const onBuilder = (r, b) => (b.site.host.builder === 'quartz-book' ? null
   : 'the builder does not build this book (no site.host.builder "quartz-book")');
 const withCms = (r, b) => (b.cms?.enabled ? null : 'cms.enabled is false');
@@ -559,7 +566,7 @@ export const checks = [
 
   // ---- textbook-edition-template ------------------------------------------------
   { id: 'edition.canonical-link', source: 'edition-template', path: 'quartz.config.yaml', design: 'quartz.config.yaml:229',
-    extract: once(/^\s+Canonical textbook: (\S+)$/m), expect: (r, b) => origin(b) },
+    when: whileCanonical, extract: once(/^\s+Canonical textbook: (\S+)$/m), expect: (r, b) => origin(b) },
   { id: 'edition.licence', source: 'edition-template', path: 'quartz.config.yaml', design: 'quartz.config.yaml:230',
     extract: once(/^\s+Licence \(([^)]+)\): /m), expect: (r, b) => b.licence },
   { id: 'edition.extras-repo', source: 'edition-template', path: 'quartz.config.yaml', design: 'quartz.config.yaml:293,315',
@@ -570,7 +577,7 @@ export const checks = [
 
   // ---- quartz-edition-extras (docs only; its plugins take these as options) ----
   { id: 'extras.readme.canonical-repo', source: 'edition-extras', path: 'README.md', design: 'README.md:12 (not in §0a)',
-    extract: once(/^- \*\*Canonical textbook:\*\* `([^`]+)`$/m), expect: (r, b) => b.content.repo },
+    when: whileCanonical, extract: once(/^- \*\*Canonical textbook:\*\* `([^`]+)`$/m), expect: (r, b) => b.content.repo },
   { id: 'extras.readme.template-repo', source: 'edition-extras', path: 'README.md', design: 'README.md:13 (not in §0a)',
     extract: once(/^- \*\*Edition template \(consumer of this repo\):\*\* `([^`]+)`$/m), expect: (r, b) => b.editions.template_repo },
 
