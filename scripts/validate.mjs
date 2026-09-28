@@ -231,6 +231,48 @@ export function validate(text, { baseText } = {}) {
     }
   }
 
+  // Authors are matched to a signed-in GitHub login, which GitHub treats case-insensitively,
+  // so two spellings of one login are one author listed twice. An automation account is
+  // never a person who signs in.
+  const bots = new Set(platform.automation_logins.map(lc));
+  for (const [n, b] of books.entries()) {
+    const at = `books[${n}] (${b.slug})`;
+    for (const a of duplicates((b.authors ?? []).map(lc))) errors.push(`${at}: authors lists ${a} twice (logins are case-insensitive)`);
+    for (const a of b.authors ?? [])
+      if (bots.has(lc(a))) errors.push(`${at}: authors lists ${a}, which is in platform.automation_logins; an author is a person who signs in`);
+  }
+
+  // Platform pages (the portal, the author site): each is one site on one project, and
+  // its hostname belongs to nothing else, since the services accept it by origin.
+  const pages = platform.pages ?? [];
+  for (const d of duplicates(pages.map((p) => p.name))) errors.push(`platform.pages: name ${d} listed twice`);
+  for (const d of duplicates(pages.map((p) => p.domain))) errors.push(`platform.pages: domain ${d} listed twice`);
+  for (const d of duplicates(pages.map((p) => `${p.host.project} on ${p.host.provider}`))) errors.push(`platform.pages: project ${d} listed twice`);
+  for (const p of pages) {
+    const at = `platform.pages (${p.name})`;
+    if (sharedSuffixOf(p.domain)) errors.push(`${at}: domain ${p.domain} is on a shared platform suffix; a platform page is accepted by origin, so it must be a hostname the platform holds`);
+    for (const n of named)
+      if (n.host === p.domain) errors.push(`${at}: domain ${p.domain} is also ${n.role} of ${n.slug}; a hostname belongs to one site`);
+    for (const b of books)
+      if (projectOf(b.site.host)?.provider === p.host.provider && b.site.host.project === p.host.project)
+        errors.push(`${at}: host.project ${p.host.project} on ${p.host.provider} is also ${b.slug}'s site.host.project; one project serves one site`);
+    if (portal?.cms_host === p.domain) errors.push(`${at}: domain ${p.domain} is also platform.portal.cms_host`);
+    if (p.name === 'portal') {
+      if (!portal) errors.push(`${at}: there is no platform.portal block for this entry to describe`);
+      else if (p.domain !== portal.domain || p.host.provider !== portal.host.provider || p.host.project !== portal.host.project)
+        errors.push(`${at}: must match platform.portal (domain ${portal.domain}, ${portal.host.project} on ${portal.host.provider})`);
+    } else if (portal) {
+      if (p.domain === portal.domain) errors.push(`${at}: domain ${p.domain} is the portal's; only the entry named portal may use it`);
+      if (p.host.provider === portal.host.provider && p.host.project === portal.host.project)
+        errors.push(`${at}: host.project ${p.host.project} is the portal's; only the entry named portal may use it`);
+    }
+    if (portal?.book_parent) {
+      const under = `.${portal.book_parent}`;
+      if (p.domain.endsWith(under) && p.domain.slice(0, -under.length).includes('.'))
+        errors.push(`${at}: domain ${p.domain} is more than one label under platform.portal.book_parent ${portal.book_parent}; certificates cover only <label>.${portal.book_parent}`);
+    }
+  }
+
   if (baseText !== undefined) {
     let base;
     try { base = JSON.parse(baseText); } catch { base = null; }

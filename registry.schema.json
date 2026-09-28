@@ -43,6 +43,12 @@
           "items": { "$ref": "#/$defs/github_login" },
           "uniqueItems": true
         },
+        "pages": {
+          "type": "array",
+          "uniqueItems": true,
+          "description": "The platform's own web pages that call the shared services with a signed-in or anonymous visitor: the portal and the author site. Each lists the services it may call, and the services accept its origin (https://<domain>, and https://<project>.pages.dev plus one-label previews of it on Cloudflare Pages) for those services only. A new platform page is a registry change, not a code change. Absent means none. validate.mjs ties the entry named portal to platform.portal.",
+          "items": { "$ref": "#/$defs/platform_page" }
+        },
         "portal": {
           "type": "object",
           "additionalProperties": false,
@@ -172,6 +178,35 @@
       "pattern": "^(?!-)(?!.*\\.\\.)(?!.*//)(?!.*\\.lock$)[A-Za-z0-9._/-]+(?<![./])$"
     },
 
+    "platform_page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "domain", "host", "services"],
+      "properties": {
+        "name": { "$ref": "#/$defs/slug" },
+        "domain": { "$ref": "#/$defs/hostname" },
+        "host": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "provider", "project"],
+          "properties": {
+            "kind": { "const": "static" },
+            "provider": { "$ref": "#/$defs/static_provider" },
+            "project": { "$ref": "#/$defs/project_name" }
+          }
+        },
+        "services": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["github-auth", "author-api", "request-book"],
+            "description": "github-auth: may open the Sign in with GitHub popup and receive an identity token bound to its origin. author-api: may call the api/author-* endpoints. request-book: may call api/request-book."
+          }
+        }
+      }
+    },
+
     "book": {
       "type": "object",
       "additionalProperties": false,
@@ -202,6 +237,13 @@
             "name": { "type": "string", "minLength": 1 },
             "github": { "oneOf": [{ "$ref": "#/$defs/github_login" }, { "type": "null" }] }
           }
+        },
+
+        "authors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/github_login" },
+          "description": "GitHub logins that may work on this book on the author site: read its drafts, send chapters and imports there, answer reader suggestions, accept or decline draft changes, and publish drafts to the live book. The author endpoints check the signed-in login against this list, case-insensitively, on every request; repository collaborator status plays no part. Absent means nobody."
         },
 
         "content": {
