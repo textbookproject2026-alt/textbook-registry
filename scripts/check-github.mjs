@@ -13,9 +13,12 @@
 //         a builder book (site.host.builder) whose two branches can't be read
 //         with no credentials at all, which is how quartz-book reads them
 //         (BOOK-ONE-TO-QUARTZ §0a). A token that can see the repo proves nothing
-//         about that, so this one check runs git ls-remote anonymously.
-// Warns:  a domain, CMS host or preview URL that doesn't answer right now. A new
-//         domain may not be live yet, so this is never a failure.
+//         about that, so this one check runs git ls-remote anonymously; a book's
+//         `authors` login with no personal account behind it, or recorded in a
+//         different case from the account's own (the author endpoints compare
+//         case-insensitively, but the registry should say who it means).
+// Warns:  a domain, CMS host, preview URL or platform page that doesn't answer
+//         right now. A new domain may not be live yet, so this is never a failure.
 //
 // Run with a registry that has already passed validate.mjs.
 
@@ -86,7 +89,28 @@ for (const login of reg.platform.automation_logins) {
   else ok(`platform.automation_logins: ${login} exists (${user.type})`);
 }
 
+for (const p of reg.platform.pages ?? []) {
+  const url = `https://${p.domain}/`;
+  const problem = await answers(url);
+  if (problem) warn(`platform.pages (${p.name}): ${url} does not answer (${problem}). Not a failure; a new page may not be live yet.`);
+  else ok(`platform.pages (${p.name}): ${url} answers`);
+}
+
 for (const b of reg.books) {
+  for (const login of b.authors ?? []) {
+    let user;
+    try {
+      user = await getUser(login);
+    } catch (e) {
+      fail(`${b.slug} authors: ${login} can't be looked up (${e.status ?? e.message})`);
+      continue;
+    }
+    if (!user) fail(`${b.slug} authors: there is no GitHub account called ${login}`);
+    else if (user.login !== login) fail(`${b.slug} authors: ${login} is ${user.login} on GitHub; record the account's own login`);
+    else if (user.type !== 'User') fail(`${b.slug} authors: ${login} is a GitHub ${user.type}, and only a person can sign in`);
+    else ok(`${b.slug} authors: ${login} exists`);
+  }
+
   if (b.status === 'retired') { ok(`${b.slug}: retired, skipped`); continue; }
 
   const repo = await repoAt(b.content.repo, `${b.slug} content.repo`);

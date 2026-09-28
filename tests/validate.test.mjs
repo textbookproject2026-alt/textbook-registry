@@ -74,6 +74,14 @@ const PORTAL = {
   book_parent: 'portal.example',
 };
 
+// Swap in a fixture portal, keeping platform.pages' portal entry in step with it (the
+// validator requires the two to match; the tests here are about the portal block).
+const usePortal = (r, portal) => {
+  r.platform.portal = portal;
+  const entry = r.platform.pages?.find((p) => p.name === 'portal');
+  if (entry) Object.assign(entry, { domain: portal.domain, host: { ...portal.host } });
+};
+
 // Where staticBook() lands. Derived, so adding a book to registry.json doesn't renumber
 // the schema paths asserted below.
 const STATIC_AT = real().books.length;
@@ -247,7 +255,7 @@ test('the committed portal block records the live portal, and book one sits unde
 
 test('book one with every new optional field filled in is valid', () => {
   const r = real();
-  r.platform.portal = { ...PORTAL };
+  usePortal(r, { ...PORTAL });
   Object.assign(book(r).site, { aliases: ['social-research-methods.portal.example'], dark: null });
   book(r).site.host.paid_by = 'maintainer';
   assert.deepEqual(validate(JSON.stringify(r)), []);
@@ -261,7 +269,7 @@ test('a §6c-shaped static book is accepted alongside book one', () => {
 
 test('platform.portal with null cms_host and book_parent is accepted', () => {
   const r = real();
-  r.platform.portal = { ...PORTAL, cms_host: null, book_parent: null };
+  usePortal(r, { ...PORTAL, cms_host: null, book_parent: null });
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
 
@@ -407,48 +415,118 @@ test('alias that is a legacy origin', () =>
 test('alias shared by two books', () =>
   expectFail((r) => { book(r).site.aliases = ['a.example']; secondBook(r).site.aliases = ['a.example']; }, 'alias a.example of second-book is also an alias of social-research-methods'));
 
-test('portal: unknown key', () => expectFail((r) => { r.platform.portal = { ...PORTAL, zone: 'x' }; }, '(zone)'));
+test('portal: unknown key', () => expectFail((r) => { usePortal(r, { ...PORTAL, zone: 'x' }); }, '(zone)'));
 test('portal: missing domain', () => expectFail((r) => { const { domain, ...rest } = PORTAL; r.platform.portal = rest; }, "must have required property 'domain'"));
 test('portal: missing host', () => expectFail((r) => { const { host, ...rest } = PORTAL; r.platform.portal = rest; }, "must have required property 'host'"));
 test('portal domain that is a book\'s domain', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL, domain: DOMAIN, book_parent: null }; }, `platform.portal.domain ${DOMAIN} is also site.domain`));
+  expectFail((r) => { usePortal(r, { ...PORTAL, domain: DOMAIN, book_parent: null }); }, `platform.portal.domain ${DOMAIN} is also site.domain`));
 test('portal domain that is a book\'s alias', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL }; book(r).site.aliases = ['portal.example']; }, 'is also an alias of social-research-methods'));
+  expectFail((r) => { usePortal(r, { ...PORTAL }); book(r).site.aliases = ['portal.example']; }, 'is also an alias of social-research-methods'));
 test('portal domain that is a legacy origin', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL, domain: 'bptext2026.xyz', book_parent: null }; }, 'is also a legacy origin'));
+  expectFail((r) => { usePortal(r, { ...PORTAL, domain: 'bptext2026.xyz', book_parent: null }); }, 'is also a legacy origin'));
 test('portal cms host that is a bare platform suffix', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL, cms_host: 'pages.dev' }; }, 'platform.portal.cms_host pages.dev is a shared platform suffix'));
+  expectFail((r) => { usePortal(r, { ...PORTAL, cms_host: 'pages.dev' }); }, 'platform.portal.cms_host pages.dev is a shared platform suffix'));
 test('book hostname two labels under book_parent', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL }; book(r).site.aliases = ['a.b.portal.example']; }, 'more than one label under platform.portal.book_parent'));
+  expectFail((r) => { usePortal(r, { ...PORTAL }); book(r).site.aliases = ['a.b.portal.example']; }, 'more than one label under platform.portal.book_parent'));
 test('book domain two labels under book_parent', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL }; secondBook(r).site.domain = 'www.second.portal.example'; }, 'more than one label under platform.portal.book_parent'));
+  expectFail((r) => { usePortal(r, { ...PORTAL }); secondBook(r).site.domain = 'www.second.portal.example'; }, 'more than one label under platform.portal.book_parent'));
 test('cms host two labels under book_parent', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL, cms_host: 'a.edit.portal.example' }; }, 'platform.portal.cms_host a.edit.portal.example is more than one label under'));
+  expectFail((r) => { usePortal(r, { ...PORTAL, cms_host: 'a.edit.portal.example' }); }, 'platform.portal.cms_host a.edit.portal.example is more than one label under'));
 test('a legacy origin under book_parent is exempt from the depth rule', () => {
   const r = real();
-  r.platform.portal = { ...PORTAL };
+  usePortal(r, { ...PORTAL });
   book(r).site.legacy_origins = ['https://old.book.portal.example'];
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
 
 test('portal host: unknown provider', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, provider: 'geocities' } }; }, '/platform/portal/host/provider'));
+  expectFail((r) => { usePortal(r, { ...PORTAL, host: { ...PORTAL.host, provider: 'geocities' } }); }, '/platform/portal/host/provider'));
 test('portal host: Publish kind is refused', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, kind: 'obsidian-publish' } }; }, '/platform/portal/host/kind'));
+  expectFail((r) => { usePortal(r, { ...PORTAL, host: { ...PORTAL.host, kind: 'obsidian-publish' } }); }, '/platform/portal/host/kind'));
 test('portal host: paid_by is not a key here', () =>
-  expectFail((r) => { r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, paid_by: 'platform' } }; }, '(paid_by)'));
+  expectFail((r) => { usePortal(r, { ...PORTAL, host: { ...PORTAL.host, paid_by: 'platform' } }); }, '(paid_by)'));
 test('portal project that is also a book\'s Pages project', () =>
   expectFail((r) => {
     const b = staticBook(r);
-    r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, project: b.site.host.project } };
+    usePortal(r, { ...PORTAL, host: { ...PORTAL.host, project: b.site.host.project } });
   }, 'one project serves one site'));
 test('portal project that is also a Publish book\'s preview project', () =>
   expectFail((r) => {
-    r.platform.portal = { ...PORTAL, host: { ...PORTAL.host, project: rolledBack(book(r)).site.host.project } };
+    usePortal(r, { ...PORTAL, host: { ...PORTAL.host, project: rolledBack(book(r)).site.host.project } });
   }, "is also social-research-methods's site.host.project"));
 test('the same project name on a different provider is fine', () => {
   const r = real();
   const b = staticBook(r);
-  r.platform.portal = { ...PORTAL, host: { kind: 'static', provider: 'netlify', project: b.site.host.project } };
+  usePortal(r, { ...PORTAL, host: { kind: 'static', provider: 'netlify', project: b.site.host.project } });
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
+
+// --- authors (author site, 28 Sep 2026) ---------------------------------------
+
+const bySlug = (r, slug) => r.books.find((b) => b.slug === slug);
+const ALEC = 'textbookproject2026-alt';
+
+test('authors: the committed backfill (requesting login from book-requests, plus the platform owner)', () => {
+  const r = real();
+  assert.deepEqual(bySlug(r, 'platform-test-book').authors, [ALEC]);
+  for (const slug of ['ontology-for-social-research-a-criti', 'from-ontology-to-method-an-ontologic'])
+    assert.deepEqual(bySlug(r, slug).authors, ['BrandonAndCaroline', ALEC], slug);
+  // A retired book has nobody to work on it.
+  assert.ok(!('authors' in bySlug(r, 'social-research-methods')));
+});
+test('authors: absent is fine (nobody)', () => {
+  const r = real();
+  for (const b of r.books) delete b.authors;
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('authors: not a login', () => expectFail((r) => { book(r).authors = ['-bad-']; }, '/books/0/authors/0'));
+test('authors: a wildcard is not a login', () => expectFail((r) => { book(r).authors = ['*']; }, '/books/0/authors/0'));
+test('authors: repeated exactly', () => expectFail((r) => { book(r).authors = ['someone', 'someone']; }, '/books/0/authors'));
+test('authors: repeated in another case', () => expectFail((r) => { book(r).authors = ['Someone', 'someone']; }, 'authors lists someone twice'));
+test('authors: an automation account', () => expectFail((r) => { book(r).authors = ['AldoGoBot']; }, 'which is in platform.automation_logins'));
+
+// --- platform.pages -------------------------------------------------------------
+
+const withPortal = (r) => {
+  r.platform.portal = { ...PORTAL };
+  r.platform.pages = [
+    { name: 'portal', domain: 'portal.example', host: { ...PORTAL.host }, services: ['request-book'] },
+    { name: 'author-site', domain: 'author.portal.example', host: { kind: 'static', provider: 'cloudflare-pages', project: 'author-fixture' }, services: ['github-auth', 'author-api'] },
+  ];
+  return r.platform.pages;
+};
+
+test('platform.pages: the committed list names the portal and the author site', () => {
+  const pages = real().platform.pages;
+  assert.deepEqual(pages.map((p) => p.name), ['portal', 'author-site']);
+  assert.equal(pages[1].domain, 'author.confused4now.org');
+  assert.deepEqual(pages[1].services, ['github-auth', 'author-api']);
+  assert.ok(!pages[0].services.includes('github-auth'), 'the portal does not sign anyone in');
+});
+test('platform.pages: absent is fine', () => {
+  const r = real();
+  delete r.platform.pages;
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('platform.pages: a fixture pair is valid', () => {
+  const r = real();
+  withPortal(r);
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('platform.pages: unknown service', () => expectFail((r) => { withPortal(r)[1].services = ['everything']; }, '/platform/pages/1/services/0'));
+test('platform.pages: no services', () => expectFail((r) => { withPortal(r)[1].services = []; }, '/platform/pages/1/services'));
+test('platform.pages: misspelt key', () => expectFail((r) => { withPortal(r)[1].origin = 'https://x.example'; }, '(origin)'));
+test('platform.pages: wildcard domain', () => expectFail((r) => { withPortal(r)[1].domain = '*.portal.example'; }, '/platform/pages/1/domain'));
+test('platform.pages: repeated name', () => expectFail((r) => { const p = withPortal(r); p.push({ ...p[1], domain: 'other.portal.example', host: { ...p[1].host, project: 'other' } }); }, 'name author-site listed twice'));
+test('platform.pages: repeated domain', () => expectFail((r) => { const p = withPortal(r); p.push({ ...p[1], name: 'other', host: { ...p[1].host, project: 'other' } }); }, 'domain author.portal.example listed twice'));
+test('platform.pages: repeated project', () => expectFail((r) => { const p = withPortal(r); p.push({ ...p[1], name: 'other', domain: 'other.portal.example' }); }, 'project author-fixture on cloudflare-pages listed twice'));
+test('platform.pages: on a shared suffix', () => expectFail((r) => { withPortal(r)[1].domain = 'author-fixture.pages.dev'; }, 'shared platform suffix'));
+test('platform.pages: a book\'s domain', () => expectFail((r) => { withPortal(r)[1].domain = DOMAIN; }, `is also site.domain of social-research-methods`));
+test('platform.pages: a book\'s alias', () => expectFail((r) => { withPortal(r); book(r).site.aliases = ['author.portal.example']; }, 'is also an alias of social-research-methods'));
+test('platform.pages: a book\'s project', () => expectFail((r) => { const b = staticBook(r); withPortal(r)[1].host.project = b.site.host.project; }, "is also static-fixture-book's site.host.project"));
+test('platform.pages: the CMS host', () => expectFail((r) => { withPortal(r)[1].domain = 'edit.portal.example'; }, 'is also platform.portal.cms_host'));
+test('platform.pages: the portal entry must match platform.portal', () => expectFail((r) => { withPortal(r)[0].host.project = 'elsewhere'; }, 'must match platform.portal'));
+test('platform.pages: a portal entry with no portal block', () => expectFail((r) => { withPortal(r); delete r.platform.portal; }, 'no platform.portal block'));
+test('platform.pages: another page on the portal\'s domain', () => expectFail((r) => { const p = withPortal(r); p.splice(0, 1); p[0].domain = 'portal.example'; }, "is the portal's"));
+test('platform.pages: another page on the portal\'s project', () => expectFail((r) => { const p = withPortal(r); p.splice(0, 1); p[0].host.project = 'portal-fixture'; }, "is the portal's"));
+test('platform.pages: two labels under book_parent', () => expectFail((r) => { withPortal(r)[1].domain = 'a.author.portal.example'; }, 'more than one label under platform.portal.book_parent'));
