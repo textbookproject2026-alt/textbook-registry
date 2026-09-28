@@ -42,7 +42,7 @@ These are the services every book uses. Each one bakes in or reads
 | S2 | **Suggest-edit function** | Vercel, project `suggest-edit-function` | bundled at build | Every book's *Suggest an edit* button fails, and the suggestion is lost |
 | S3 | **CMS auth relay** | Cloudflare Worker `sveltia-cms-auth` | no: `ALLOWED_DOMAINS` is set by hand | No contributor on any book can sign in to a browser editor |
 | S4 | **Portal** (`textbook-portal`) | Cloudflare Pages, project `textbook-portal`, on `confused4now.org` | generated at build | The front page is gone. Old book-one links keep redirecting, because the redirect rule is in the zone, not in Pages |
-| S5 | **Authoring Assistant** (author's console) | each author's Mac, a signed app | fetched at launch, cached copy as fallback | Authors can't work through their queues from the app. Books and sites are unaffected |
+| S5 | **The author site** (`author-site`) | Cloudflare Pages, project `author-site`, on `author.confused4now.org`; its back end is S2's `api/author-*` | none of its own: S2 reads `authors` and `platform.pages` (bundled); the page reads the public registry for links | Authors can't import, answer their queues or publish. Books, their sites and the in-site editor are unaffected |
 | S6 | **Edition extras** (`quartz-edition-extras`) | GitHub, installed by department-edition builds | named in `platform.edition_extras_repo` | Every department edition's next build fails |
 | S7 | **The builder** (`quartz-book`), **started by the `build-nudge` Worker** | GitHub Actions. Its `reconcile` workflow builds each book and uploads it to the book's Pages project in `brandonproject2026` (Direct Upload). The Cloudflare Worker `build-nudge` in the same account starts `reconcile`: on each book's pushes, and every 15 minutes | `quartz-book`: fetched from `main` at every build. `build-nudge`: fetched at most every 5 minutes, only to filter nudges | `quartz-book` gone: no book rebuilds, and each keeps serving its last deployment. `build-nudge` gone: nothing rebuilds **on its own**, but `reconcile` still runs by hand. Since the cutover (BOOK-ONE-TO-QUARTZ §8 step 16, 26 Sep 2026) it serves book one's readers (added 23 Sep 2026, §8 step 8; deploys from 24 Sep, step 9; the Worker from 24 Sep, step 10) |
 
@@ -87,7 +87,7 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | Plausible | Plausible | the platform's one site, `confused4now.org`, for the portal and every live book (`platform.analytics.plausible`, BOOK-ONE-TO-QUARTZ D19, §8 step 17a), plus any site an edition has of its own | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
 | `AlecGordon` | Hypothes.is | book one's API token. No groups are in use | a person's account, not the platform's: the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client (§9) |
 | Obsidian | Obsidian Publish | book one's Publish site | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
-| Apple Developer | Apple | the Developer ID that signs the Authoring Assistant | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
+| Apple Developer | Apple | the Developer ID that signed the Authoring Assistant (retired 28 Sep 2026; nothing needs it now) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
 | DNS registrar for `confused4now.org` | registrar | the portal domain and every `<slug>.confused4now.org` book | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client (§5) |
 
 ---
@@ -108,7 +108,9 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 | `sveltia-cms-auth` | public | the relay's source (S3). A copy of upstream `sveltia/sveltia-cms-auth` that hardcodes scope `repo,user` | platform |
 | `textbook-template` | public | the starting point for a new book (`SETUP.md`, `scripts/new-book.mjs`) | platform |
 | `book-requests` | **private** | the "Publish your textbook" requests: one issue per request, the uploaded manuscripts under `requests/`, and the `provision` and `remove` workflows. Private so that requesters' emails and unpublished manuscripts never reach a public repo. Added 24 Sep 2026 (see below) | platform |
-| `authoring-assistant-releases` | public | meant to host the Authoring Assistant's `.dmg` for authors, as a release asset named `Authoring-Assistant.dmg`. Created 24 Sep 2026, 19:10 UTC. **It had no releases on 25 Sep** (§6) | platform |
+| `authoring-assistant-releases` | public | meant to host the Authoring Assistant's `.dmg`. Never used; the app was retired on 28 Sep 2026 | platform |
+| `author-site` | public | the author site (S5, §6) | platform |
+| `authoring-assistant` | public | the converter library (`app/convert.py`, `contents.py`, `drafts.py`, the questions' modules) and its tests, pinned by book-requests' `CONVERTER_REF` and author-site's `converter.json`. Once the Mac app's source | platform |
 | `<slug>`, one per book made from a request | public | a request-made book's content repo, created by `provision` with `PLATFORM_TOKEN`. None exists on 25 Sep: the only one, the sandbox test, was removed (registry #27, #28) | the book (held by the platform, `paid_by: platform`) |
 | `textbook` | public | **book one's** content repo. Book one is retired (27 Sep 2026): its weekly workflows and `nudge` are disabled, `lint` stays. Kept, not deleted | book one |
 | `textbook-edition-template` | public | The department-edition template. It is still recorded as `editions.template_repo` on book one's tombstone, but since 27 Sep 2026 (edition-template #12) it names *Ontology for Social Research* (`ontology-for-social-research-a-criti`) as its canonical textbook. The preview only ever held a placeholder front page | platform |
@@ -412,8 +414,10 @@ Added 24 Sep 2026 for the in-site editor.
   is who the reader is. `/api/github-auth` swaps the code for a GitHub token, reads
   the login, and **revokes the GitHub token at once**. Its client ID and secret are
   in Vercel (§2b). It is owned by the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client.
-  It's separate from the *Textbook CMS* OAuth App (§3), the *Textbook Author
-  Console* OAuth App (§6) and the GitHub App (§2c).
+  It's separate from the *Textbook CMS* OAuth App (§3), the retired *Textbook
+  Author Console* OAuth App (§6) and the GitHub App (§2c). It also signs authors in
+  to the author site (§6): `github-auth` accepts the origins of platform pages that
+  list `github-auth` in `platform.pages`.
 - **`IDENTITY_SECRET`** signs the identity token the function gives back instead: it
   lasts 8 hours and is bound to the origin of the page that asked. A signed-in
   reader's commit is authored as `<id>+<login>@users.noreply.github.com`. An
@@ -545,46 +549,21 @@ book that wants the editor brings its own Pages project and asks for one
 
 ---
 
-## 6. S5 — the Authoring Assistant
+## 6. S5 — the author site
 
-- **What:** a macOS app, built from the private `authoring-assistant` repo and
-  sent to authors as a signed, notarised `.dmg`. There's no update mechanism.
-- **Multi-book since migration step 5.** The app fetches the registry at launch,
-  keeps the last good copy, and ships a bundled copy. It lists the books the
-  signed-in author can push to. The chosen book decides (a vault is optional,
-  and only ever the chosen book's copy), and the app refuses a vault whose slug
-  or `origin` remote doesn't match the registry.
-- **Sign-in:** OAuth device flow against the *Textbook Author Console* OAuth App.
-  Its client ID is public by design, and comes from
-  `platform.console_oauth_client_id` in the registry. A value pasted into
-  Settings overrides it. The scope is `public_repo`, which is why every content
-  repo must be public. **Widening to `public_repo repo:invite`** lets an author
-  accept an invitation to their book from inside the app, which is what
-  request-made books rely on. It is on `authoring-assistant` `main` (`c90f2ed`,
-  24 Sep 2026), and **needs a new signed, notarised build**, which isn't
-  recorded as made by 25 Sep. Authors on the old
-  scope are asked to sign in again.
-- **Distribution:** the `.dmg` is meant to go out as the release asset
-  `Authoring-Assistant.dmg` on the public `authoring-assistant-releases` (§1).
-  Request-made books' welcome email links to it through `book-requests`'
-  `APP_DOWNLOAD_URL`. On 25 Sep the repo has no releases and the variable isn't
-  set.
-- **Signing:** a Developer ID Application certificate on the build machine, and
-  a `notarytool` keychain profile read through `NOTARY_PROFILE`. The certificate is
-  *Developer ID Application: Alec Gordon (S8B4BPJWX4)*, in the platform owner's
-  keychain (checked 27 Sep 2026). The Apple Developer account is Alec's and stays with him.
-- **DeepSeek (optional):** if the author pastes their own key, the app sends a
-  chapter's text to `api.deepseek.com`, for glossary suggestions or for the AI
-  formatting check. That happens only with a key present and a tick box ticked.
-- **Formatting knowledge base:** `app/formatting_rules.md` in the app repo,
-  versioned, bundled into each build. The AI formatting check's prompt is built
-  from it ([AUTHORING-APP-OPERATIONS.md](AUTHORING-APP-OPERATIONS.md), *The
-  formatting knowledge base*). Nobody has recorded who approved book text leaving the
-  institution.
-- **If the app is gone:** authors lose the queue view and the publish button.
-  Nothing on the web changes. **If the Developer ID lapses,** existing installs
-  keep working, but no new build can ship.
-- **Guide:** [AUTHORING-APP-OPERATIONS.md](AUTHORING-APP-OPERATIONS.md).
+- **What:** a static site at `author.confused4now.org` (repo `author-site`, Pages
+  project `author-site`), where authors import Word chapters, run the citation,
+  concept-link and glossary questions, answer suggestions, accept draft changes and
+  publish. It replaced the Authoring Assistant (a Mac app) on 28 Sep 2026.
+- **Back end:** S2's `api/author-read`, `-send`, `-import`, `-act`, acting as the
+  GitHub App; every write names the author.
+- **Who may:** the book's `authors` in the registry, checked on every request;
+  collaborator status plays no part and nobody is invited to a repository.
+- **Word conversion:** private, in `book-requests`' `import-chapter` (§1).
+- **The questions:** the converter's Python, run in the browser with Pyodide.
+- **If it is gone:** authors lose imports, the queues and the publish button.
+  Nothing on the web changes, and the in-site editor keeps working.
+- **Guide:** [AUTHOR-SITE.md](AUTHOR-SITE.md).
 
 ---
 
@@ -779,7 +758,7 @@ a page's hostname guard were wrong.
 | S2 function | bundled at build | on the deploy that `deploy.yml` triggers | `deploy.yml` (`X-Registry-Version`) |
 | S4 portal | generated at build | on the deploy that `portal.yml` triggers | `portal.yml` (`/version.txt`) |
 | S3 relay | **not at all** | when someone edits `ALLOWED_DOMAINS` by hand | nothing |
-| S5 console | fetched at launch | the author's next launch | nothing |
+| S5 author site | through S2 (bundled `authors`, `platform.pages`) | on S2's next deploy | `deploy.yml` (`X-Registry-Version`) |
 | The builder (S7) | fetched from `main` at every build | **at the next `*/15` tick of `build-nudge`, not at the merge.** A registry merge starts no `reconcile` of its own, so a book changes up to 15 minutes later, plus the build (step 17a: #38 merged 12:32, the 12:45 tick rebuilt every book) | the build marker's `registry_digest` (`/.well-known/textbook.json`) |
 | A book's Actions (backup, dashboard) | fetched at job start | the next scheduled run | the job fails if the registry can't be read, or the book is retired |
 | A book's rendered files (`publish.js`, `admin/config.yml`, README…) | `configure.mjs` | a PR touching the config, **or** the weekly Monday `apply-config` run (book one and the template). Book one's title, maintainer, licence and `site_url` come from its own `textbook.config.json`, so a change to those also needs an edit there; parity flags the mismatch | parity (book one), nothing for a book without the weekly run (book two has none) |
@@ -808,8 +787,10 @@ Audited 26 Sep 2026:
 | `book-requests` | none (Actions run from `main` when an issue is labelled) | n/a | n/a | n/a |
 | content repos (`textbook`, the request-made books, book two) | their book | `nudge.yml` → `build-nudge` → `reconcile` | the marker's `book_commit` | had both |
 
-The Authoring Assistant (S5) is a desktop app released by hand (its `BUILD.md`), not a
-deployed service. `textbook-template` and `code_repo` deploy nothing.
+| `author-site` | S5 author site | Pages Git integration (`main` = production), building `node scripts/fetch-converter.mjs` | the Pages check on the commit | new 28 Sep 2026 |
+
+`book-requests`' `import-chapter` runs on pushes to its own `author-imports/*`
+branches (§6). `textbook-template` and `code_repo` deploy nothing.
 
 ---
 
@@ -821,9 +802,9 @@ deployed service. `textbook-template` and `code_repo` deploy nothing.
 | `gh` logins | the platform owner's keyring | platform owner |
 | GitHub App private key (`.pem`), backups | held by the platform owner, Alec (confirmed 27 Sep 2026); where isn't written here | platform owner (stays with Alec) |
 | `quartz-book-bot`'s private key, `quartz-book-bot.2026-09-24.private-key.pem` (§7) | the platform owner's `~/Downloads/`. Its only other copy is the `quartz-book` secret `BOT_APP_PRIVATE_KEY`, which can't be read back | platform owner |
-| Developer ID certificate, `notarytool` profile | the build Mac's keychain | platform owner |
-| An author's console token, DeepSeek key | the author's login Keychain, service `Authoring Assistant` | each author |
-| An author's console state and log | `~/Library/Application Support/Authoring Assistant/` | each author |
+| Developer ID certificate, `notarytool` profile | the build Mac's keychain; unused since the Authoring Assistant was retired | platform owner |
+
+Authors keep nothing locally: the author site's sign-in lives in the browser tab.
 
 ---
 

@@ -120,9 +120,9 @@ work: GitHub won't issue a client secret to a script. Budget 30 minutes.
    the old Worker answering until every book has re-rendered.** Platform
    endpoints are permanent (`MULTI-BOOK-HOSTING.md` §5a).
 
-Do **not** reuse this OAuth App for the author's console. The console has its own
-device-flow app (AUTHORING-APP-OPERATIONS.md), so revoking one never signs out
-the other.
+Do **not** reuse this OAuth App for anything else. The author site and the in-site
+editor sign in through suggest-edit-function's *Textbook sign-in* OAuth App
+(AUTHOR-SITE.md), so revoking one never signs out the other.
 
 ---
 

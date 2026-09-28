@@ -33,7 +33,8 @@ If you're inheriting the platform cold, read these in order:
 | [SCHEDULED-JOBS.md](SCHEDULED-JOBS.md) | a workflow went red, a chore PR is piling up, or nothing ran. It covers the registry's workflows and book one's |
 | [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE.md) | adding a book, retiring one, declaring one dark, or removing one under the hosting policy |
 | [CMS-RELAY.md](CMS-RELAY.md) | editor sign-in fails, a book wants the browser editor, or the relay's secret leaks |
-| [AUTHORING-APP-OPERATIONS.md](AUTHORING-APP-OPERATIONS.md) | building, signing and shipping the author's app, and its sign-in |
+| [AUTHOR-SITE.md](AUTHOR-SITE.md) | the author site: its parts, who may do what (`authors`, `platform.pages`), Word imports, settings |
+| [history/AUTHORING-APP-OPERATIONS.md](history/AUTHORING-APP-OPERATIONS.md) | the retired Mac app (a record) |
 | [DOCS-AUDIT.md](DOCS-AUDIT.md) | the 22 Sep 2026 audit: which doc lives where, and what documentation can't fix |
 | [history/DOCS-REMEDIATION.md](history/DOCS-REMEDIATION.md) | book one's documentation worklist from before the audit, moved here at BOOK-ONE-TO-QUARTZ §8 step 18. A record: its links into `textbook/docs/` are dead |
 
