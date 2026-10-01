@@ -19,7 +19,7 @@
       {
         "name": "author-site",
         "domain": "author.confused4now.org",
-        "host": { "kind": "static", "provider": "cloudflare-pages", "project": "author-site" },
+        "host": { "kind": "static", "provider": "cloudflare-pages", "project": "c4n-author-site" },
         "services": ["github-auth", "author-api"]
       }
     ],
