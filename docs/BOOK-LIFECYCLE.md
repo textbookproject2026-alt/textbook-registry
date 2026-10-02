@@ -22,7 +22,7 @@ This file covers only the steps a maintainer can't do.
   slug present on `main`, on the PR base or in the previous commit. Retirement is
   `status: retired`. The entry that stays behind is the tombstone.
 - **`status` is `preview`, `live` or `retired`, and never anything else.** The
-  function and the console reject an unknown status for the **whole registry**,
+  function rejects an unknown status for the **whole registry**,
   so a fourth value would stop suggestions for every book.
 - **A hostname belongs to one book, once, forever,** retired books included.
   Never give a retired or dark book's hostname to anything else: annotations
@@ -164,9 +164,9 @@ record.
    registry *as it was before retirement*:
    `https://raw.githubusercontent.com/textbookproject2026-alt/textbook-registry/<sha-before>/registry.json`.
    The scripts' error message doesn't say this yet (§7b gap 2), so you have to.
-10. **The console** stops offering the book at each author's next launch. A
-    vault for the book is then refused with "isn't a registered textbook any
-    more". The maintainer can still push to their own repo with git.
+10. **The author site** stops offering the book once the function has redeployed
+    (minutes): a retired book is refused to every author. The maintainer can still
+    push to their own repo with git.
 
 **Reinstating** is the reverse PR (`status` back to `live`, with the record, DNS
 and `ALLOWED_DOMAINS` entry restored). The validator allows `retired → live`.

@@ -30,10 +30,11 @@ book's `docs/`, not here.
 - The book's `configure.mjs` renders `publish.js` and `.lycheeignore` (step 3a) and
   `admin/config.yml` (step 4) from it.
 - The book's annotation backup and dashboard scripts fetch it when they run (step 3b).
-- The author's console (`authoring-assistant`) fetches it at launch, keeps the last
-  good copy, and ships a copy bundled at build (step 5). The author picks a book,
-  or the open vault decides it, and every repository, branch and link comes from
-  that book's entry.
+- The author site (`author-site`, docs/AUTHOR-SITE.md) gets it through the
+  function: `books[].authors` decides who may work on which book, and
+  `platform.pages` which pages may sign people in and call the author endpoints.
+  The page itself reads the public registry only for links (the drafts preview,
+  discussion).
 - The platform portal (`textbook-portal`) generates its page from it at build
   (`platform.portal`), rebuilt on every merge by `portal.yml`.
 
@@ -55,7 +56,7 @@ redeployed from a specific commit of this repo. Delivery as it stands (DESIGN §
 | Portal (`textbook-portal`) | generated at build, pinned to a commit | on the rebuild `portal.yml` triggers after every merge to `main` |
 | Shared CMS host | not built (DESIGN step 5b) | — |
 | Book repo's `publish.js`, `admin/config.yml` | rendered by `configure.mjs` | when the author next publishes |
-| Author's console (desktop) | fetched at launch, cached copy as fallback | at next launch |
+| Author site | through the function (bundled) | on the function's next deploy |
 | Book repo Actions | fetched at job start | at next run |
 
 Services that hold credentials or issue them read a pinned, validated copy. So merging
@@ -105,17 +106,18 @@ What a red run of either workflow means, and what to do: `docs/SCHEDULED-JOBS.md
 - **A hostname belongs to one book, once.** A domain, alias or legacy origin may not
   appear twice anywhere in the registry, and none of them may be the portal's own
   domain.
-- **`status` is only ever `preview`, `live` or `retired`.** The function and the
-  console reject an unknown status for the **whole registry**, not one book, so a
+- **`status` is only ever `preview`, `live` or `retired`.** The function rejects
+  an unknown status for the **whole registry**, not one book, so a
   new value would stop suggestions for every book. A site that has gone away is
   recorded in `site.dark`, never in `status`.
 - **Store facts, not URLs derived from them.** The issues link, edit links and
   canonical origin are all built from `content.repo` and `site.domain`. They are
   never stored.
-- **No secrets.** Everything here is already public in a repo or in page source. The
-  console's OAuth client ID is public by design, because device flow has no secret.
-- **Every content repo is public**, because the author's console signs in with the
-  `public_repo` scope. CI checks this.
+- **No secrets.** Everything here is already public in a repo or in page source.
+- **Every content repo is public**, because the builder reads it without
+  credentials and the author site's pages are read from GitHub's public copy. CI
+  checks this. (Before 28 Sep 2026 it was also because the Mac app signed in with
+  the `public_repo` scope; authors now sign in with no scope at all.)
 - **Unknown keys are rejected.** A misspelt key fails CI instead of being ignored.
 
 ## Fields
@@ -132,7 +134,8 @@ means the same as its empty value (no aliases, not dark, unknown payer, no porta
 | `cms_auth_relay` | The CMS OAuth relay's origin, used as Sveltia's `backend.base_url` (no trailing slash, no `/callback`). |
 | `cms_auth_relay_scope` | The GitHub scope the deployed relay actually requests. A recorded fact, not a setting (see below). |
 | `edition_extras_repo` | The repo of Quartz plugins that department editions use. |
-| `console_oauth_client_id` | The author's console's OAuth App client ID. Public by design. |
+| `console_oauth_client_id` | The retired Mac app's device-flow OAuth App client ID. Nothing reads it since the author site replaced the app (28 Sep 2026); it goes when the app's source is removed. |
+| `pages` | **Optional.** The platform's own pages that call the shared services: each has a `name`, a `domain`, a static `host`, and the `services` it may use (`github-auth`: may sign people in; `author-api`: may call the author endpoints; `request-book`: the request form). The services accept `https://<domain>` and the page's Pages project previews, for those services only. The entry named `portal` must match `portal`; a page's hostname and project belong to nothing else. A new platform page is an entry here, not a code change. |
 | `automation_logins` | Machine accounts left out of contributor and activity counts. |
 | `portal` | **Optional**, until a portal domain exists. `domain`: the portal's own address, never a book's hostname. `host`: where the page is served from — always `static`, with a `provider` and a `project`, and no `paid_by` because the portal is the platform's by definition. `cms_host`: the shared CMS host (the single `ALLOWED_DOMAINS` entry) once books have moved onto it, else `null`. `book_parent`: new books get `<slug>.<book_parent>`, and any hostname the platform serves under it — a book's domain or alias, or `cms_host` — must be exactly one label deep so Universal SSL covers it; `null` for no convention. A legacy origin is exempt: the platform may no longer hold it. |
 | `analytics.plausible` | The platform's one Plausible site (BOOK-ONE-TO-QUARTZ D19, §8 step 17a), or `null` for no analytics anywhere: `script_src`, `site` (the site's name in Plausible; each book's public dashboard link is derived from it, filtered to the book's hostname) and `dashboard_public`. The builder gives the script to **live** books only, and each page counts only on its own address (a book's `site.domain`, the portal's `domain`), never on a preview. A book has no analytics field of its own. |
@@ -145,6 +148,7 @@ means the same as its empty value (no aliases, not dark, unknown payer, no porta
 | `status` | `preview` (resolvable by services, not listed), `live`, or `retired`. Nothing else, ever (see "Rules"). |
 | `title`, `summary`, `licence` | Shown on the book and the portal. `licence` is an SPDX identifier. |
 | `maintainer` | `name`, and `github` (a login, or `null`). `github` must be set when `site.host.paid_by` is `maintainer`, so a site-health alert reaches whoever can fix it. |
+| `authors` | **Optional.** The GitHub logins that may work on the book on the author site (docs/AUTHOR-SITE.md): read its drafts, send chapters and imports, answer suggestions, accept draft changes, publish. Checked on every request, case-insensitively; collaborator status plays no part. The platform owner is on every book. No wildcard, no automation login, no login twice; `github-facts` checks each is a real personal account in its own case. Absent means nobody. |
 | `content` | `repo` (`owner/name`, public), `live_branch`, and `drafts_branch`, which must differ from it. |
 | `site.domain` | The hostname readers visit. `null` only for a `preview` book. It may be on a shared suffix such as `pages.dev` only for a `static` host with status `preview`: the platform can't park or redirect a hostname it doesn't hold. |
 | `site.aliases` | **Optional.** Redirect-only hostnames, such as a courtesy `<slug>.<portal>`. Never an accepted origin. |
@@ -349,8 +353,7 @@ silently, and anything else fails. Today there is one:
 upstream's graph, switched off, until §8 step 22.
 
 **Not checkable by parity**, because no repository holds the value. These are printed
-on every run: the console OAuth client ID (read by the console from here since
-step 5), `maintainer.github`, the live CMS allowlist,
+on every run: the retired console OAuth client ID, `maintainer.github`, `authors`, the live CMS allowlist,
 Plausible account settings, and registry-only fields such as `status`.
 
 ## What the registry records that differs from DESIGN.md

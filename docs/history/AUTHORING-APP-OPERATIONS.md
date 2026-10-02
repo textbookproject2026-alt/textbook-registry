@@ -1,3 +1,6 @@
+> **Retired 28 Sep 2026.** The Authoring Assistant was replaced by the author site
+> ([`../AUTHOR-SITE.md`](../AUTHOR-SITE.md)). Kept as a record; nothing here is current.
+
 # The Authoring Assistant: operations
 
 **Audience: the platform owner.** This is what you have to build, create and hold

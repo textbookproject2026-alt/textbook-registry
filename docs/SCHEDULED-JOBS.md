@@ -237,7 +237,7 @@ the way GitHub's `schedule:` runs are.
 > and contributors at 12:40. The rest of this part describes the jobs as they ran.
 
 These are book one's own jobs. They're listed here because the platform owner
-currently looks after them, and because the author's console shows four of them
+currently looks after them, and because the author site shows every book's jobs
 (Part 4). Book one's maintainer has a pointer to this file from
 the README's **This book** section (before §8 step 18, from
 `textbook/docs/troubleshooting.md`).
@@ -400,17 +400,14 @@ both run normally.
 
 ---
 
-## Part 4 — what the author's console shows
+## Part 4 — what the author site shows
 
-The Authoring Assistant's **Weekly jobs** strip is hardcoded as `WEEKLY_JOBS`
-in `authoring-assistant/app/github.py`: `backup-annotations.yml`,
-`contributors.yml`, `derivatives.yml`, `dashboard.yml`. It queries those
-filenames **on whichever book is open**.
+Under **Waiting for you**, the author site lists **every active workflow of the
+book**, each with how its last finished run went (finished properly, did not
+finish, or hasn't run yet), read from GitHub's public API in the author's browser.
+Nothing is hardcoded, so a book with none of book one's weekly jobs (every
+request-made book) simply shows the ones it has: the weekly snapshot, the link
+check, lint, `apply-config`, `nudge`.
 
-- Renaming, adding or retiring one of those workflows in book one means changing
-  `WEEKLY_JOBS` too, and shipping a new build of the app.
-- **A book that doesn't have those four files** (book two, or any book made from
-  `textbook-template`) gets a 404, which the console shows as a standing
-  **"Weekly jobs:"** error banner. That banner also hides the green "Nothing is
-  waiting" note. This is a defect in the app, recorded in DOCS-AUDIT.md.
-  Until it is fixed, tell the authors of those books to ignore the banner.
+The Mac app it replaced hardcoded book one's four jobs and showed a standing error
+on every other book; that defect went with it (28 Sep 2026).
