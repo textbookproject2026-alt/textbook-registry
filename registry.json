@@ -105,7 +105,7 @@
     "name": "Platform test",
     "github": "dept-coordinator-test"
   },
-  "authors": ["textbookproject2026-alt"],
+  "authors": ["textbookproject2026-alt", "gobi10k"],
 
   "content": {
     "repo": "dept-coordinator-test/platform-test-book",
