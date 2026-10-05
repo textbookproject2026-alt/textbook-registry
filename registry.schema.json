@@ -33,6 +33,10 @@
           "description": "The GitHub OAuth scope the deployed relay requests. A recorded fact, not a setting: the relay decides it, and this records what a contributor's token can do."
         },
         "edition_extras_repo": { "$ref": "#/$defs/repo" },
+        "books_owner": {
+          "$ref": "#/$defs/github_login",
+          "description": "The GitHub organisation that holds every book's content repository. Provisioning creates repos there with the books App, which is installed on it for all repositories."
+        },
         "console_oauth_client_id": {
           "type": "string",
           "pattern": "^[A-Za-z0-9.]{20}$",
