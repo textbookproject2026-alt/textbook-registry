@@ -14,7 +14,7 @@ const book = (r) => r.books[0];
 const secondBook = (r) => {
   const b = structuredClone(book(r));
   b.slug = 'second-book';
-  b.content.repo = 'someone/second';
+  b.content.repo = 'confused4now-books/second';
   b.site.domain = 'second.example';
   b.site.legacy_origins = [];
   b.cms.host = 'second-cms.pages.dev';
@@ -35,7 +35,7 @@ const staticBook = (r) => {
     summary: 'A static-host book used by the tests below. Not for readers.',
     licence: 'CC-BY-SA-4.0',
     maintainer: { name: 'Platform test', github: 'someone' },
-    content: { repo: 'someone/static-fixture-book', live_branch: 'main', drafts_branch: 'drafts' },
+    content: { repo: 'confused4now-books/static-fixture-book', live_branch: 'main', drafts_branch: 'drafts' },
     site: {
       domain: 'static-fixture-book.pages.dev',
       aliases: [],
@@ -158,13 +158,21 @@ test('domain that is another book\'s legacy origin', () =>
 test('null domain on a live book', () => expectFail((r) => { book(r).site.domain = null; }, 'may be null only when status is preview'));
 test('null domain on a preview book is fine', () => {
   const r = real();
-  book(r).status = 'preview';
-  book(r).site.domain = null;
+  const b = r.books.find((x) => x.status === 'live');
+  b.status = 'preview';
+  b.site.domain = null;
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
 
 test('duplicate content repo, case-insensitively', () =>
   expectFail((r) => { secondBook(r).content.repo = 'TextbookProject2026-alt/Textbook'; }, 'duplicate content.repo'));
+test('live book outside books_owner', () =>
+  expectFail((r) => { r.books.find((b) => b.status === 'live').content.repo = 'someone-else/a-book'; }, 'is not in platform.books_owner'));
+test('retired book may stay outside books_owner', () => {
+  const r = JSON.parse(REAL);
+  assert.ok(r.books.some((b) => b.status === 'retired' && !b.content.repo.startsWith(`${r.platform.books_owner}/`)));
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
 test('drafts equals live', () => expectFail((r) => { book(r).content.drafts_branch = 'main'; }, 'must differ'));
 
 test('duplicate cms host', () => expectFail((r) => { secondBook(r).cms.host = 'textbook-admin.pages.dev'; }, 'duplicate cms.host'));
@@ -292,7 +300,7 @@ test('a static book built by quartz-book is accepted beside one without the fiel
   staticBook(r).site.host.builder = 'quartz-book';
   const other = staticBook(r);
   other.slug = 'static-fixture-unbuilt';
-  other.content.repo = 'someone/static-fixture-unbuilt';
+  other.content.repo = 'confused4now-books/static-fixture-unbuilt';
   other.site.domain = 'static-fixture-unbuilt.pages.dev';
   other.site.host.project = 'static-fixture-unbuilt';
   assert.ok(!('builder' in other.site.host));
@@ -345,7 +353,7 @@ test('two static books on one project', () =>
     const a = staticBook(r);
     const b = staticBook(r);
     b.slug = 'static-fixture-two';
-    b.content.repo = 'someone/static-fixture-two';
+    b.content.repo = 'confused4now-books/static-fixture-two';
     b.site.domain = 'static-fixture-two.pages.dev';
     b.site.host.project = a.site.host.project;
   }, 'duplicate site.host.project: static-fixture-book on cloudflare-pages'));
@@ -389,8 +397,7 @@ test('static book on its own domain may be live', () => {
 
 test('dark on a live book is accepted', () => {
   const r = real();
-  book(r).status = 'live';
-  book(r).site.dark = { since: '2026-10-02', reason: 'subscription-lapsed', notified: '2026-09-20' };
+  r.books.find((x) => x.status === 'live').site.dark = { since: '2026-10-02', reason: 'subscription-lapsed', notified: '2026-09-20' };
   assert.deepEqual(validate(JSON.stringify(r)), []);
 });
 test('dark on a preview book', () =>
