@@ -275,7 +275,8 @@ function cmsStep4(name, key, token, field) {
 }
 
 // The console passes the resolved book to every repository call (app/github.py) and
-// takes its links from the book the app resolved (app/web/app.js). Each retirement
+// took its links from app/web/app.js, which step 8 (authoring-assistant 7690fba)
+// deleted with the rest of the desktop shell, so those checks are gone. Each retirement
 // requires the line that now carries the value, so a file that merely lost the
 // constant does not pass.
 function consoleStep5(name, path, reason, pattern) {
@@ -376,9 +377,6 @@ export const RETIREMENTS = {
   ...consoleStep5('consoleLiveStep5', 'app/github.py',
     'the console opens the publish request from the resolved book\'s drafts_branch into its live_branch',
     /"head": book\.drafts_branch, "base": book\.live_branch\}/),
-  ...consoleStep5('consoleLinksStep5', 'app/web/app.js',
-    'the page takes the discussion and history links from the book the app resolved; both are derived from site.domain, content.repo and live_branch in app/registry.py, not stored',
-    /\bbook\.discussion_url\b[\s\S]*\bbook\.history_url\b/),
 };
 
 // --- the manifest -------------------------------------------------------------
@@ -557,12 +555,6 @@ export const checks = [
   { id: 'console.drafts-pr-base-literal', source: 'authoring-assistant', path: 'app/github.py', design: 'github.py:254',
     extract: once(/[?&]base=([^&"]+)&/), expect: (r, b) => b.content.drafts_branch,
     retired: RETIREMENTS.consoleDraftsStep5 },
-  { id: 'console.site', source: 'authoring-assistant', path: 'app/web/app.js', design: 'app.js:860',
-    extract: once(/^const SITE = '([^']*)';$/m), expect: (r, b) => origin(b),
-    retired: RETIREMENTS.consoleLinksStep5 },
-  { id: 'console.history-url', source: 'authoring-assistant', path: 'app/web/app.js', design: 'app.js:862',
-    extract: once(/^const HISTORY_URL = '([^']*)';$/m), expect: (r, b) => `https://github.com/${b.content.repo}/commits/${b.content.live_branch}`,
-    retired: RETIREMENTS.consoleLinksStep5 },
 
   // ---- textbook-edition-template ------------------------------------------------
   { id: 'edition.canonical-link', source: 'edition-template', path: 'quartz.config.yaml', design: 'quartz.config.yaml:229',
