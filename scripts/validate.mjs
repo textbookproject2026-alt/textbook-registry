@@ -173,6 +173,13 @@ export function validate(text, { baseText } = {}) {
 
   for (const s of duplicates(books.map((b) => b.slug))) errors.push(`duplicate slug: ${s}`);
   for (const r of duplicates(books.map((b) => lc(b.content.repo)))) errors.push(`duplicate content.repo: ${r}`);
+  // Every book the platform serves lives in the books org, where the books App and
+  // the suggest-edit App are installed on all repositories (05 Oct 2026). A retired
+  // book's tombstone keeps the repo it had.
+  if (platform.books_owner)
+    for (const [i, b] of books.entries())
+      if (b.status !== 'retired' && lc(b.content.repo.split('/')[0]) !== lc(platform.books_owner))
+        errors.push(`books[${i}] (${b.slug}): content.repo ${b.content.repo} is not in platform.books_owner ${platform.books_owner}`);
   for (const h of duplicates(books.map((b) => b.cms.host).filter(Boolean))) errors.push(`duplicate cms.host: ${h}`);
 
   // One project serves one site: a second book deploying to it would replace the first.
