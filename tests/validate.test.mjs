@@ -223,6 +223,16 @@ test('removing a book that was not a sandbox in the base still fails', () => {
   assert.ok(errors.some((e) => e.includes('slug second-book was removed')), errors.join('\n'));
 });
 
+test('listed: false is accepted on a live book', () => {
+  const r = real();
+  r.books.find((b) => b.status === 'live').listed = false;
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('listed must be a boolean', () => {
+  const r = real();
+  book(r).listed = 'no';
+  assert.ok(validate(JSON.stringify(r)).some((e) => e.includes('listed')));
+});
 test('sandbox must be a boolean', () => {
   const r = real();
   book(r).sandbox = 'yes';
