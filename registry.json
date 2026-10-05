@@ -6,6 +6,7 @@
     "cms_auth_relay": "https://sveltia-cms-auth.brandonproject2026.workers.dev",
     "cms_auth_relay_scope": "repo,user",
     "edition_extras_repo": "textbookproject2026-alt/quartz-edition-extras",
+    "books_owner": "confused4now-books",
     "console_oauth_client_id": "Ov23lixHRSXxMpKK8lVP",
     "automation_logins": ["aldogobot"],
 
