@@ -102,6 +102,7 @@ export function renderConfig(config, opts, ignorePatterns) {
   Object.assign(plugin("edit-on-github").options, {
     repo: opts.repo,
     suggestEndpoint: opts.suggestEndpoint,
+    sourceBlobs: opts.sourceBlobs ?? {},
   })
   return out
 }
