@@ -70,3 +70,49 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/check-github.mjs registry.json
+
+  # A People change from the author site (branch people/<slug>/...) records in its
+  # own description whether its checks failed, and why, between the marker below and
+  # the end. The author site reads it from there (suggest-edit-function's
+  # lib/author-people.mjs) and shows the change as failed, with the reason, instead of
+  # "on its way". A later green run takes the record out again.
+  people-outcome:
+    needs: [registry, github-facts]
+    if: always() && github.event_name == 'pull_request' && startsWith(github.head_ref, 'people/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Record the outcome in the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          FAILED: ${{ needs.registry.result == 'failure' || needs.github-facts.result == 'failure' }}
+        run: |
+          set -uo pipefail
+          reasons=""
+          if [ "$FAILED" = true ]; then
+            # The same checks again, without the Actions annotation format, keeping
+            # only the lines that say what is wrong.
+            reasons=$( {
+              GITHUB_ACTIONS= node scripts/validate.mjs registry.json | sed -n 's/^error: //p'
+              GITHUB_ACTIONS= node scripts/check-github.mjs registry.json | sed -n 's/^FAIL  //p'
+              npm test 2>&1 | sed -n 's/^not ok [0-9]* - /a platform test failed: /p'
+            } | head -n 5 )
+            [ -n "$reasons" ] || reasons="the registry's checks failed; the platform's technical contact can see why in this pull request's checks"
+          fi
+          marker='<!-- people-outcome -->'
+          body=$(gh pr view "$PR" --json body --jq .body | sed "/^$marker\$/,\$d")
+          if [ -n "$reasons" ]; then
+            body="$body"$'\n\n'"$marker"$'\n'"**This change did not go through.** Nothing changed in who can work on the book."$'\n'"$(printf '%s\n' "$reasons" | sed 's/^/- /')"
+          fi
+          gh pr edit "$PR" --body "$body"
+          echo "${reasons:-no failure recorded}"
