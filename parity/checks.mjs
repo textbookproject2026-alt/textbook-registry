@@ -154,7 +154,7 @@ export function evaluate(expr, scope, consts = {}, depth = 0) {
  */
 export const builderOption = (plugin, key, optKey = key) => (text, { registry, book }) => {
   const render = fnBody(text, 'renderConfig');
-  const assign = new RegExp(`Object\\.assign\\(plugin\\("${plugin}"\\)\\.options, \\{([^}]*)\\}\\)`).exec(render.body);
+  const assign = new RegExp(`Object\\.assign\\(plugin\\("${plugin}"\\)\\.options, \\{((?:[^{}]|\\{[^{}]*\\})*)\\}\\)`).exec(render.body);
   if (!assign) throw new NotFound(`renderConfig does not fill ${plugin}'s options`);
   if (!new RegExp(`^\\s+${key}: opts\\.${optKey},$`, 'm').test(assign[1]))
     throw new NotFound(`renderConfig does not set ${plugin}'s ${key} from opts.${optKey}`);

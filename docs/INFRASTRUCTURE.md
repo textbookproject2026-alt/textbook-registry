@@ -198,7 +198,7 @@ Settings → Secrets and variables → Actions:
 >   - After #51, `validate`, `parity`, `deploy` and `portal` were green.
 > - **The Apps are now `book-requests`' only credential.** Still not checkable from the API:
 >   whether the classic token behind the old `PLATFORM_TOKEN` was revoked (24.md B5.1).
-| `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` | optional | the welcome email. **Not set on 25 Sep**, so the maintainer sends the prepared email by hand | — |
+| `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO` | optional | the welcome email. **Set on 6 Oct 2026**: `MAIL_FROM` = `Confused4now <no-reply@confused4now.org>`, `MAIL_REPLY_TO` = the maintainer's address. `confused4now.org` is verified in Resend with the records Resend lists for it (DKIM TXT on `resend._domainkey`; CNAMEs on `send` and `rsend` to Resend's mail host; `_dmarc` TXT `p=none`); copy them from Resend's domain page, not from here. Proved by the sandbox request (book-requests #1, 6 Oct): "Welcome email: sent" with a Resend id | without them, the issue carries the prepared email as a `mailto:` link |
 | `APP_DOWNLOAD_URL`, `PANDOC_VERSION` | variables, used by the delivered follow-up | the welcome email's download link (meant to be `…/authoring-assistant-releases/releases/latest/download/Authoring-Assistant.dmg`), and the pandoc version, pinned to the app build's own. **Neither is set on 25 Sep** | — |
 | `APPROVERS` | variable, optional | a JSON list of logins, besides the repo owner, whose `approved` and `remove` labels count. Not set | only the owner's labels count |
 
