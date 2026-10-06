@@ -483,13 +483,16 @@ test('the same project name on a different provider is fine', () => {
 const bySlug = (r, slug) => r.books.find((b) => b.slug === slug);
 const ALEC = 'textbookproject2026-alt';
 
-test('authors: the committed backfill (requesting login from book-requests, plus the platform owner)', () => {
-  const r = real();
-  assert.deepEqual(bySlug(r, 'platform-test-book').authors, [ALEC]);
-  for (const slug of ['ontology-for-social-research-a-criti', 'from-ontology-to-method-an-ontologic'])
-    assert.deepEqual(bySlug(r, slug).authors, ['BrandonAndCaroline', ALEC], slug);
-  // A retired book has nobody to work on it.
-  assert.ok(!('authors' in bySlug(r, 'social-research-methods')));
+// The rules for the committed authors, not the names: who works on a book changes
+// from the author site (People) without a developer, so the test can't pin them.
+test('authors: every working book has authors, the platform owner among them', () => {
+  for (const b of real().books.filter((b) => b.status !== 'retired')) {
+    assert.ok(Array.isArray(b.authors) && b.authors.length, `${b.slug} has no authors`);
+    assert.ok(b.authors.some((a) => a.toLowerCase() === ALEC.toLowerCase()), `${b.slug} is missing ${ALEC}`);
+  }
+});
+test('authors: a retired book has nobody to work on it', () => {
+  for (const b of real().books.filter((b) => b.status === 'retired')) assert.ok(!('authors' in b), b.slug);
 });
 test('authors: absent is fine (nobody)', () => {
   const r = real();
