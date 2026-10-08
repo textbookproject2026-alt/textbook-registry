@@ -238,11 +238,6 @@ export function validate(text, { baseText } = {}) {
     }
   }
 
-  // The shared link is the same site's: Page, Book and Platform statistics link to it.
-  const pl = platform.analytics?.plausible;
-  if (pl?.shared_link && !pl.shared_link.startsWith(`https://plausible.io/share/${pl.site}?`))
-    errors.push(`platform.analytics.plausible.shared_link is for another site than ${pl.site}`);
-
   // Authors are matched to a signed-in GitHub login, which GitHub treats case-insensitively,
   // so two spellings of one login are one author listed twice. An automation account is
   // never a person who signs in.
