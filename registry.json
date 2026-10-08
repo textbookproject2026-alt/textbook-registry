@@ -39,8 +39,7 @@
       "plausible": {
         "script_src": "https://plausible.io/js/pa-eii3VlmU1ClI0VxGOsCTe.js",
         "site": "confused4now.org",
-        "dashboard_public": true,
-      "shared_link": null
+        "dashboard_public": true
       }
     }
   },

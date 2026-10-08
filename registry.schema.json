@@ -98,13 +98,6 @@
                   "additionalProperties": false,
                   "required": ["script_src", "site", "dashboard_public"],
                   "properties": {
-                    "shared_link": {
-                      "oneOf": [
-                        { "type": "null" },
-                        { "type": "string", "pattern": "^https://plausible\\.io/share/[A-Za-z0-9.-]+\\?auth=[A-Za-z0-9_-]+$" }
-                      ],
-                      "description": "The site's free shared-link dashboard (Plausible: Site settings › Visibility › Shared links), pasted here once. Page, Book and Platform statistics link to it, filtered. null (or absent) falls back to the public dashboard, https://plausible.io/<site>, when dashboard_public is true; with neither, no statistics links are shown."
-                    },
                     "script_src": {
                       "type": "string",
                       "pattern": "^https://plausible\\.io/js/[A-Za-z0-9._-]+\\.js$"
