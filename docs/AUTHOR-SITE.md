@@ -24,7 +24,9 @@ when something is set up or moved.
 | **The questions** | in the author's browser: Pyodide (pinned in `author-site/converter.json`), from jsDelivr | The Authoring Assistant's own Python (`session.py`'s `DraftsSession` and the modules it uses), at the commit `converter.json` pins, copied into `site/py/` at build time |
 | **The converter's source** | `authoring-assistant` (public) | Now only the converter library and its tests. Two pins point at it: book-requests' `CONVERTER_REF` and author-site's `converter.json`. Move them together, after its tests pass |
 
-No analytics.
+Pageviews only, to the platform's one Plausible site (`platform.analytics.plausible`,
+`site/analytics.js`), from `author.confused4now.org` alone: previews load no script.
+No custom events.
 
 ---
 
