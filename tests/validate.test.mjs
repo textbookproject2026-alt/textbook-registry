@@ -503,6 +503,13 @@ test('authors: not a login', () => expectFail((r) => { book(r).authors = ['-bad-
 test('authors: a wildcard is not a login', () => expectFail((r) => { book(r).authors = ['*']; }, '/books/0/authors/0'));
 test('authors: repeated exactly', () => expectFail((r) => { book(r).authors = ['someone', 'someone']; }, '/books/0/authors'));
 test('authors: repeated in another case', () => expectFail((r) => { book(r).authors = ['Someone', 'someone']; }, 'authors lists someone twice'));
+test('mentions_off: absent, or logins once each', () => {
+  const r = real();
+  book(r).mentions_off = ['someone'];
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('mentions_off: not a login', () => expectFail((r) => { book(r).mentions_off = ['-bad-']; }, '/books/0/mentions_off/0'));
+test('mentions_off: repeated in another case', () => expectFail((r) => { book(r).mentions_off = ['Someone', 'someone']; }, 'mentions_off lists someone twice'));
 test('authors: an automation account', () => expectFail((r) => { book(r).authors = ['AldoGoBot']; }, 'which is in platform.automation_logins'));
 
 // --- platform.pages -------------------------------------------------------------
