@@ -39,7 +39,8 @@
       "plausible": {
         "script_src": "https://plausible.io/js/pa-eii3VlmU1ClI0VxGOsCTe.js",
         "site": "confused4now.org",
-        "dashboard_public": true
+        "dashboard_public": true,
+      "shared_link": null
       }
     }
   },
@@ -47,6 +48,7 @@
   "books": [
     {
       "slug": "social-research-methods",
+      "type": "book",
       "status": "retired",
 
       "title": "Education Tool Project 2026",
@@ -97,6 +99,7 @@
     }, 
 	{
   "slug": "platform-test-book",
+  "type": "book",
   "status": "preview",
 
   "title": "Platform test book",
@@ -146,6 +149,7 @@
 },
     {
       "slug": "ontology-for-social-research-a-criti",
+      "type": "book",
       "status": "live",
       "title": "Ontology for Social Research: A Critical Introduction",
       "summary": "To go beyond the quantitative and qualitative divide in the social sciences, this book proposes ontology as the way forward. You will learn how to situate methods based on their assumptions about social reality and how to implement this philosophy into practical research.",
@@ -188,6 +192,7 @@
     },
     {
       "slug": "from-ontology-to-method-an-ontologic",
+      "type": "book",
       "status": "live",
       "title": "From Ontology to Method: An Ontologically Situated Critical Realist Approach to Research Methodology",
       "summary": "This paper shows how the quantitative-qualitative divide reflects the philosophical problem of the epistemic fallacy, which collapses questions about what exists into questions about how we can know it and proposes, in response, a hybrid integration of three Critical Realist models of social change.",
@@ -230,6 +235,7 @@
     },
     {
       "slug": "author-guide",
+      "type": "book",
       "status": "live",
       "title": "Author guide",
       "summary": "An A–Z guide for authors on Confused for Now: from a folder of Word files to a published open textbook.",

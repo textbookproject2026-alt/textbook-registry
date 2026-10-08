@@ -98,6 +98,13 @@
                   "additionalProperties": false,
                   "required": ["script_src", "site", "dashboard_public"],
                   "properties": {
+                    "shared_link": {
+                      "oneOf": [
+                        { "type": "null" },
+                        { "type": "string", "pattern": "^https://plausible\\.io/share/[A-Za-z0-9.-]+\\?auth=[A-Za-z0-9_-]+$" }
+                      ],
+                      "description": "The site's free shared-link dashboard (Plausible: Site settings › Visibility › Shared links), pasted here once. Page, Book and Platform statistics link to it, filtered. null (or absent) falls back to the public dashboard, https://plausible.io/<site>, when dashboard_public is true; with neither, no statistics links are shown."
+                    },
                     "script_src": {
                       "type": "string",
                       "pattern": "^https://plausible\\.io/js/[A-Za-z0-9._-]+\\.js$"
@@ -221,6 +228,10 @@
       "properties": {
         "slug": { "$ref": "#/$defs/slug" },
         "status": { "enum": ["preview", "live", "retired"] },
+        "type": {
+          "enum": ["book", "paper", "report", "article"],
+          "description": "What kind of text this is, shown as a badge on the portal's cards and in the site's header, and filterable on the portal. Asked on the request form. Absent means book."
+        },
         "listed": {
           "type": "boolean",
           "description": "false keeps a book off the portal: out of its catalogue, key-word graph, topics, authors and recent changes. The book is built, served and works like any other (paragraph numbers, annotations, suggestions). For platform-held pages such as the author guide. Absent means true."
