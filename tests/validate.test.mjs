@@ -503,6 +503,27 @@ test('authors: not a login', () => expectFail((r) => { book(r).authors = ['-bad-
 test('authors: a wildcard is not a login', () => expectFail((r) => { book(r).authors = ['*']; }, '/books/0/authors/0'));
 test('authors: repeated exactly', () => expectFail((r) => { book(r).authors = ['someone', 'someone']; }, '/books/0/authors'));
 test('authors: repeated in another case', () => expectFail((r) => { book(r).authors = ['Someone', 'someone']; }, 'authors lists someone twice'));
+test('type: book, paper, report or article; absent is a book', () => {
+  for (const t of ['book', 'paper', 'report', 'article']) {
+    const r = real();
+    book(r).type = t;
+    assert.deepEqual(validate(JSON.stringify(r)), []);
+  }
+  const r = real();
+  delete book(r).type;
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('type: anything else', () => expectFail((r) => { book(r).type = 'thesis'; }, '/books/0/type'));
+test('every committed entry says its type', () => {
+  for (const b of real().books) assert.ok(b.type, b.slug);
+});
+test('shared_link: null, or a share link for the same site', () => {
+  const r = real();
+  r.platform.analytics.plausible.shared_link = `https://plausible.io/share/${r.platform.analytics.plausible.site}?auth=AbC_12-x`;
+  assert.deepEqual(validate(JSON.stringify(r)), []);
+});
+test('shared_link: another site', () => expectFail((r) => { r.platform.analytics.plausible.shared_link = 'https://plausible.io/share/example.org?auth=abc'; }, 'shared_link is for another site'));
+test('shared_link: not a share link', () => expectFail((r) => { r.platform.analytics.plausible.shared_link = 'https://plausible.io/confused4now.org'; }, '/platform/analytics/plausible/shared_link'));
 test('mentions_off: absent, or logins once each', () => {
   const r = real();
   book(r).mentions_off = ['someone'];
