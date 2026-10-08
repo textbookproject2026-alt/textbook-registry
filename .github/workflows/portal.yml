@@ -130,3 +130,17 @@ jobs:
 
           echo "::error::The portal is still serving registry ${now:-<unknown>} ten minutes after the deploy hook, not $SHA. Check the Cloudflare Pages build log: a registry the portal refuses (an unknown schema_version, or no book it could list) fails the build and leaves the previous page live. If /version.txt returns HTML, the apex redirect rule is catching it — it must exempt /version.txt."
           exit 1
+
+      # The page's key-word graph draws its nodes: the portal's own check
+      # (textbook-portal scripts/check-graph.mjs). A registry change is what
+      # emptied it on 27 Sep (book one retired, #54), with nothing failing. It
+      # fails when there were key words and no node was drawn, and warns when
+      # the live books have fewer than two key words between them.
+      - name: The key-word graph on the live page
+        env:
+          VERSION_URL: ${{ vars.PORTAL_VERSION_URL || steps.target.outputs.url }}
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 30 -o "$RUNNER_TEMP/check-graph.mjs" \
+            https://raw.githubusercontent.com/textbookproject2026-alt/textbook-portal/main/scripts/check-graph.mjs
+          node "$RUNNER_TEMP/check-graph.mjs" "${VERSION_URL%version.txt}"
