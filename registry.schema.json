@@ -254,6 +254,13 @@
           "description": "GitHub logins that may work on this book on the author site: read its drafts, send chapters and imports there, answer reader suggestions, accept or decline draft changes, and publish drafts to the live book. The author endpoints check the signed-in login against this list, case-insensitively, on every request; repository collaborator status plays no part. Absent means nobody."
         },
 
+        "mentions_off": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/github_login" },
+          "description": "Authors who have turned off being @mentioned when a reader's suggestion arrives (the People screen on the author site, for their own login). Every other author is mentioned in the suggestion's issue or pull request, so GitHub emails them. Matched case-insensitively. Absent means everyone is mentioned."
+        },
+
         "content": {
           "type": "object",
           "additionalProperties": false,

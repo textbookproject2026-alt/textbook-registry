@@ -245,6 +245,7 @@ export function validate(text, { baseText } = {}) {
   for (const [n, b] of books.entries()) {
     const at = `books[${n}] (${b.slug})`;
     for (const a of duplicates((b.authors ?? []).map(lc))) errors.push(`${at}: authors lists ${a} twice (logins are case-insensitive)`);
+    for (const a of duplicates((b.mentions_off ?? []).map(lc))) errors.push(`${at}: mentions_off lists ${a} twice (logins are case-insensitive)`);
     for (const a of b.authors ?? [])
       if (bots.has(lc(a))) errors.push(`${at}: authors lists ${a}, which is in platform.automation_logins; an author is a person who signs in`);
   }
