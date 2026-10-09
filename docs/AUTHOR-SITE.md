@@ -73,10 +73,15 @@ on D1 decides. Someone without GitHub is invited by email from People.
 
 **The migration flag.** `GITHUB_SIGNIN` in `author-site/wrangler.toml` (`"on"`) keeps
 the GitHub button for members who joined before email sign-in: they sign in with
-GitHub once and confirm an email address (a link to that inbox). People shows any
-member without one as **needs an email address**, where another member can send them a
-confirmation link. When every member has an email, set `GITHUB_SIGNIN = "off"` and
-deploy: the button and `/api/auth/github` go.
+GitHub once and confirm an email address (a link to that inbox). Once a member has an
+address, GitHub no longer signs them in. People shows any member without one as **needs
+an email address**; only the platform maintainer can send them a confirmation link from
+there (whoever reads that inbox becomes them, on every book). When every member has an
+email, set `GITHUB_SIGNIN = "off"` and deploy: the button and `/api/auth/github` go.
+
+**Copied invitations.** An invitation copied from People (rather than emailed) never adds
+or signs in anyone by itself: opening it sends the same invitation to the invited address,
+and joining happens from that inbox.
 
 **Setting it up again** (a new account, say): create the D1 database, put its id in
 `wrangler.toml`, apply `migrations/` (`npx wrangler d1 migrations apply
