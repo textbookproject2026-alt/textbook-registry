@@ -9,6 +9,8 @@
     "books_owner": "confused4now-books",
     "console_oauth_client_id": "Ov23lixHRSXxMpKK8lVP",
     "automation_logins": ["aldogobot"],
+    "automation_identities": ["textbookproject2026-alt", "github-actions", "quartz-book-bot", "quartz-book bot", "textbook-suggest-edit", "confused4now-platform", "confused4now-books", "aldogo-bot", "Claude", "Claude Code", "noreply@anthropic.com", "@anthropic.com"],
+    "features": { "orcid": false },
 
     "pages": [
       {

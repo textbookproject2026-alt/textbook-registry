@@ -45,7 +45,25 @@
         "automation_logins": {
           "type": "array",
           "items": { "$ref": "#/$defs/github_login" },
-          "uniqueItems": true
+          "uniqueItems": true,
+          "description": "The automation-accounts list, part 1: GitHub accounts that are machines or the platform itself (checked to exist by check-github.mjs). Never credited as an author, editor or contributor, never counted in activity. Read with automation_identities."
+        },
+        "automation_identities": {
+          "type": "array",
+          "uniqueItems": true,
+          "description": "The automation-accounts list, part 2: identities that aren't GitHub user accounts (Apps, AI tools), matched case-insensitively against a commit's or attribution's name, login and email. An entry starting with @ matches an email domain (\"@anthropic.com\"); any other entry matches a whole name, login or email. Besides this list, logins ending [bot] and GitHub accounts of type Bot are always left out.",
+          "items": { "type": "string", "minLength": 2, "maxLength": 100, "pattern": "^\\S(.*\\S)?$" }
+        },
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Platform-wide switches. Absent means each feature's default.",
+          "properties": {
+            "orcid": {
+              "type": "boolean",
+              "description": "ORCID iDs on bylines, the contributors page, metadata (JSON-LD sameAs) and the author site's Credits tab. Off: iDs already in frontmatter are kept but shown and emitted nowhere. Default true."
+            }
+          }
         },
         "pages": {
           "type": "array",
