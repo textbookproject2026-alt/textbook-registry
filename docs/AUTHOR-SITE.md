@@ -16,10 +16,11 @@ when something is set up or moved.
 
 | Part | Where | What it does |
 |---|---|---|
-| **The site** | repo `author-site`, Cloudflare Pages project `author-site` (account `brandonproject2026`), custom domain `author.confused4now.org` | Static: plain ES modules, no framework. Pages builds with `node scripts/fetch-converter.mjs` (output `site/`); a push to `main` deploys, a PR gets `<branch>.author-site.pages.dev` |
-| **The author endpoints** | `suggest-edit-function`, `api/author-read`, `-send`, `-import`, `-act` (Vercel) | Every read and write, as the GitHub App `textbook-suggest-edit` |
-| **Sign-in** | `suggest-edit-function`, `api/github-auth` | The same no-scope OAuth App (*Textbook sign-in*) as the in-site editor. The GitHub token is revoked at once; the page gets an 8-hour identity token bound to its own origin |
-| **Who may** | this registry: `books[].authors`, `platform.pages` | See §2 |
+| **The site** | repo `author-site`, Cloudflare Pages project `c4n-author-site` (account `brandonproject2026`), custom domain `author.confused4now.org` | Static pages (`site/`, plain ES modules) and, since batch 2b, its own backend: Cloudflare Pages Functions (`functions/`). Pages builds with `node scripts/fetch-converter.mjs`; `wrangler.toml` holds the bindings and plain settings. A push to `main` deploys, a PR gets `<branch>.c4n-author-site.pages.dev` |
+| **Who is on each book** | Cloudflare **D1** database `c4n-author-members`, bound to the site as `DB` (schema: `author-site/migrations/`) | Members (display name, email, a GitHub login while one is linked, the suggestion-email setting), who is on which book, sessions, emailed links, one-minute request assertions, the People audit log, rate limits. **Access follows this, at once.** See §2 |
+| **Sign-in** | `author-site/functions/api/auth/*`; email through Resend | Emailed links (sign-in: 15 minutes, single use; invitation and email confirmation: seven days, single use; every token stored only as its SHA-256), then an HttpOnly, Secure, SameSite=Lax session cookie for 30 days. GitHub sign-in survives only for members who haven't moved to email yet (§2) |
+| **The author endpoints** | `suggest-edit-function`, `api/author-read`, `-send`, `-import`, `-act` (Vercel), reached through the site's `/fn/` proxy | Every read and write, as the GitHub App `textbook-suggest-edit`. A member's commits are authored as their display name and `m-<id>@users.noreply.confused4now.org` |
+| **The public record** | this registry: `books[].members`, `authors`, `mentions_off` | Synced from D1 in the background (§2); never emails |
 | **Word conversion** | private `book-requests`: workflow `import-chapter`, `scripts/import_chapter.py` | The Authoring Assistant's own `convert.py`, `contents.py`, `drafts.py`, at `CONVERTER_REF`, with pandoc at `PANDOC_VERSION` |
 | **The questions** | in the author's browser: Pyodide (pinned in `author-site/converter.json`), from jsDelivr | The Authoring Assistant's own Python (`session.py`'s `DraftsSession` and the modules it uses), at the commit `converter.json` pins, copied into `site/py/` at build time |
 | **The converter's source** | `authoring-assistant` (public) | Now only the converter library and its tests. Two pins point at it: book-requests' `CONVERTER_REF` and author-site's `converter.json`. Move them together, after its tests pass |
@@ -32,24 +33,56 @@ No custom events.
 
 ## 2. Who may do what
 
-Every author request is checked, afresh, by suggest-edit-function (`lib/author.mjs`):
+**Who is on a book lives in D1** (`c4n-author-members`), not in this registry. Every
+member of a book is equal: anyone on it can invite (by name and email), remove, edit
+and publish. Adding and removing take effect at once: removing someone deletes their
+sessions and pending links, and their next request is refused; someone removed from
+their last book also loses their stored email (their name stays in the credits).
 
-1. **The page.** The `Origin` must be a platform page whose `platform.pages` entry
-   lists `author-api`: `https://author.confused4now.org`, or a preview of the
-   `author-site` Pages project. Anything else: 403, no CORS headers.
-2. **The person.** An identity token that `github-auth` issued **to that origin**.
-   `github-auth` signs people in only for books' origins and for platform pages
-   listing `github-auth`. A token from a book's in-site editor is useless here.
-3. **The book.** The login must be in that book's `authors` (case-insensitive), and
-   the book not retired. Repository collaborator status plays no part: nobody is
-   invited to a book's repository any more.
+**A request to the author endpoints** goes browser → the site's `/fn/<endpoint>`
+(`functions/fn/[[path]].js`) → suggest-edit-function:
 
-A book's `authors` is set by provisioning (the form's GitHub username, plus the
-platform owner) or by `new-book.mjs` (the maintainer, plus the platform owner); the
-platform owner is an author of every book. **To add or remove an author**, edit the
-book's `authors` here by pull request; it takes effect when `deploy.yml` has
-redeployed the function (minutes). `check-github.mjs` fails a login that isn't a real
-personal account in its own case.
+1. **The proxy** forwards only `author-read`, `-history` (GET), `-import` (GET, POST),
+   `-send` and `-act` (POST), only to the function's production origin (hard-coded),
+   only with a valid session whose member is on the book the request names, and only
+   with the site's own `x-author-site` header and Origin (the CSRF check). It sends
+   none of the browser's headers: just `Authorization: Member <id>`.
+2. **The assertion.** For each request the proxy writes a one-minute, single-use
+   assertion (stored hashed) bound to the member, the book, the method, the endpoint,
+   the query and a hash of the body.
+3. **The function** (`lib/member.mjs`) recomputes that binding from the request it
+   received and reads the assertion back from `https://author.confused4now.org/api/internal/assertion`
+   (hard-coded) over HTTPS. The author site answers once, only if the binding matches
+   and the member is still on that book, and marks it used. The member may then act on
+   that book alone. **There is no shared secret**: the trust is the fixed origin and TLS.
+
+**The registry stays the public record.** After a change, the site asks the function's
+`/api/author-sync` (inside `api/author.js`) to bring `books[].members` (member ids and
+display names), `authors` (the GitHub logins still linked: GitHub sign-in during the
+migration, and @mentions) and `mentions_off` in line. The function reads the site's
+public `/api/internal/members?book=` (never emails) and keeps **one pull request per
+book** (branch `people/<slug>/sync`), updated in place, which merges itself on green.
+A slow or failed sync never affects access. On the People tab, only the platform
+maintainer (`PLATFORM_OWNER` in `author-site/wrangler.toml`) sees whether the registry
+has caught up.
+
+**A new book** arrives from provisioning with its people as GitHub logins in `authors`.
+The first time one of them signs in (GitHub) or the platform owner loads the site,
+each book with **no members in D1 yet** adopts its registry authors once; from then
+on D1 decides. Someone without GitHub is invited by email from People.
+
+**The migration flag.** `GITHUB_SIGNIN` in `author-site/wrangler.toml` (`"on"`) keeps
+the GitHub button for members who joined before email sign-in: they sign in with
+GitHub once and confirm an email address (a link to that inbox). People shows any
+member without one as **needs an email address**, where another member can send them a
+confirmation link. When every member has an email, set `GITHUB_SIGNIN = "off"` and
+deploy: the button and `/api/auth/github` go.
+
+**Setting it up again** (a new account, say): create the D1 database, put its id in
+`wrangler.toml`, apply `migrations/` (`npx wrangler d1 migrations apply
+c4n-author-members --remote`), and run book-requests' `author-site-mail` workflow to
+give the site the Resend key. Reading the members: `npx wrangler d1 execute
+c4n-author-members --remote --command "SELECT …"`.
 
 **A new platform page** (one that should sign people in, or call the author
 endpoints) is a `platform.pages` entry, not a code change. Its hostname must be the

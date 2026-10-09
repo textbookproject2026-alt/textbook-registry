@@ -555,10 +555,14 @@ book that wants the editor brings its own Pages project and asks for one
   project `author-site`), where authors import Word chapters, run the citation,
   concept-link and glossary questions, answer suggestions, accept draft changes and
   publish. It replaced the Authoring Assistant (a Mac app) on 28 Sep 2026.
-- **Back end:** S2's `api/author-read`, `-send`, `-import`, `-act`, acting as the
-  GitHub App; every write names the author.
-- **Who may:** the book's `authors` in the registry, checked on every request;
-  collaborator status plays no part and nobody is invited to a repository.
+- **Back end:** its own Pages Functions and D1 database `c4n-author-members` (members,
+  sessions, email sign-in, invitations, the People log; batch 2b), and S2's
+  `api/author-read`, `-send`, `-import`, `-act` through its `/fn/` proxy, acting as the
+  GitHub App; every write names the member.
+- **Who may:** the book's members in D1, at once; the registry's `members` and
+  `authors` are the public record, synced by S2's `author-sync`. Email via Resend
+  (`RESEND_API_KEY` on the Pages project, set by book-requests' `author-site-mail`).
+  Details: [AUTHOR-SITE.md](AUTHOR-SITE.md) §2.
 - **Word conversion:** private, in `book-requests`' `import-chapter` (§1).
 - **The questions:** the converter's Python, run in the browser with Pyodide.
 - **If it is gone:** authors lose imports, the queues and the publish button.
