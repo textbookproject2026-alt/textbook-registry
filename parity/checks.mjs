@@ -352,7 +352,10 @@ export const RETIREMENTS = {
     consumes: { path: 'admin/config.yml', pattern: /^# Kept by hand \(BOOK-ONE-TO-QUARTZ D7\)\./m },
   },
   ...configStep18('configTitleStep18', 'the builder takes the title from the registry', 'builder', 'builder/lib.mjs', /^\s+title: book\.title,$/m),
-  ...configStep18('configMaintainerStep18', 'the contributors page takes the maintainer from the registry', 'builder', `${AUTOMATION}/gen-contributors.mjs`, /maintainer: field\(book, 'maintainer\.name', isString,/),
+  // Since batch 2a (quartz-book #80) the contributors page no longer names the
+  // maintainer; the registry's maintainer is read by the builder instead, as the
+  // book's author of last resort in its metadata and citations (batch 1's chain).
+  ...configStep18('configMaintainerStep18', 'the builder takes the maintainer from the registry', 'builder', 'builder/lib.mjs', /^\s+authors: book\.maintainer\?\.name \?\? "",$/m),
   ...configStep18('configSiteUrlStep18', 'the builder takes the domain from the registry', 'builder', 'builder/lib.mjs', /^\s+domain: book\.site\.domain,$/m),
   ...configStep18('configLicenceStep18', 'the builder takes the licence from the registry', 'builder', 'builder/lib.mjs', /^\s+licence: book\.licence,$/m),
   // The platform's operator docs moved out of the vault into this repo's docs/ on
