@@ -248,6 +248,9 @@ export function validate(text, { baseText } = {}) {
     for (const a of duplicates((b.mentions_off ?? []).map(lc))) errors.push(`${at}: mentions_off lists ${a} twice (logins are case-insensitive)`);
     for (const a of b.authors ?? [])
       if (bots.has(lc(a))) errors.push(`${at}: authors lists ${a}, which is in platform.automation_logins; an author is a person who signs in`);
+    for (const id of duplicates((b.members ?? []).map((m) => m.id))) errors.push(`${at}: members lists ${id} twice`);
+    for (const m of b.members ?? [])
+      if (/@/.test(m.name)) errors.push(`${at}: members ${m.id}'s name looks like an email address; the registry is public and holds names only`);
   }
 
   // Platform pages (the portal, the author site): each is one site on one project, and

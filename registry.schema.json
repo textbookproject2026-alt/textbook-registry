@@ -289,7 +289,21 @@
           "type": "array",
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/github_login" },
-          "description": "GitHub logins that may work on this book on the author site: read its drafts, send chapters and imports there, answer reader suggestions, accept or decline draft changes, and publish drafts to the live book. The author endpoints check the signed-in login against this list, case-insensitively, on every request; repository collaborator status plays no part. Absent means nobody."
+          "description": "Since batch 2b: the GitHub logins still linked to members of this book (sign-in by GitHub while members move to email links, and @mentions on reader suggestions); synced from the author site with members. Before that: GitHub logins that may work on this book on the author site: read its drafts, send chapters and imports there, answer reader suggestions, accept or decline draft changes, and publish drafts to the live book. The author endpoints check the signed-in login against this list, case-insensitively, on every request; repository collaborator status plays no part. Absent means nobody."
+        },
+
+        "members": {
+          "type": "array",
+          "description": "The book's people, the public record (batch 2b): who is on the book in the author site's own database, which is what access follows. Synced from the author site in the background (the suggest-edit function's author-sync opens a pull request that merges itself). Each is a member id and the display name the book credits them by; never an email address. Absent means not synced yet.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^m-[0-9a-f]{10}$" },
+              "name": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "^\\S(.*\\S)?$" }
+            }
+          }
         },
 
         "mentions_off": {
