@@ -571,3 +571,13 @@ test('platform.pages: a portal entry with no portal block', () => expectFail((r)
 test('platform.pages: another page on the portal\'s domain', () => expectFail((r) => { const p = withPortal(r); p.splice(0, 1); p[0].domain = 'portal.example'; }, "is the portal's"));
 test('platform.pages: another page on the portal\'s project', () => expectFail((r) => { const p = withPortal(r); p.splice(0, 1); p[0].host.project = 'portal-fixture'; }, "is the portal's"));
 test('platform.pages: two labels under book_parent', () => expectFail((r) => { withPortal(r)[1].domain = 'a.author.portal.example'; }, 'more than one label under platform.portal.book_parent'));
+
+test('members: ids and names only, no duplicates, nothing like an email', () => {
+  const r = real();
+  book(r).members = [{ id: 'm-0123456789', name: 'Ann Author' }];
+  assert.deepEqual(validate(JSON.stringify(r, null, 2)), []);
+  expectFail((r) => { book(r).members = [{ id: 'm-0123456789', name: 'A' }, { id: 'm-0123456789', name: 'B' }]; }, 'lists m-0123456789 twice');
+  expectFail((r) => { book(r).members = [{ id: 'm-0123456789', name: 'ann@example.org' }]; }, 'looks like an email address');
+  expectFail((r) => { book(r).members = [{ id: 'x-1', name: 'Ann' }]; }, 'members');
+  expectFail((r) => { book(r).members = [{ id: 'm-0123456789', name: 'Ann', email: 'a@b.c' }]; }, 'members');
+});
