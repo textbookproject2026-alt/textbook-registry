@@ -108,7 +108,7 @@
     "name": "Platform test",
     "github": "dept-coordinator-test"
   },
-  "authors": ["textbookproject2026-alt", "gobi10k"],
+  "authors": ["textbookproject2026-alt"],
 
   "content": {
     "repo": "confused4now-books/platform-test-book",
