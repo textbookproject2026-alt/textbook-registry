@@ -83,6 +83,30 @@ email, set `GITHUB_SIGNIN = "off"` and deploy: the button and `/api/auth/github`
 or signs in anyone by itself: opening it sends the same invitation to the invited address,
 and joining happens from that inbox.
 
+**Links are scanner-safe, and new browsers are told about (batch 2c).** Opening any
+emailed link (sign-in, invitation, email claim, *This wasn't me*) only shows a page:
+the token is in the URL's fragment, which a server never sees, and only the page's
+button POSTs it. A sign-in on a browser the member hasn't used (a 400-day HttpOnly
+`__Host-tb_device` cookie, stored hashed in `devices`) emails them the time, the
+browser and system in words, and *This wasn't me*: a `revoke` link (seven days) whose
+page's button, in one transaction, ends every session, removes every unused link
+that could sign them in (and invitations to their address) and forgets that browser.
+The only sign-in that never alerts is a new member's first, from their invitation; a
+failed alert forgets the browser so the next sign-in there retries. **Where you're
+signed in** (`/api/sessions`) lists the member's sessions by a public handle, browser
+and last use, each with Sign out. Migration `0002_devices.sql`.
+
+**Declined, in public (batch 2c).** Declining a reader's proposal, note or suggestion
+needs a reason (10–1000 characters): the App posts it under the member's display name
+with a `<!-- tb-declined {…} -->` marker, then the thank-you, then closes it (unmerged,
+or not planned) and locks the conversation. Members comment on declined items from
+History (`comment-add`, `comment-delete` their own; the App unlocks, writes and locks
+again). The function's `/api/history?declined=1` serves declined items (reason,
+decliner, comments; for items declined before, the last comment by the book's people
+or the maintainer, else "No reason was recorded."), and `&change=<n>` a proposal's
+diff from its pull request. Items labelled `no-credit` or `platform-test` (the
+platform's own tests) are left out. Declined earns nobody credit.
+
 **Setting it up again** (a new account, say): create the D1 database, put its id in
 `wrangler.toml`, apply `migrations/` (`npx wrangler d1 migrations apply
 c4n-author-members --remote`), and run book-requests' `author-site-mail` workflow to
