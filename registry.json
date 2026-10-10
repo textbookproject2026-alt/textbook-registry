@@ -162,6 +162,8 @@
         "github": "BrandonAndCaroline"
       },
       "authors": ["BrandonAndCaroline", "textbookproject2026-alt"],
+      "mentions_off": [],
+      "members": [{ "id": "m-0836784bba", "name": "Brandon Sommer and Caroline Laschkolnig" }, { "id": "m-ab738d332e", "name": "Alec Gordon" }],
       "content": {
         "repo": "confused4now-books/ontology-for-social-research-a-criti",
         "live_branch": "main",
