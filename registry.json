@@ -251,9 +251,9 @@
         "name": "Alec Gordon",
         "github": "textbookproject2026-alt"
       },
-      "authors": [
-        "textbookproject2026-alt"
-      ],
+      "authors": ["textbookproject2026-alt"],
+      "mentions_off": [],
+      "members": [{ "id": "m-ab738d332e", "name": "Alec Gordon" }],
       "content": {
         "repo": "confused4now-books/author-guide",
         "live_branch": "main",
