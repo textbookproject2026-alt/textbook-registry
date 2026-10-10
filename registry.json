@@ -112,7 +112,7 @@
   },
   "authors": ["textbookproject2026-alt"],
   "mentions_off": [],
-  "members": [{ "id": "m-ab738d332e", "name": "Alec Gordon" }],
+  "members": [{ "id": "m-223ddbe62e", "name": "Part 3 Test Member" }, { "id": "m-ab738d332e", "name": "Alec Gordon" }],
 
   "content": {
     "repo": "confused4now-books/platform-test-book",
