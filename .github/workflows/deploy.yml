@@ -1,17 +1,21 @@
-# Redeploys the suggest-edit function after every registry change on main, and fails
-# (a red check on the merge commit) if production isn't serving the new registry
-# within ten minutes (DESIGN §2b-2c). The function bakes the registry in at build
-# time, so without this a merge here never reaches production.
+# Redeploys the platform API after every registry change on main, and fails (a red
+# check on the merge commit) if it isn't serving the new registry within ten minutes
+# (DESIGN §2b-2c). The API bakes the registry in at build time, so without this a
+# merge here never reaches it. Two hosts while the Vercel fallback lives:
 #
-# Mechanism: a Vercel deploy hook. It rebuilds the function's production branch; that
-# build resolves this repo's main to a SHA, validates it, runs the function's tests,
-# and deploys only if all of that passes. The function reports the SHA it was built
-# with in the X-Registry-Version response header, which is what is polled here.
+# - worker: the Cloudflare Worker c4n-api (api.confused4now.org), production since
+#   batch 2d. suggest-edit-function's worker.yml, called here: bundle the registry,
+#   test, deploy, wait for X-Function-Version. Needs CLOUDFLARE_WORKERS_TOKEN.
+# - suggest-edit (Vercel, the fallback until it is retired): a Vercel deploy hook.
+#   That build resolves this repo's main to a SHA, validates it, runs the function's
+#   tests, and deploys only if all of that passes. The function reports the SHA it was
+#   built with in the X-Registry-Version response header, which is what is polled
+#   here. Needs SUGGEST_EDIT_DEPLOY_HOOK (README, "Delivery to services"). Delete this
+#   job when Vercel is retired.
 #
-# Also runs on a schedule as a staleness alarm: if production has fallen behind main
-# (a missed hook, a failed build), it redeploys and fails loudly.
-#
-# Needs the repository secret SUGGEST_EDIT_DEPLOY_HOOK (README, "Delivery to services").
+# Also runs on a schedule as a staleness alarm: if Vercel has fallen behind main
+# (a missed hook, a failed build), it redeploys and fails loudly; the Worker is
+# redeployed each time.
 name: deploy
 
 on:
@@ -33,6 +37,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  worker:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    uses: textbookproject2026-alt/suggest-edit-function/.github/workflows/worker.yml@main
+    secrets:
+      CLOUDFLARE_WORKERS_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_TOKEN }}
+
   suggest-edit:
     # Only a successful validate of a push to main. Pull requests never deploy.
     if: >-
@@ -54,7 +66,8 @@ jobs:
           set -euo pipefail
           # A merge deploys its own commit; a schedule or manual run deploys main.
           sha="${RUN_SHA:-$(git rev-parse HEAD)}"
-          endpoint="$(git show "$sha:registry.json" | jq -er '.platform.suggest_edit_endpoint')"
+          # The Vercel fallback; the Worker (platform.suggest_edit_endpoint) is the worker job's.
+          endpoint=https://suggest-edit-function.vercel.app/api/suggest-edit
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "endpoint=$endpoint" >> "$GITHUB_OUTPUT"
           echo "Target registry $sha, endpoint $endpoint"
