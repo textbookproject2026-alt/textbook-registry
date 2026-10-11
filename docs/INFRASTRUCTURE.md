@@ -272,12 +272,18 @@ It stops and asks the platform owner first for:
 
 ---
 
-## 2. S2 — the suggest-edit function (Vercel)
+## 2. S2 — the suggest-edit function (Cloudflare Worker `c4n-api`)
 
-- **URL:** `https://suggest-edit-function.vercel.app/api/suggest-edit`
-  (`platform.suggest_edit_endpoint`). This endpoint is **permanent**: every
-  book's rendered front end has it baked in, and not every book will republish
-  (`MULTI-BOOK-HOSTING.md` §5a). Add a new version beside it rather than moving it.
+- **URL:** `https://api.confused4now.org/api/suggest-edit`
+  (`platform.suggest_edit_endpoint`), since 11 Oct 2026: the Cloudflare Worker
+  `c4n-api`, the same handlers as before (suggest-edit-function's README, "Where the
+  API lives"). The old host, `https://suggest-edit-function.vercel.app`, keeps
+  answering as the fallback until **25 Oct 2026**, then is retired.
+- **Moving the endpoint.** Every book's pages have the endpoint baked in, so a move
+  is safe only while every book builds centrally from the registry (all do since
+  book one was retired): change `platform.suggest_edit_endpoint`, keep the old host
+  answering until every book has rebuilt (build-nudge's next `*/15` tick) and no live
+  page names it, then retire it. Never stop the old host first.
 - **Account owner:** the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client.
 - **What it does:** it resolves the request's `Origin` header to exactly one
   registered book (`https://` + `site.domain`, for `preview` and `live` books), then
@@ -766,7 +772,7 @@ a page's hostname guard were wrong.
 | The builder (S7) | fetched from `main` at every build | **at the next `*/15` tick of `build-nudge`, not at the merge.** A registry merge starts no `reconcile` of its own, so a book changes up to 15 minutes later, plus the build (step 17a: #38 merged 12:32, the 12:45 tick rebuilt every book) | the build marker's `registry_digest` (`/.well-known/textbook.json`) |
 | A book's Actions (backup, dashboard) | fetched at job start | the next scheduled run | the job fails if the registry can't be read, or the book is retired |
 | A book's rendered files (`publish.js`, `admin/config.yml`, README…) | `configure.mjs` | a PR touching the config, **or** the weekly Monday `apply-config` run (book one and the template). Book one's title, maintainer, licence and `site_url` come from its own `textbook.config.json`, so a change to those also needs an edit there; parity flags the mismatch | parity (book one), nothing for a book without the weekly run (book two has none) |
-| A Publish book's **live** `publish.js` | the maintainer's Publish dialog | when the maintainer next publishes | nothing. This is why platform endpoints never move |
+| A Publish book's **live** `publish.js` | the maintainer's Publish dialog | when the maintainer next publishes | nothing. There are none since book one was retired (27 Sep 2026); while there were, platform endpoints could not move |
 | Parity | read per run | every run | itself |
 
 ### 10a. How a merge to each platform repo reaches its service
