@@ -82,7 +82,14 @@ can start builds, though only of the function's own `main`. Keep it in the secre
 nowhere else, and regenerate it in Vercel if it leaks. Without the secret, the run
 fails and says so.
 
-The endpoint polled is `platform.suggest_edit_endpoint`, read from `registry.json`.
+That job watches the Vercel fallback, `https://suggest-edit-function.vercel.app`.
+Production is the Cloudflare Worker c4n-api at `platform.suggest_edit_endpoint`
+(`https://api.confused4now.org`): the `worker` job in the same workflow calls
+suggest-edit-function's `worker.yml`, which bundles this registry, runs the function's
+tests, deploys with wrangler and waits for the new `X-Function-Version`. It needs the
+secret **`CLOUDFLARE_WORKERS_TOKEN`** (see suggest-edit-function's README, "Where the
+API lives"); without it the deploy is skipped with a warning. When Vercel is retired,
+delete the `suggest-edit` job and `SUGGEST_EDIT_DEPLOY_HOOK`.
 
 **Portal.** `.github/workflows/portal.yml` is the same mechanism for the portal: after
 `validate` passes on `main` it fires a Cloudflare Pages deploy hook on the
