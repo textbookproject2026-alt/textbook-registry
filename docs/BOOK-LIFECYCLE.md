@@ -129,7 +129,7 @@ record.
 
    ```sh
    curl -s -o /dev/null -w '%{http_code}\n' -X OPTIONS \
-     https://suggest-edit-function.vercel.app/api/suggest-edit \
+     https://api.confused4now.org/api/suggest-edit \
      -H 'Origin: https://<site.domain>'          # -> 403
    ```
 

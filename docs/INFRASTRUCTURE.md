@@ -272,12 +272,41 @@ It stops and asks the platform owner first for:
 
 ---
 
-## 2. S2 — the suggest-edit function (Vercel)
+## 2. S2 — the suggest-edit function (Worker `c4n-api` in front, Vercel for writes)
 
-- **URL:** `https://suggest-edit-function.vercel.app/api/suggest-edit`
-  (`platform.suggest_edit_endpoint`). This endpoint is **permanent**: every
-  book's rendered front end has it baked in, and not every book will republish
-  (`MULTI-BOOK-HOSTING.md` §5a). Add a new version beside it rather than moving it.
+- **URL:** `https://api.confused4now.org/api/suggest-edit`
+  (`platform.suggest_edit_endpoint`), since 12 Oct 2026: the Cloudflare Worker
+  `c4n-api`. It runs the same handlers as Vercel (suggest-edit-function's README,
+  "Where the API lives").
+- **What runs where, and why.** The Worker is on Cloudflare's free plan, which allows
+  10 ms of CPU per request. Reads and small writes fit:
+  - history, compare, page revisions, the editor's page, reader names;
+  - sign-in;
+  - Suggest an edit and Note to the authors;
+  - book requests and the people sync.
+
+  A commit to GitHub doesn't fit (an author's save measured 12–35 ms on 12 Oct). So the
+  Worker forwards every route that commits, unchanged, to
+  `https://suggest-edit-function.vercel.app`:
+  - a reader's proposal;
+  - an author's save, import, decisions and publishing;
+  - people changes.
+
+  **Vercel stays as the write back end; it isn't retired.** The reader's own address
+  goes along signed (`FORWARD_SECRET`), so Vercel's limits stay per reader. Both hosts
+  share `FORWARD_SECRET` and `IDENTITY_SECRET`. Moving the writes onto the Worker too
+  needs **Workers Paid** (30 s CPU).
+- **Rolling back.** Set `platform.suggest_edit_endpoint` back to
+  `https://suggest-edit-function.vercel.app/api/suggest-edit`, and the author site's
+  proxy (`functions/_lib/core.js` `UPSTREAM`, `site/index.html` `tb-api`) back too. The
+  books rebuild at build-nudge's next `*/15` tick. Vercel already serves every route,
+  so nothing else is needed.
+- **Moving the endpoint.** Every book's pages have the endpoint baked in. A move is
+  safe only while every book builds centrally from the registry, which all do since book
+  one was retired. To move it:
+  1. Change `platform.suggest_edit_endpoint`.
+  2. Keep the old host answering until every book has rebuilt and no live page names it.
+  3. Never stop the old host first.
 - **Account owner:** the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client.
 - **What it does:** it resolves the request's `Origin` header to exactly one
   registered book (`https://` + `site.domain`, for `preview` and `live` books), then
@@ -766,7 +795,7 @@ a page's hostname guard were wrong.
 | The builder (S7) | fetched from `main` at every build | **at the next `*/15` tick of `build-nudge`, not at the merge.** A registry merge starts no `reconcile` of its own, so a book changes up to 15 minutes later, plus the build (step 17a: #38 merged 12:32, the 12:45 tick rebuilt every book) | the build marker's `registry_digest` (`/.well-known/textbook.json`) |
 | A book's Actions (backup, dashboard) | fetched at job start | the next scheduled run | the job fails if the registry can't be read, or the book is retired |
 | A book's rendered files (`publish.js`, `admin/config.yml`, README…) | `configure.mjs` | a PR touching the config, **or** the weekly Monday `apply-config` run (book one and the template). Book one's title, maintainer, licence and `site_url` come from its own `textbook.config.json`, so a change to those also needs an edit there; parity flags the mismatch | parity (book one), nothing for a book without the weekly run (book two has none) |
-| A Publish book's **live** `publish.js` | the maintainer's Publish dialog | when the maintainer next publishes | nothing. This is why platform endpoints never move |
+| A Publish book's **live** `publish.js` | the maintainer's Publish dialog | when the maintainer next publishes | nothing. There are none since book one was retired (27 Sep 2026); while there were, platform endpoints could not move |
 | Parity | read per run | every run | itself |
 
 ### 10a. How a merge to each platform repo reaches its service
