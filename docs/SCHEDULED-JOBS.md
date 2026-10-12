@@ -107,11 +107,15 @@ automation login exists (`github-facts` job).
 
 ### `deploy` (after `validate` on `main`; every 6 h at :41)
 
-Two jobs. `worker` deploys the Cloudflare Worker `c4n-api` (production,
-`https://api.confused4now.org`) through suggest-edit-function's `worker.yml`, which
-waits for the new `X-Function-Version`. `suggest-edit` keeps the Vercel fallback
-current until it is retired on 25 Oct 2026: it POSTs the Vercel deploy hook, then
-polls `X-Registry-Version` for up to 10 minutes. The table is that job's.
+Two jobs, both needed: the registry is baked into each host at build time.
+- `worker` deploys the Cloudflare Worker `c4n-api` (`https://api.confused4now.org`,
+  reads and small writes) through suggest-edit-function's `worker.yml`, which waits for
+  the new `X-Function-Version`.
+- `suggest-edit` keeps Vercel current: it is the write back end the Worker forwards
+  commits to (INFRASTRUCTURE §2). It POSTs the Vercel deploy hook, then polls
+  `X-Registry-Version` for up to 10 minutes.
+
+The table is that job's.
 
 | Result | Meaning | Do |
 |---|---|---|
@@ -126,7 +130,7 @@ Check it by hand:
 
 ```sh
 curl -sI -X OPTIONS https://api.confused4now.org/api/suggest-edit | grep -i x-registry-version
-curl -sI -X OPTIONS https://suggest-edit-function.vercel.app/api/suggest-edit | grep -i x-registry-version  # the fallback
+curl -sI -X OPTIONS https://suggest-edit-function.vercel.app/api/suggest-edit | grep -i x-registry-version  # the write back end
 git -C textbook-registry rev-parse origin/main
 ```
 

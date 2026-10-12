@@ -82,7 +82,7 @@ can start builds, though only of the function's own `main`. Keep it in the secre
 nowhere else, and regenerate it in Vercel if it leaks. Without the secret, the run
 fails and says so.
 
-That job watches the Vercel fallback, `https://suggest-edit-function.vercel.app`.
+That job keeps Vercel current, `https://suggest-edit-function.vercel.app`: the write back end the Worker forwards commits to (docs/INFRASTRUCTURE.md §2).
 Production is the Cloudflare Worker c4n-api at `platform.suggest_edit_endpoint`
 (`https://api.confused4now.org`): the `worker` job in the same workflow calls
 suggest-edit-function's `worker.yml`, which bundles this registry, runs the function's
