@@ -51,7 +51,7 @@
         "automation_identities": {
           "type": "array",
           "uniqueItems": true,
-          "description": "The automation-accounts list, part 2: identities that aren't GitHub user accounts (Apps, AI tools), matched case-insensitively against a commit's or attribution's name, login and email. An entry starting with @ matches an email domain (\"@anthropic.com\"); any other entry matches a whole name, login or email. Besides this list, logins ending [bot] and GitHub accounts of type Bot are always left out.",
+          "description": "The automation-accounts list, part 2: identities that aren't GitHub user accounts (Apps, AI tools), and the platform's test identities (the name and noreply address of a member an automated or by-hand platform test writes as), matched case-insensitively against a commit's or attribution's name, login and email. An entry starting with @ matches an email domain (\"@anthropic.com\"); any other entry matches a whole name, login or email. Besides this list, logins ending [bot] and GitHub accounts of type Bot are always left out.",
           "items": { "type": "string", "minLength": 2, "maxLength": 100, "pattern": "^\\S(.*\\S)?$" }
         },
         "features": {
