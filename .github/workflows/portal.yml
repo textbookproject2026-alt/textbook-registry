@@ -134,8 +134,10 @@ jobs:
       # The page's key-word graph draws its nodes: the portal's own check
       # (textbook-portal scripts/check-graph.mjs). A registry change is what
       # emptied it on 27 Sep (book one retired, #54), with nothing failing. It
-      # fails when there were key words and no node was drawn, and warns when
-      # the live books have fewer than two key words between them.
+      # fails when there were key words and no node (or no graph section) was
+      # drawn. When the live books have fewer than two key words between them
+      # it warns, and fails only if the graph's markup is on the page anyway
+      # (an empty box): the section is left out until there is a graph.
       - name: The key-word graph on the live page
         env:
           VERSION_URL: ${{ vars.PORTAL_VERSION_URL || steps.target.outputs.url }}
