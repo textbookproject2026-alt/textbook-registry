@@ -24,6 +24,7 @@ start tens of minutes late under load.
 |---|---|---|---|
 | every 15 min | Cloudflare Worker `build-nudge` (a Cron Trigger) | dispatches `reconcile` in `quartz-book`, named `cron` | each builder book's Pages deployments, when a book or branch is behind. **This tick is how a registry change reaches the books**: a registry merge starts no build of its own, so books change at the next `*/15` tick, not at the merge. When `quartz-edition-extras`' `main` is ahead of the pin, it also starts `bump-extras`, which opens a pull request (once per extras commit) |
 | on every push to a branch | `textbook` | `nudge` | nothing. It asks `build-nudge` to dispatch `reconcile` for the book, named `nudge` |
+| every 5 min, and the moment a write is queued | `suggest-edit-function` | `write-fallback` | a write that failed on the Worker (an issue, a pull request, a commit), done as the Worker would have; its answer in D1 for the page. Health: `api.confused4now.org/api/health` |
 | every 6 h at :17 | `textbook-registry` | `portal` | nothing. It polls the portal and redeploys if it's behind |
 | every 6 h at :41 | `textbook-registry` | `deploy` | nothing. It polls the function and redeploys if it's behind |
 | daily 06:17 | `textbook-registry` | `parity` | nothing. It compares the registry with the constants left in other repos |
@@ -111,8 +112,8 @@ Two jobs, both needed: the registry is baked into each host at build time.
 - `worker` deploys the Cloudflare Worker `c4n-api` (`https://api.confused4now.org`,
   reads and small writes) through suggest-edit-function's `worker.yml`, which waits for
   the new `X-Function-Version`.
-- `suggest-edit` keeps Vercel current: it is the write back end the Worker forwards
-  commits to (INFRASTRUCTURE §2). It POSTs the Vercel deploy hook, then polls
+- `suggest-edit` keeps Vercel current: unused since 13 Oct, kept until 27 Oct 2026 as
+  the rollback (INFRASTRUCTURE §2). It POSTs the Vercel deploy hook, then polls
   `X-Registry-Version` for up to 10 minutes.
 
 The table is that job's.
@@ -130,8 +131,33 @@ Check it by hand:
 
 ```sh
 curl -sI -X OPTIONS https://api.confused4now.org/api/suggest-edit | grep -i x-registry-version
-curl -sI -X OPTIONS https://suggest-edit-function.vercel.app/api/suggest-edit | grep -i x-registry-version  # the write back end
+curl -sI -X OPTIONS https://suggest-edit-function.vercel.app/api/suggest-edit | grep -i x-registry-version  # the rollback, until 27 Oct
 git -C textbook-registry rev-parse origin/main
+```
+
+### `write-fallback` in suggest-edit-function (when a write is queued; every 5 min)
+
+A write that failed on the Worker (Cloudflare's CPU limit, error 1102, or a 5xx) and that
+the page queued again is run here, through the same handler, with no CPU limit
+(INFRASTRUCTURE §2). The Worker starts it the moment a write is queued; the five-minute
+schedule is the backstop.
+
+**The health check for writes is `https://api.confused4now.org/api/health`.** It lists
+every write that failed on the Worker and every fallback (`inline-failed`, `queued`,
+`dispatch-failed`, `fallback-done`, `fallback-failed`), the last day's counts, and what
+is still waiting. It answers 503 (`"ok": false`) when a fallback failed or couldn't be
+started in the last day, or a write has waited over ten minutes.
+
+| Result | Meaning | Do |
+|---|---|---|
+| a green run, "Nothing waiting" | the schedule found no queued write | nothing |
+| a green run, "1 write(s) looked at; 0 failed" | a write went through the fallback | nothing; a few a day is normal on the free plan |
+| a red run | a write failed in the fallback too; the reader was told | read the run's log, then the health check |
+| `dispatch-failed` in the health check | the Worker couldn't start the run (the App isn't installed on suggest-edit-function) | the schedule still runs it; install the App to make it immediate |
+| `waiting` with an old `oldest` | nothing has run the queue | run `write-fallback` by hand |
+
+```sh
+curl -s https://api.confused4now.org/api/health | jq '{ok, lastDay, waiting}'
 ```
 
 ### `portal` (after `validate` on `main`; every 6 h at :17)
