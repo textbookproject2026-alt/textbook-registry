@@ -272,35 +272,38 @@ It stops and asks the platform owner first for:
 
 ---
 
-## 2. S2 — the suggest-edit function (Worker `c4n-api` in front, Vercel for writes)
+## 2. S2 — the suggest-edit function (Worker `c4n-api`; Vercel kept as the rollback)
 
 - **URL:** `https://api.confused4now.org/api/suggest-edit`
   (`platform.suggest_edit_endpoint`), since 12 Oct 2026: the Cloudflare Worker
   `c4n-api`. It runs the same handlers as Vercel (suggest-edit-function's README,
   "Where the API lives").
-- **What runs where, and why.** The Worker is on Cloudflare's free plan, which allows
-  10 ms of CPU per request. Reads and small writes fit:
-  - history, compare, page revisions, the editor's page, reader names;
-  - sign-in;
-  - Suggest an edit and Note to the authors;
-  - book requests and the people sync.
-
-  A commit to GitHub doesn't fit (an author's save measured 12–35 ms on 12 Oct). So the
-  Worker forwards every route that commits, unchanged, to
-  `https://suggest-edit-function.vercel.app`:
-  - a reader's proposal;
-  - an author's save, import, decisions and publishing;
-  - people changes.
-
-  **Vercel stays as the write back end; it isn't retired.** The reader's own address
-  goes along signed (`FORWARD_SECRET`), so Vercel's limits stay per reader. Both hosts
-  share `FORWARD_SECRET` and `IDENTITY_SECRET`. Moving the writes onto the Worker too
-  needs **Workers Paid** (30 s CPU).
+- **Everything runs on the Worker, since 13 Oct 2026.** Reads, sign-in and every write.
+  Vercel's Hobby plan doesn't allow commercial use, so nothing goes to Vercel any more.
+  (12–13 Oct the Worker forwarded the writes to Vercel; that ended with
+  suggest-edit-function #45, and `FORWARD_SECRET` was deleted from both hosts.)
+- **Writes on a free plan.** The Worker is on Cloudflare's free plan: 10 ms of CPU per
+  request, and a commit can take more (an author's save measured 12–35 ms on 12 Oct; most
+  still finish). So each write carries a key (`?write_key=`) that the Worker claims in
+  its D1 database first: sent twice, it runs once. If Cloudflare stops a write (error
+  1102) or it answers 5xx, the page queues the same request and key, and the
+  `write-fallback` workflow in suggest-edit-function runs the same handler in GitHub
+  Actions with no CPU limit. The page says "Saving… this can take up to a minute" and
+  reads the answer from `/api/write-status`. Every such failure and fallback is listed
+  by **`https://api.confused4now.org/api/health`** (SCHEDULED-JOBS.md). Moving to
+  Workers Paid (30 s CPU) would make the fallback rare; it isn't needed for it to work.
+- **The Worker starts the fallback with the GitHub App `textbook-suggest-edit`** (a
+  `repository_dispatch` on suggest-edit-function). Until that App is installed on
+  suggest-edit-function, the start fails (`dispatch-failed` in the health check) and
+  the workflow's five-minute schedule picks the write up instead.
+- **Vercel: deployed, unused, until 27 Oct 2026.** The Vercel project still deploys
+  from `main` (the registry's `deploy` keeps it current) and serves every route, as the
+  rollback. After 27 Oct it can be retired.
 - **Rolling back.** Set `platform.suggest_edit_endpoint` back to
   `https://suggest-edit-function.vercel.app/api/suggest-edit`, and the author site's
   proxy (`functions/_lib/core.js` `UPSTREAM`, `site/index.html` `tb-api`) back too. The
-  books rebuild at build-nudge's next `*/15` tick. Vercel already serves every route,
-  so nothing else is needed.
+  books rebuild at build-nudge's next `*/15` tick. Vercel already serves every route
+  and holds the same `IDENTITY_SECRET`, so nothing else is needed.
 - **Moving the endpoint.** Every book's pages have the endpoint baked in. A move is
   safe only while every book builds centrally from the registry, which all do since book
   one was retired. To move it:
