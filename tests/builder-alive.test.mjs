@@ -1,4 +1,4 @@
-// builder-alive's verdict: red with no cron run in the last hour, whatever else
+// builder-alive's verdict: red with no cron run in the last hour, or a book's problems;
 // ran; warnings, never red, for a failing build or a token about to expire.
 
 import { test } from 'node:test';
@@ -64,4 +64,18 @@ test('reads both spellings of the expiry header', () => {
   assert.equal(parseExpiry('2027-09-24 00:00:00 UTC'), Date.parse('2027-09-24T00:00:00Z'));
   assert.equal(parseExpiry('2027-09-24 01:00:00 +0100'), Date.parse('2027-09-24T00:00:00Z'));
   assert.ok(Number.isNaN(parseExpiry(null)));
+});
+
+test("a book's problems are red, one line each; a clean book or an unread marker isn't", () => {
+  const books = [
+    { slug: 'ptb', url: 'u1', marker: { problems: [{ step: 'export', message: 'ptb-2026-10-14.pdf was not made, so it isn\'t offered: label does not exist.' }] } },
+    { slug: 'clean', url: 'u2', marker: { problems: [] } },
+    { slug: 'old', url: 'u3', marker: {} },
+    { slug: 'down', url: 'u4', marker: null },
+  ];
+  const v = judge({ runs: [run('reconcile: cron, every book', 3)], status: healthy, now: NOW, books });
+  assert.equal(v.ok, false);
+  assert.equal(v.errors.length, 1);
+  assert.match(v.errors[0], /^ptb \(export\): ptb-2026-10-14\.pdf was not made/);
+  assert.match(v.warnings.join(), /down: its marker \(u4\) couldn't be read/);
 });

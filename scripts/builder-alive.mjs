@@ -8,11 +8,18 @@
 // It also reads the Worker's GET /, and warns a month before the Worker's token
 // expires. That part only warns: the missing cron runs are what fail.
 //
+// And it reads each book's served marker: a part of a book's build that failed
+// but isn't needed to serve the text (a download, the page histories, the
+// credits, the preview images: quartz-book builder/problems.mjs) is left out of
+// that book's site and listed in the marker's `problems`. Each is red here, so
+// it is heard about, while nothing waits on it: the book is live without that part.
+//
 //   node scripts/builder-alive.mjs
 //
 // Environment: GITHUB_TOKEN (optional, for the rate limit; quartz-book is public),
 // NOW (an ISO time, for trying it against an old day).
 
+import { readFileSync } from 'node:fs';
 import { listWorkflowRuns } from './github.mjs';
 
 export const BUILDER_REPO = 'textbookproject2026-alt/quartz-book';
@@ -39,10 +46,21 @@ export function parseExpiry(value) {
  * The verdict, from the runs created since `now - MAX_SILENCE` and the Worker's
  * status (null if it didn't answer). Returns { ok, errors, warnings, notes }.
  */
-export function judge({ runs, status, now }) {
+export function judge({ runs, status, now, books = [] }) {
   const errors = [];
   const warnings = [];
   const notes = [];
+
+  // books: [{ slug, url, marker }], marker null when it couldn't be read.
+  for (const b of books) {
+    if (!b.marker) {
+      warnings.push(`${b.slug}: its marker (${b.url}) couldn't be read.`);
+      continue;
+    }
+    for (const p of b.marker.problems ?? []) {
+      errors.push(`${b.slug} (${p.step}): ${p.message} The site is live without it; fix the book or the builder, and the next build clears this.`);
+    }
+  }
 
   const since = now - MAX_SILENCE;
   const cron = runs.filter(isCron).filter((r) => Date.parse(r.created_at) >= since);
@@ -91,11 +109,28 @@ async function readStatus() {
   }
 }
 
+/** Every book on the builder that isn't retired, with its served marker (null if unread). */
+async function readBooks() {
+  const registry = JSON.parse(readFileSync(new URL('../registry.json', import.meta.url), 'utf8'));
+  const books = registry.books.filter((b) => b.site?.host?.builder === 'quartz-book' && b.status !== 'retired' && b.site?.domain);
+  return Promise.all(
+    books.map(async (b) => {
+      const url = `https://${b.site.domain}/.well-known/textbook.json`;
+      try {
+        const res = await fetch(`${url}?alive=${Date.now()}`, { signal: AbortSignal.timeout(15000) });
+        return { slug: b.slug, url, marker: res.ok ? await res.json() : null };
+      } catch {
+        return { slug: b.slug, url, marker: null };
+      }
+    }),
+  );
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const now = process.env.NOW ? Date.parse(process.env.NOW) : Date.now();
   const created = `>=${new Date(now - MAX_SILENCE).toISOString()}`;
   const runs = await listWorkflowRuns(BUILDER_REPO, WORKFLOW, { event: 'workflow_dispatch', created });
-  const verdict = judge({ runs, status: await readStatus(), now });
+  const verdict = judge({ runs, status: await readStatus(), now, books: await readBooks() });
 
   for (const n of verdict.notes) console.log(n);
   for (const w of verdict.warnings) console.log(`::warning::${w}`);
