@@ -28,7 +28,7 @@ start tens of minutes late under load.
 | every 6 h at :17 | `textbook-registry` | `portal` | nothing. It polls the portal and redeploys if it's behind |
 | every 6 h at :41 | `textbook-registry` | `deploy` | nothing. It polls the function and redeploys if it's behind |
 | daily 06:17 | `textbook-registry` | `parity` | nothing. It compares the registry with the constants left in other repos |
-| daily 07:29 | `textbook-registry` | `builder-alive` | nothing. It checks that a `cron` run of `reconcile` started in the last hour |
+| daily 07:29 | `textbook-registry` | `builder-alive` | nothing. It checks that a `cron` run of `reconcile` started in the last hour, and reports each book's build problems |
 | Sun 03:00 | `textbook`, and every book made from the template since 27 Sep (textbook-template #7) | `backup-annotations` | the `backups` branch. A book without the `HYPOTHESIS_API_TOKEN` secret skips it, green (quartz-book #19) |
 | Sun 03:00 | `textbook`, `textbook-template` | `weekly-snapshot` | a `snapshot-YYYY-MM-DD` tag on `main`, if `main` changed since the last one. Skipped in the template repo itself |
 | Sun 07:00 | `textbook`, and every book made from the template | `contributors` | `community/contributors.md`, by auto-merged PR |
@@ -221,6 +221,12 @@ Added 24 Sep 2026 (BOOK-ONE-TO-QUARTZ §8 step 10). It asks the Actions API for
 named `reconcile: cron, …`. Nudged and hand runs don't count, because they can't
 show that the 15-minute tick is alive. It then reads the Worker's status page
 (`https://build-nudge.brandonproject2026.workers.dev/`) for two warnings.
+Since 14 Oct 2026 it also reads every book's served marker
+(`https://<domain>/.well-known/textbook.json`): its `problems` are the parts of
+that book's last build that failed but aren't needed to serve the text (a
+download, the page histories, the credits, the preview images; quartz-book
+`builder/problems.mjs`). The book is live without them, and nothing waits on
+them, but each is red here, so you hear about it.
 
 | Result | Meaning | Do |
 |---|---|---|
@@ -228,6 +234,8 @@ show that the 15-minute tick is alive. It then reads the Worker's status page
 | red, "No reconcile run named "cron"" | **nothing rebuilds on its own.** The Worker is gone or failing, its Cron Trigger was removed, or its token expired or was revoked. Every book keeps serving its last deployment | run `reconcile` by hand now (below), then open the Worker's status page: `"token"` other than `"works"` means replace the token; no answer means redeploy the Worker (`build-nudge` README) |
 | warning, "token expires on …" | the Worker's token lapses within 30 days | renew it (INFRASTRUCTURE.md §7) |
 | warning, "ended "failure"" | the Worker is fine, but a book's build is failing | read the red `reconcile` run in `quartz-book` |
+| red, "<book> (export): … was not made" (or history, credits, og-image) | that book's site is live, but that part is missing: e.g. its PDF isn't offered because Typst stopped at a broken link | fix the book's text (the message quotes the error), or the builder if every book has it; the next build clears it |
+| warning, "its marker … couldn't be read" | a book's site didn't answer | open the book's site |
 | warning, "didn't answer" alone | the status page didn't answer, but cron runs are arriving | look again tomorrow |
 
 **Running `reconcile` by hand**, while the Worker is down: `quartz-book` → Actions
