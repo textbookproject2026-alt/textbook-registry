@@ -366,6 +366,7 @@ Vercel's instant rollback rolls back code and registry together.
 | `REQUESTS_REPO` | Vercel env, optional | only needed if `book-requests` is ever renamed | — |
 | `GITHUB_APP_INSTALLATION_ID` | Vercel env | **no longer read**. If it's set, startup logs a warning | delete it |
 | `REGISTRY_REF` | Vercel build env, optional | pins the registry to a SHA or branch | while set, `deploy.yml` stays red by design |
+| `MAINTAINER_MEMBER_IDS` | Worker `c4n-api`, `wrangler.toml` `[vars]` (not a secret: ids aren't credentials; a change is a PR and a deploy) | comma-separated author-site member ids (10 hex digits, no `m-`) who may make and remove test books from the author site. Since 12 Nov 2026: `ab738d332e` (Alec). To add a second maintainer, see book-requests' README, *Test books* | everyone gets 403 on `/api/maintainer/*`: no New test book button, nothing else changes |
 | `SUGGEST_EDIT_DEPLOY_HOOK` | `textbook-registry` repo secret | the Vercel deploy hook's URL, a credential | `deploy.yml` fails and says so |
 
 The App's `.pem` file itself is kept outside any repository. Its backups are held by

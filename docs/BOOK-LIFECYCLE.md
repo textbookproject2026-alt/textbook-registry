@@ -109,6 +109,19 @@ had `sandbox: true`. book-requests' `remove` workflow takes one out completely:
 registry entry, Pages project, DNS record, App installation and repository. Never
 set it on a book readers use.
 
+**Test books from the author site (since 12 Nov 2026).** A maintainer (a member id in
+the Worker's `MAINTAINER_MEMBER_IDS`) makes one with *New test book* on the author
+site: the Worker files a request issue through the App with `sandbox: true` and the
+labels `maintainer` and `approved`, so provision runs at once. Its slug always starts
+`test-`. It is built and deployed like any book, but it is left out of the portal,
+counted nowhere in Plausible, `noindex,nofollow`, and every page carries a strip
+saying it will be removed. *Remove test book* in its Settings adds `remove` to that
+issue; the Worker refuses any slug whose registry entry isn't `sandbox: true`, and the
+author site drops everyone's access and unused invitations at once. A public request
+can never make a sandbox book: provision refuses `sandbox: true` unless the issue was
+opened by the App and carries `maintainer`. Details: book-requests' README, *Test
+books*; suggest-edit-function's README, *Test books*.
+
 ---
 
 ## Retiring a book that is finished (voluntary)
