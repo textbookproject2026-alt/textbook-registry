@@ -138,6 +138,8 @@ export function evaluate(expr, scope, consts = {}, depth = 0) {
   const again = (x) => evaluate(x, scope, consts, depth + 1);
   let m;
   if ((m = /^(\w+) \? (\w+) : "([^"]*)"$/.exec(e))) return again(m[1]) ? again(m[2]) : m[3];
+  if ((m = /^(.+?) && (.+)$/.exec(e))) return again(m[1]) && again(m[2]);
+  if ((m = /^!(\w+)$/.exec(e))) return !again(m[1]);
   if ((m = /^(.+) === true$/.exec(e))) return again(m[1]) === true;
   if ((m = /^(.+) \?\? "([^"]*)"$/.exec(e))) return again(m[1]) ?? m[2];
   if ((m = /^(.+?) \?\? (.+)$/.exec(e))) return again(m[1]) ?? again(m[2]);
