@@ -51,7 +51,7 @@ redeployed from a specific commit of this repo. Delivery as it stands (DESIGN §
 
 | Consumer | Gets the registry | A change takes effect |
 |---|---|---|
-| suggest-edit function (Vercel) | bundled at build, pinned to a commit | on redeploy, which `deploy.yml` triggers after every merge to `main` |
+| suggest-edit function (Worker c4n-api) | bundled at build, pinned to a commit | on redeploy, which `deploy.yml` triggers after every merge to `main` |
 | CMS auth relay (Cloudflare Worker) | **not delivered.** `ALLOWED_DOMAINS` is edited by hand; generating it from `cms.host` (DESIGN step 5a) is not built | when someone edits the Worker variable |
 | Portal (`textbook-portal`) | generated at build, pinned to a commit | on the rebuild `portal.yml` triggers after every merge to `main` |
 | Shared CMS host | not built (DESIGN step 5b) | — |
@@ -66,37 +66,22 @@ code and registry together.
 ### Delivery to services
 
 **suggest-edit function.** `.github/workflows/deploy.yml` runs after `validate` passes
-on a push to `main`. It calls the function's Vercel deploy hook, then polls the
-function's `X-Registry-Version` header until production serves the merged commit (or
-a later one). If that hasn't happened within ten minutes, the run fails, which puts a
-red check on the merge commit. The usual cause is the function's build refusing the
-registry or failing a test; the old deployment stays live, and the Vercel build log
-says why. The workflow also runs every six hours as a staleness alarm: if production
-is behind `main`, it redeploys and fails, so the missed deploy gets looked at. Run it
-by hand from the Actions tab (`workflow_dispatch`) to force a catch-up.
-
-It needs one repository secret, **`SUGGEST_EDIT_DEPLOY_HOOK`**: the URL of a deploy
-hook on the Vercel project `suggest-edit-function` (Project → Settings → Git → Deploy
-Hooks), for the production branch `main`. The URL is a credential: anyone holding it
-can start builds, though only of the function's own `main`. Keep it in the secret and
-nowhere else, and regenerate it in Vercel if it leaks. Without the secret, the run
-fails and says so.
-
-That job keeps Vercel current, `https://suggest-edit-function.vercel.app`: unused since 13 Oct 2026, kept until 27 Oct as the rollback (docs/INFRASTRUCTURE.md §2).
-Production is the Cloudflare Worker c4n-api at `platform.suggest_edit_endpoint`
-(`https://api.confused4now.org`): the `worker` job in the same workflow calls
+on a push to `main`, every six hours as a staleness alarm, and by hand. Its one job calls
 suggest-edit-function's `worker.yml`, which bundles this registry, runs the function's
-tests, deploys with wrangler and waits for the new `X-Function-Version`. It needs the
-secret **`CLOUDFLARE_WORKERS_TOKEN`** (see suggest-edit-function's README, "Where the
-API lives"); without it the deploy is skipped with a warning. When Vercel is retired,
-delete the `suggest-edit` job and `SUGGEST_EDIT_DEPLOY_HOOK`.
+tests, deploys the Cloudflare Worker c4n-api (`platform.suggest_edit_endpoint`,
+`https://api.confused4now.org`) with wrangler and waits for the new
+`X-Function-Version`. It needs the secret **`CLOUDFLARE_WORKERS_TOKEN`** (see
+suggest-edit-function's README, "Where the API lives"); without it the deploy is skipped
+with a warning. If a build refuses the registry or a test fails, the old version stays
+live and the run is red. (Until 14 Nov 2026 a second job kept the Vercel copy current
+through a deploy hook; Vercel is retired.)
 
 **Portal.** `.github/workflows/portal.yml` is the same mechanism for the portal: after
 `validate` passes on `main` it fires a Cloudflare Pages deploy hook on the
 `textbook-portal` project, then polls `https://<platform.portal.domain>/version.txt`
 until it shows the merged commit, failing after ten minutes. It also runs every six
 hours, at a different minute from `deploy.yml`. It needs the repository secret
-**`PORTAL_DEPLOY_HOOK`** (the Pages deploy hook URL, a credential like the one above).
+**`PORTAL_DEPLOY_HOOK`** (the Pages deploy hook URL, a credential).
 The repository variable `PORTAL_VERSION_URL` redirects the poll during setup only; it
 is unset, and should stay unset, because polling the apex is what proves readers see
 the change.
