@@ -39,7 +39,7 @@ These are the services every book uses. Each one bakes in or reads
 | # | Service | Where it runs | Reads the registry | Breaks if gone |
 |---|---|---|---|---|
 | S1 | **The registry** (`textbook-registry`) | GitHub | — it *is* the registry | No service can learn about a change. What is already deployed keeps working |
-| S2 | **Suggest-edit function** | Vercel, project `suggest-edit-function` | bundled at build | Every book's *Suggest an edit* button fails, and the suggestion is lost |
+| S2 | **Suggest-edit function** | Cloudflare Worker `c4n-api` (api.confused4now.org) | bundled at build | Every book's *Suggest an edit* button fails, and the suggestion is lost |
 | S3 | **CMS auth relay** | Cloudflare Worker `sveltia-cms-auth` | no: `ALLOWED_DOMAINS` is set by hand | No contributor on any book can sign in to a browser editor |
 | S4 | **Portal** (`textbook-portal`) | Cloudflare Pages, project `textbook-portal`, on `confused4now.org` | generated at build | The front page is gone. Old book-one links keep redirecting, because the redirect rule is in the zone, not in Pages |
 | S5 | **The author site** (`author-site`) | Cloudflare Pages, project `author-site`, on `author.confused4now.org`; its back end is S2's `api/author-*` | none of its own: S2 reads `authors` and `platform.pages` (bundled); the page reads the public registry for links | Authors can't import, answer their queues or publish. Books, their sites and the in-site editor are unaffected |
@@ -68,7 +68,7 @@ same dates as reminders. Add a row whenever a step creates an expiring credentia
 | GitHub fine-grained token `build-nudge dispatch` (§7) | **23 Sep 2027**, 22:00 UTC (the date GitHub set, a day before the one entered) | `build-nudge` Worker secret `DISPATCH_TOKEN` | the Worker can't start `reconcile`: nothing rebuilds on its own (no nudges, no 15-minute tick). `builder-alive` goes red within a day. `reconcile` still works by hand |
 | `PARITY_READ_TOKEN` (fine-grained, SCHEDULED-JOBS Part 1) | **not recorded — confirm** | registry secret | parity goes red every day |
 | ~~`PLATFORM_TOKEN`~~ (§1, `book-requests`) | n/a: **the secret was deleted 27 Sep 2026** | — | `provision` and `remove` fail: no approved request becomes a book, and no sandbox book can be removed. Nothing live breaks |
-| `GITHUB_OAUTH_CLIENT_SECRET`, the *Textbook sign-in* OAuth App's secret (§2f) | **unconfirmed** | Vercel env | "Sign in with GitHub" in the editor fails. Anonymous proposals still work |
+| `GITHUB_OAUTH_CLIENT_SECRET`, the *Textbook sign-in* OAuth App's secret (§2f) | **unconfirmed** | function repo secret `SIGNIN_OAUTH_CLIENT_SECRET` → Worker | "Sign in with GitHub" in the editor fails. Anonymous proposals still work |
 | `HYPOTHESIS_API_TOKEN` (§9) | **not recorded — confirm** whether it expires | `textbook` secret | book one's Sunday annotation backup and dashboard fail |
 
 Book two is a throwaway test book (`MULTI-BOOK-HOSTING.md` §6). It is meant to be
@@ -80,10 +80,10 @@ retired once the multi-book test is over (see [BOOK-LIFECYCLE.md](BOOK-LIFECYCLE
 |---|---|---|---|
 | `textbookproject2026-alt` | GitHub user | The platform and book-one repositories (§1), the registry's CODEOWNERS entry, the suggest-edit GitHub App (§2c), the GitHub App `quartz-book-bot` (§7), the fine-grained token `build-nudge dispatch` (§7), the classic token that was `PLATFORM_TOKEN` (§1, `book-requests`; the secret was deleted on 27 Sep 2026), and every book made from a request | the platform owner |
 | `dept-coordinator-test` | GitHub user | `platform-test-book` (book two) and the one department-edition fork | the platform owner, as a test identity. SSH alias `github-coord` |
-| `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set in Vercel (§2d) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
+| `aldogobot` | GitHub user (machine) | nothing live: its token, the old `BOT_TOKEN`, was revoked on 17 Sep and isn't set anywhere (§2d) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
 | `brandonproject2026` | Cloudflare | the relay Worker (S3), the portal Pages project (S4), book one's Quartz Pages project `social-research-methods` (S7), the API token `quartz-book` deploys with, and the Worker `build-nudge` (S7) | the platform owner (confirmed on their word, 20 Sep), the sole administrator, who also pays for it (D16, 25 Sep 2026) |
 | a second Cloudflare account | Cloudflare | not established from any repository: probably `platform-test-book` Pages and the `textbook-edition-template-5cm` test project (§8) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
-| Vercel | Vercel | the suggest-edit function (S2) | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
+| ~~Vercel~~ | Vercel | **retired 14 Nov 2026**: the suggest-edit function ran there until the Worker took over (§2). The project is deleted by hand | — |
 | Plausible | Plausible | the platform's one site, `confused4now.org`, for the portal, every live book and the author site (`platform.analytics.plausible`, BOOK-ONE-TO-QUARTZ D19, §8 step 17a), plus any site an edition has of its own | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
 | `AlecGordon` | Hypothes.is | book one's API token. No groups are in use | a person's account, not the platform's: the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client (§9) |
 | Obsidian | Obsidian Publish | book one's Publish site | the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client |
@@ -272,16 +272,14 @@ It stops and asks the platform owner first for:
 
 ---
 
-## 2. S2 — the suggest-edit function (Worker `c4n-api`; Vercel kept as the rollback)
+## 2. S2 — the suggest-edit function (Worker `c4n-api`)
 
 - **URL:** `https://api.confused4now.org/api/suggest-edit`
   (`platform.suggest_edit_endpoint`), since 12 Oct 2026: the Cloudflare Worker
-  `c4n-api`. It runs the same handlers as Vercel (suggest-edit-function's README,
-  "Where the API lives").
+  `c4n-api`. (suggest-edit-function's README, "Where the API lives").
 - **Everything runs on the Worker, since 13 Oct 2026.** Reads, sign-in and every write.
-  Vercel's Hobby plan doesn't allow commercial use, so nothing goes to Vercel any more.
-  (12–13 Oct the Worker forwarded the writes to Vercel; that ended with
-  suggest-edit-function #45, and `FORWARD_SECRET` was deleted from both hosts.)
+  (It ran on Vercel until then; Vercel was kept as a rollback until 27 Oct and retired
+  on 14 Nov 2026: suggest-edit-function #78, textbook-registry's deploy job removed.)
 - **Writes on a free plan.** The Worker is on Cloudflare's free plan: 10 ms of CPU per
   request, and a commit can take more (an author's save measured 12–35 ms on 12 Oct; most
   still finish). So each write carries a key (`?write_key=`) that the Worker claims in
@@ -296,14 +294,6 @@ It stops and asks the platform owner first for:
   `repository_dispatch` on suggest-edit-function). Until that App is installed on
   suggest-edit-function, the start fails (`dispatch-failed` in the health check) and
   the workflow's five-minute schedule picks the write up instead.
-- **Vercel: deployed, unused, until 27 Oct 2026.** The Vercel project still deploys
-  from `main` (the registry's `deploy` keeps it current) and serves every route, as the
-  rollback. After 27 Oct it can be retired.
-- **Rolling back.** Set `platform.suggest_edit_endpoint` back to
-  `https://suggest-edit-function.vercel.app/api/suggest-edit`, and the author site's
-  proxy (`functions/_lib/core.js` `UPSTREAM`, `site/index.html` `tb-api`) back too. The
-  books rebuild at build-nudge's next `*/15` tick. Vercel already serves every route
-  and holds the same `IDENTITY_SECRET`, so nothing else is needed.
 - **Moving the endpoint.** Every book's pages have the endpoint baked in. A move is
   safe only while every book builds centrally from the registry, which all do since book
   one was retired. To move it:
@@ -333,55 +323,39 @@ It stops and asks the platform owner first for:
 
 ### 2a. Deploy pipeline
 
-1. A push to the function's `main` deploys production through Vercel's Git
-   integration. Other branches get preview deployments.
-2. A registry merge triggers `textbook-registry/.github/workflows/deploy.yml`
-   after `validate` passes. The workflow POSTs the Vercel **deploy hook**, then
-   polls `X-Registry-Version` for up to 10 minutes and fails red on the merge
-   commit if production hasn't caught up.
-3. The Vercel build (`npm run vercel-build`) resolves registry `main` to a SHA,
-   fetches `registry.json` at that SHA, validates it, writes
-   `registry/bundled.mjs` and runs the tests. **If any step fails, the old
-   deployment stays live.**
-4. A schedule at `41 */6 * * *` re-runs the same check as a staleness alarm.
-5. A merge to the function itself leaves `X-Registry-Version` unchanged, so it
-   is checked by the function's own `.github/workflows/deployed.yml`
-   (suggest-edit-function #2, 26 Sep 2026). That workflow polls
-   `X-Function-Version`, the function's commit, for up to 10 minutes and fails
-   red on the merge commit.
-
-Vercel's instant rollback rolls back code and registry together.
+1. A push to the function's `main` runs its `worker.yml`: bundle the registry, run the
+   tests, deploy `c4n-api`, then wait for `X-Function-Version` to name the commit. If a
+   step fails, the old version stays live.
+2. A registry merge triggers `textbook-registry/.github/workflows/deploy.yml` after
+   `validate` passes, which calls the same `worker.yml` (the registry is baked in at
+   build time).
+3. A schedule at `41 */6 * * *` re-runs the deploy as a staleness alarm.
 
 ### 2b. Secrets and settings
 
 | Name | Where | What | If it's missing or wrong |
 |---|---|---|---|
-| `GITHUB_APP_ID` | Vercel env (production) | the App's numeric ID | falls back to `BOT_TOKEN`, or 500 |
-| `GITHUB_APP_PRIVATE_KEY` | Vercel env, **Sensitive** | the App's `.pem`, base64 on one line | as above |
-| `BOT_TOKEN` | **not set** (the platform owner checked Vercel, 25 Sep) | was the temporary fallback PAT (§2d). The token was revoked on 17 Sep | nothing: a repo without the App gets a 502 |
-| `GITHUB_OAUTH_CLIENT_ID` | Vercel env | the *Textbook sign-in* OAuth App's client ID (§2f). Not the GitHub App's | "Sign in with GitHub" fails. Anonymous proposals still work |
-| `GITHUB_OAUTH_CLIENT_SECRET` | Vercel env, **Sensitive** | that OAuth App's client secret. **Expiry: unconfirmed** | as above |
-| `IDENTITY_SECRET` | Vercel env | 32 or more random characters that sign the editor's identity tokens (§2f). It doesn't expire. Rotating it signs every reader out | as above |
-| `GITHUB_OAUTH_REDIRECT_URI` | Vercel env, optional | defaults to `https://<request host>/api/github-auth`. **Unconfirmed** whether it's set | sign-in's callback fails if the OAuth App's callback URL differs |
-| `REQUESTS_REPO` | Vercel env, optional | only needed if `book-requests` is ever renamed | — |
-| `GITHUB_APP_INSTALLATION_ID` | Vercel env | **no longer read**. If it's set, startup logs a warning | delete it |
-| `REGISTRY_REF` | Vercel build env, optional | pins the registry to a SHA or branch | while set, `deploy.yml` stays red by design |
-| `MAINTAINER_MEMBER_IDS` | Worker `c4n-api`, `wrangler.toml` `[vars]` (not a secret: ids aren't credentials; a change is a PR and a deploy) | comma-separated author-site member ids (10 hex digits, no `m-`) who may make and remove test books from the author site. Since 12 Nov 2026: `ab738d332e` (Alec). To add a second maintainer, see book-requests' README, *Test books* | everyone gets 403 on `/api/maintainer/*`: no New test book button, nothing else changes |
-| `SUGGEST_EDIT_DEPLOY_HOOK` | `textbook-registry` repo secret | the Vercel deploy hook's URL, a credential | `deploy.yml` fails and says so |
+| `GITHUB_APP_ID` | `wrangler.toml` `[vars]` | the App's numeric ID | 500 on every App call |
+| `GITHUB_APP_PRIVATE_KEY` | function repo secret `SUGGEST_EDIT_APP_PRIVATE_KEY` → Worker (`worker-secrets.yml`) | the App's `.pem`, base64 on one line | as above |
+| `BOT_TOKEN` | **not set** | was the temporary fallback PAT (§2d). The token was revoked on 17 Sep | nothing: a repo without the App gets a 502 |
+| `GITHUB_OAUTH_CLIENT_ID` | `wrangler.toml` `[vars]` | the *Textbook sign-in* OAuth App's client ID (§2f). Not the GitHub App's | "Sign in with GitHub" fails. Anonymous proposals still work |
+| `GITHUB_OAUTH_CLIENT_SECRET` | function repo secret `SIGNIN_OAUTH_CLIENT_SECRET` → Worker | that OAuth App's client secret. **Expiry: unconfirmed** | as above |
+| `IDENTITY_SECRET` | function repo secret `IDENTITY_SECRET` → Worker | 32 or more random characters that sign the editor's identity tokens (§2f). It doesn't expire. Rotating it signs every reader out | as above |
+| `MAINTAINER_MEMBER_IDS` | `wrangler.toml` `[vars]` (not a secret: ids aren't credentials; a change is a PR and a deploy) | comma-separated author-site member ids (10 hex digits, no `m-`) who may make and remove test books from the author site. Since 12 Nov 2026: `ab738d332e` (Alec). To add a second maintainer, see book-requests' README, *Test books* | everyone gets 403 on `/api/maintainer/*`: no New test book button, nothing else changes |
+| `REGISTRY_REF` | worker.yml build env, optional | pins the registry to a SHA or branch | while set, registry merges can't change what is served |
+| ~~`SUGGEST_EDIT_DEPLOY_HOOK`~~ | **deleted 14 Nov 2026** (was a `textbook-registry` repo secret) | the Vercel deploy hook | — |
 
 The App's `.pem` file itself is kept outside any repository. Its backups are held by
 the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client. If it's lost, generate a
 new key in the App's settings. No code changes.
 
-**`BOT_TOKEN` is not set (25 Sep 2026, checked in Vercel by the platform
-owner).** On 22 Sep this couldn't be checked, and it mattered: while `BOT_TOKEN`
+**`BOT_TOKEN` is not set (checked 25 Sep 2026; Vercel, where it lived, is retired).** On 22 Sep this couldn't be checked, and it mattered: while `BOT_TOKEN`
 was set, a book whose repo didn't have the App installed still got its
 suggestions, filed silently under the bot's personal token. That hid a missing
 installation, which is the trap `INTERIM-BOOK.md` warns about. The fallback's code
 is still in the function, but the token was revoked on 17 Sep, so setting the old
 value again would not bring the fallback back.
-The editor's live proof on 24 Sep showed `credential=app` in the logs. **Still
-unverified:** whether `GITHUB_APP_INSTALLATION_ID` is set.
+The editor's live proof on 24 Sep showed `credential=app` in the logs.
 
 ### 2c. The GitHub App `textbook-suggest-edit`
 
@@ -419,7 +393,7 @@ reader suggestions under a fine-grained PAT before the App existed.
 and `check-github.mjs` checks that the account exists. The token is a fallback,
 and the plan is to delete it along with its code (`suggest-edit-function/README.md`).
 **The token was revoked on 17 Sep 2026, after the App was proven, and on 25 Sep
-the variable was confirmed unset in Vercel.** Only the fallback's code is left in
+the variable was confirmed unset.** Only the fallback's code is left in
 the function. Delete it; the account can stay, since `automation_logins` still
 names it.
 Deleting it is a change to the function's configuration, not to any book.
@@ -428,7 +402,7 @@ Deleting it is a change to the function's configuration, not to any book.
 
 - **If it's gone,** every book's form shows its generic failure copy. Nothing is
   queued or retried.
-- **Logs:** `vercel logs <deployment-url>` is the only place to see validation
+- **Logs:** `wrangler tail c4n-api` is the only place to see validation
   rejections, honeypot hits, rate-limit trips and the credential path. The
   response withholds that detail deliberately.
 - **Rate limit:** 5 an hour per IP, held in one serverless instance's memory,
@@ -446,7 +420,7 @@ Added 24 Sep 2026 for the in-site editor.
 - **The OAuth App *Textbook sign-in*.** It asks for **no scopes**, so all it proves
   is who the reader is. `/api/github-auth` swaps the code for a GitHub token, reads
   the login, and **revokes the GitHub token at once**. Its client ID and secret are
-  in Vercel (§2b). It is owned by the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client.
+  in the Worker's settings (§2b). It is owned by the platform owner, Alec (`textbookproject2026-alt` / `brandonproject2026`): **confirmed 27 Sep 2026**. It stays with Alec, the maintainer: there is no handover to a client.
   It's separate from the *Textbook CMS* OAuth App (§3), the retired *Textbook
   Author Console* OAuth App (§6) and the GitHub App (§2c). It also signs authors in
   to the author site (§6): `github-auth` accepts the origins of platform pages that
@@ -816,7 +790,7 @@ Audited 26 Sep 2026:
 | `textbook-registry` | S2 function, S4 portal | `deploy.yml`, `portal.yml` (deploy hooks) | `X-Registry-Version`, `/version.txt` | had both |
 | `quartz-book` | every book | `ci` → `stable` → `reconcile: stable` | `reconcile-book` waits for Pages to serve the new marker | had both |
 | `textbook-portal` | S4 portal | Pages Git integration (`main` = production) | `deployed.yml` polls the apex's `<meta name="portal-version">` (textbook-portal #2) | deployed, **nothing proved it** |
-| `suggest-edit-function` | S2 function | Vercel Git integration (`main` = production) | `deployed.yml` polls `X-Function-Version` (suggest-edit-function #2) | deployed, **nothing proved it** |
+| `suggest-edit-function` | S2 function | `worker.yml` on push to `main` | `worker.yml` waits for `X-Function-Version` | proved on every merge |
 | `build-nudge` | S7's Worker | `deploy.yml`, `wrangler deploy --tag <commit>` (build-nudge #3) | `deploy.yml` polls `GET /`'s `commit` and `token` | **deployed by hand only** |
 | `sveltia-cms-auth` | S3 relay | Workers Builds | its check goes red if the deploy fails; no served-commit marker (§3) | unchanged |
 | `quartz-edition-extras` | none directly | the pin bot: the next tick opens a quartz-book PR, which deploys when merged (the design-preview gate, §7) | through quartz-book | unchanged, by design |
@@ -853,12 +827,12 @@ Tracked here so nobody rediscovers them the hard way. See
 - `textbook-registry` `main` is protected, but no review is required until a second maintainer exists (§1).
 - `ALLOWED_DOMAINS` isn't generated or checked (§3).
 - DNS isn't generated or checked (§5).
-- `BOT_TOKEN` was revoked on 17 Sep and is unset in Vercel, but its code path is
+- `BOT_TOKEN` was revoked on 17 Sep and is unset, but its code path is
   still in the function (§2d).
 - Expiry **unconfirmed** for `PLATFORM_TOKEN`, `book-requests`' Cloudflare token and
   the *Textbook sign-in* client secret (§1, §2b).
 - Owners **confirmed 27 Sep 2026** as the platform owner, Alec (`textbookproject2026-alt`
-  / `brandonproject2026`): Vercel, Plausible, Apple Developer, the registrar, the second
+  / `brandonproject2026`): Plausible, Apple Developer, the registrar, the second
   Cloudflare account, the *Textbook CMS* OAuth App, the App's `.pem` backups, `code_repo`,
   `aldogobot` and Hypothes.is (`AlecGordon`). Also Obsidian Publish and the *Textbook sign-in*
   OAuth App. **Every account stays with Alec, the maintainer: there is no handover to a

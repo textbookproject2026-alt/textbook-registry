@@ -192,7 +192,7 @@ Retired at the platform owner's request (registry #54). What was done, in order:
 1. **Before the registry PR:** quartz-book #23 moved the builder's CI off book one,
    because the builder refuses a retired book. CI builds the first `live` book instead.
 2. **Registry #54:** `status: retired`, and nothing else.
-   - Its `deploy` first failed: the function's Vercel build runs its tests, and two
+   - Its `deploy` first failed: the function's build runs its tests, and two
      assumed book one was routable. suggest-edit-function #3 fixed them.
    - The function then answered book one's origin with 403 (registry `65cb4e9`).
    - `portal` dropped the listing.

@@ -124,6 +124,8 @@ test('evaluate: the registry reads builder/lib.mjs uses, and nothing else', () =
   assert.equal(evaluate('on ? ep : ""', scope, { on: 'book.suggest_edit?.enabled === true', ep: 'registry.platform?.suggest_edit_endpoint ?? ""' }), 'https://f/api/suggest-edit');
   assert.equal(evaluate('book.content.live_branch === "main"', scope), true);
   assert.equal(evaluate('book.missing ?? book.content.repo ?? ""', scope), 'o/book');
+  assert.equal(evaluate('book.status === "live" && !testBook', { book: { status: 'live', sandbox: true } }, { testBook: 'book.sandbox === true' }), false);
+  assert.equal(evaluate('book.status === "live" && !testBook', { book: { status: 'live' } }, { testBook: 'book.sandbox === true' }), true);
   assert.throws(() => evaluate('"o/book"', scope), /not one parity can evaluate/);
   assert.throws(() => evaluate('book.missing ?? "o" + "x"', scope), /not one parity can evaluate/);
   assert.throws(() => evaluate('process.env.REPO', scope), /not one parity can evaluate/);

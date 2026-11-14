@@ -108,30 +108,22 @@ automation login exists (`github-facts` job).
 
 ### `deploy` (after `validate` on `main`; every 6 h at :41)
 
-Two jobs, both needed: the registry is baked into each host at build time.
-- `worker` deploys the Cloudflare Worker `c4n-api` (`https://api.confused4now.org`,
-  reads and small writes) through suggest-edit-function's `worker.yml`, which waits for
-  the new `X-Function-Version`.
-- `suggest-edit` keeps Vercel current: unused since 13 Oct, kept until 27 Oct 2026 as
-  the rollback (INFRASTRUCTURE §2). It POSTs the Vercel deploy hook, then polls
-  `X-Registry-Version` for up to 10 minutes.
-
-The table is that job's.
+One job: the registry is baked into the API at build time. `worker` deploys the
+Cloudflare Worker `c4n-api` (`https://api.confused4now.org`) through
+suggest-edit-function's `worker.yml`, which bundles the registry, runs the tests and
+waits for the new `X-Function-Version`. (Until 14 Nov 2026 a second job kept the Vercel
+copy current; Vercel is retired.)
 
 | Result | Meaning | Do |
 |---|---|---|
-| green, "Already current" | production is on this commit or a later one | nothing |
-| green after "Deploy hook accepted" | a merge deployed normally | nothing |
-| red, "`SUGGEST_EDIT_DEPLOY_HOOK` is not set" | the secret is missing | recreate the hook in Vercel and store it |
-| red, "still serving … ten minutes after the deploy hook" | the function's build failed. It usually refused the registry or a test failed. The old deployment is still live | read the Vercel build log |
-| red on a **schedule** run, "had fallen behind" | a merge-time deploy was missed. This run caught it up, and is red so that someone asks why | find the missed run |
-| permanently red with a registry pin | `REGISTRY_REF` is set on Vercel | remove the pin when you mean to |
+| green | the Worker serves this registry | nothing |
+| red in the build or test step | the function refused the registry or a test failed. The old version is still live | read the run's log |
+| red, "still serving" | the deploy didn't take | re-run; check `CLOUDFLARE_WORKERS_TOKEN` |
 
 Check it by hand:
 
 ```sh
 curl -sI -X OPTIONS https://api.confused4now.org/api/suggest-edit | grep -i x-registry-version
-curl -sI -X OPTIONS https://suggest-edit-function.vercel.app/api/suggest-edit | grep -i x-registry-version  # the rollback, until 27 Oct
 git -C textbook-registry rev-parse origin/main
 ```
 
@@ -191,11 +183,11 @@ service's own repo is served, and is red on the merge commit if it isn't
 | Repo | Workflow | Polls | Red means |
 |---|---|---|---|
 | `textbook-portal` | `deployed` | the apex's `<meta name="portal-version">` | the Pages build failed (previous page still live), or the apex redirect rule is catching `/` |
-| `suggest-edit-function` | `deployed` | `X-Function-Version` | the Vercel build or its tests failed (previous deployment still live) |
+| `suggest-edit-function` | `worker` | `X-Function-Version` | the build, the tests or the deploy failed (previous version still live) |
 | `build-nudge` | `deploy` | `GET /` → `commit`, `token` | a secret is missing (it names it), the deploy failed, or the new version's token doesn't work |
 
 A "fired the deploy hook once" warning in `deployed` means the push didn't start a
-build by itself. Find out why in the Pages or Vercel project's Git settings.
+build by itself. Find out why in the Pages project's Git settings.
 
 ### `parity` (push, PR, daily 06:17, and on `repository_dispatch: parity`)
 
