@@ -102,6 +102,11 @@
             }
           }
         },
+        "donate_url": {
+          "type": "string",
+          "pattern": "^$|^https://(www\\.paypal\\.com|paypal\\.me)/[^\\s\"'<>\\\\]+$",
+          "description": "The platform's donation link: a PayPal address (https://www.paypal.com/... or https://paypal.me/...), or \"\" for none. Set, every book's page footer and ⋯ menu and the portal's footer and top navigation show Donate; empty, nothing is shown. The builder and the portal's build refuse anything else."
+        },
         "analytics": {
           "type": "object",
           "description": "The platform's one Plausible site (BOOK-ONE-TO-QUARTZ D19, §8 step 17a). It covers the portal and every live book, each counted only on its own address; null means no analytics anywhere.",
